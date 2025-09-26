@@ -139,13 +139,29 @@ class eBayListingAPITester:
         """Test listing optimization with text only"""
         test_description = "iPhone 12 in good condition, minor scratches on back"
         
-        success, response = self.run_test(
-            "Optimize Listing (Text Only)",
-            "POST",
-            "listings/optimize",
-            200,
-            data={"description": test_description}
-        )
+        # Use form data for this endpoint
+        url = f"{self.api_url}/listings/optimize"
+        headers = {'Authorization': f'Bearer {self.token}'}
+        data = {'description': test_description}
+        
+        try:
+            response = requests.post(url, data=data, headers=headers)
+            success = response.status_code == 200
+            
+            if success:
+                response_data = response.json()
+                self.log_test("Optimize Listing (Text Only)", True)
+            else:
+                error_detail = f"Expected 200, got {response.status_code}"
+                try:
+                    error_detail += f" - {response.json()}"
+                except:
+                    error_detail += f" - {response.text}"
+                self.log_test("Optimize Listing (Text Only)", False, error_detail)
+                return False
+        except Exception as e:
+            self.log_test("Optimize Listing (Text Only)", False, f"Exception: {str(e)}")
+            return False
         
         if success:
             required_fields = ['id', 'original_description', 'optimized_description', 'created_at']
