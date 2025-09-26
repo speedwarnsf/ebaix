@@ -83,6 +83,14 @@ function App() {
   const handleFileUpload = (file) => {
     if (file && file.type.startsWith('image/')) {
       setListing(prev => ({ ...prev, image: file }));
+      
+      // Create image preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+      
       toast.success('Image uploaded successfully!');
     } else {
       toast.error('Please upload a valid image file');
