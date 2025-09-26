@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Image Upload</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .upload-area { 
+            border: 2px dashed #ccc; 
+            padding: 20px; 
+            text-align: center; 
+            margin: 20px 0;
+            min-height: 200px;
+        }
+        .preview-image { 
+            max-width: 300px; 
+            max-height: 300px; 
+            margin: 10px; 
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <h1>Image Upload Test</h1>
+    <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+        <p>Click to select an image file</p>
+        <div id="preview"></div>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" style="display: none;">
+    
+    <script>
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('preview').innerHTML = 
+                        '<img src="' + e.target.result + '" class="preview-image" alt="Preview">';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+</body>
+</html>
