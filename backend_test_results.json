@@ -1,0 +1,88 @@
+{
+  "summary": {
+    "total_tests": 13,
+    "passed_tests": 9,
+    "success_rate": 69.23076923076923,
+    "timestamp": "2025-09-26T20:10:53.144619"
+  },
+  "detailed_results": [
+    {
+      "test": "API Health Check",
+      "success": true,
+      "details": "",
+      "timestamp": "2025-09-26T20:10:30.102543"
+    },
+    {
+      "test": "User Registration",
+      "success": true,
+      "details": "",
+      "timestamp": "2025-09-26T20:10:30.152600"
+    },
+    {
+      "test": "Get User Profile",
+      "success": true,
+      "details": "",
+      "timestamp": "2025-09-26T20:10:30.205757"
+    },
+    {
+      "test": "Profile Fields Complete",
+      "success": true,
+      "details": "",
+      "timestamp": "2025-09-26T20:10:30.206432"
+    },
+    {
+      "test": "Optimize Listing (Text Only)",
+      "success": false,
+      "details": "Expected 200, got 422 - {'detail': [{'type': 'missing', 'loc': ['body', 'description'], 'msg': 'Field required', 'input': None, 'url': 'https://errors.pydantic.dev/2.11/v/missing'}]}",
+      "timestamp": "2025-09-26T20:10:30.245206"
+    },
+    {
+      "test": "Optimize Listing (With Image)",
+      "success": true,
+      "details": "",
+      "timestamp": "2025-09-26T20:10:52.924158"
+    },
+    {
+      "test": "Image Optimization",
+      "success": true,
+      "details": "",
+      "timestamp": "2025-09-26T20:10:52.924817"
+    },
+    {
+      "test": "Get User Listings",
+      "success": true,
+      "details": "",
+      "timestamp": "2025-09-26T20:10:52.981984"
+    },
+    {
+      "test": "Listings Count",
+      "success": false,
+      "details": "Expected at least 2 listings, got 1",
+      "timestamp": "2025-09-26T20:10:52.982637"
+    },
+    {
+      "test": "Check Usage Before Limit Test",
+      "success": true,
+      "details": "",
+      "timestamp": "2025-09-26T20:10:53.029084"
+    },
+    {
+      "test": "Create Listing 1 (Within Limit)",
+      "success": false,
+      "details": "Expected 200, got 422 - {'detail': [{'type': 'missing', 'loc': ['body', 'description'], 'msg': 'Field required', 'input': None, 'url': 'https://errors.pydantic.dev/2.11/v/missing'}]}",
+      "timestamp": "2025-09-26T20:10:53.069684"
+    },
+    {
+      "test": "Invalid Token Test",
+      "success": true,
+      "details": "",
+      "timestamp": "2025-09-26T20:10:53.108745"
+    },
+    {
+      "test": "No Token Test",
+      "success": false,
+      "details": "Expected 401, got 403 - {'detail': 'Not authenticated'}",
+      "timestamp": "2025-09-26T20:10:53.143963"
+    }
+  ]
+}
