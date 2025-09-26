@@ -21,6 +21,7 @@ function App() {
   const [authTab, setAuthTab] = useState('login');
   const [authData, setAuthData] = useState({ email: '', password: '' });
   const [listing, setListing] = useState({ description: '', image: null });
+  const [imagePreview, setImagePreview] = useState(null);
   const [optimizedListing, setOptimizedListing] = useState(null);
   const [userListings, setUserListings] = useState([]);
   const [loading, setLoading] = useState(false);
