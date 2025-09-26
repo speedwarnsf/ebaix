@@ -30,7 +30,13 @@ SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'your-secret-key-change-this')
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Simple password hashing for MVP (replace with proper bcrypt in production)
+def get_password_hash(password):
+    return hashlib.sha256((password + SECRET_KEY).encode()).hexdigest()
+
+def verify_password(plain_password, hashed_password):
+    return get_password_hash(plain_password) == hashed_password
+
 security = HTTPBearer()
 
 # Create the main app without a prefix
@@ -80,16 +86,6 @@ class OptimizedListing(BaseModel):
     optimized_description: str
     optimized_image_url: Optional[str] = None
     created_at: datetime
-
-# Helper functions
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
-
-def get_password_hash(password):
-    # Truncate password to 72 bytes for bcrypt compatibility
-    if len(password.encode('utf-8')) > 72:
-        password = password[:72]
-    return pwd_context.hash(password)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
