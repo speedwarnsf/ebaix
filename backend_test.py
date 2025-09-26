@@ -281,31 +281,32 @@ class eBayListingAPITester:
         for i in range(remaining + 1):  # Try one more than the limit
             test_desc = f"Test listing {i+1} for limit testing"
             
-            if i < remaining:
-                # Should succeed
-                success, _ = self.run_test(
-                    f"Create Listing {i+1} (Within Limit)",
-                    "POST",
-                    "listings/optimize",
-                    200,
-                    data={"description": test_desc}
-                )
-                if not success:
-                    return False
-            else:
-                # Should fail with 403
-                success, _ = self.run_test(
-                    "Create Listing (Over Limit)",
-                    "POST",
-                    "listings/optimize",
-                    403,
-                    data={"description": test_desc}
-                )
-                if not success:
-                    self.log_test("Usage Limit Enforcement", False, "Should have returned 403 for over-limit request")
-                    return False
+            # Use form data for optimization endpoint
+            url = f"{self.api_url}/listings/optimize"
+            headers = {'Authorization': f'Bearer {self.token}'}
+            data = {'description': test_desc}
+            
+            try:
+                response = requests.post(url, data=data, headers=headers)
+                
+                if i < remaining:
+                    # Should succeed
+                    if response.status_code == 200:
+                        self.log_test(f"Create Listing {i+1} (Within Limit)", True)
+                    else:
+                        self.log_test(f"Create Listing {i+1} (Within Limit)", False, f"Expected 200, got {response.status_code}")
+                        return False
                 else:
-                    self.log_test("Usage Limit Enforcement", True)
+                    # Should fail with 403
+                    if response.status_code == 403:
+                        self.log_test("Create Listing (Over Limit)", True)
+                        self.log_test("Usage Limit Enforcement", True)
+                    else:
+                        self.log_test("Usage Limit Enforcement", False, f"Should have returned 403 for over-limit request, got {response.status_code}")
+                        return False
+            except Exception as e:
+                self.log_test(f"Usage Limit Test Exception", False, f"Exception: {str(e)}")
+                return False
         
         return True
 
