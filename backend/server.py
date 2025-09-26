@@ -175,10 +175,15 @@ Create a clean, professional product shot that will make buyers want to purchase
             return images[0]['data']  # Return base64 data of optimized image
         return None
     except Exception as e:
-        logging.error(f"Error optimizing image: {e}")
-        # Return original image with a simple border as fallback
-        logging.info("Using original image as fallback for optimization")
-        return base64.b64encode(image_data).decode('utf-8')
+        logging.error(f"Image optimization failed: {e}")
+        # Check if it's a quota/limit error
+        if "quota" in str(e).lower() or "limit" in str(e).lower() or "429" in str(e):
+            logging.info("Gemini API quota exceeded for image processing - using original image")
+            # Return original image as fallback when quota is exceeded
+            return base64.b64encode(image_data).decode('utf-8')
+        else:
+            logging.info("Image optimization error - using original image as fallback")
+            return base64.b64encode(image_data).decode('utf-8')
 
 # Auth routes
 @api_router.post("/auth/register", response_model=Token)
