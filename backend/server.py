@@ -39,8 +39,6 @@ def verify_password(plain_password, hashed_password):
 
 security = HTTPBearer()
 
-security = HTTPBearer()
-
 # Create the main app without a prefix
 app = FastAPI(title="eBay Listing Optimization Tool")
 
