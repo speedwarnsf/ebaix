@@ -442,12 +442,28 @@ function App() {
                 <div className="space-y-6" data-testid="optimized-listing-result">
                   {optimizedListing.optimized_image_url && (
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Optimized Image</label>
-                      <img
-                        src={optimizedListing.optimized_image_url}
-                        alt="Optimized product"
-                        className="w-full rounded-lg border shadow-lg"
-                      />
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-medium">Product Image</label>
+                        <Badge variant="outline" className="text-xs">
+                          {optimizedListing.optimized_image_url.includes('data:image') ? 'Enhanced' : 'Original'}
+                        </Badge>
+                      </div>
+                      <div className="relative">
+                        <img
+                          src={optimizedListing.optimized_image_url}
+                          alt="Product image"
+                          className="w-full rounded-lg border shadow-lg"
+                          onError={(e) => {
+                            console.error('Image load error:', e);
+                            e.target.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 text-center">
+                        {optimizedListing.optimized_image_url.includes('data:image') 
+                          ? '✨ AI image processing applied (when quota available)' 
+                          : 'Original image - AI enhancement requires premium API quota'}
+                      </p>
                     </div>
                   )}
                   
