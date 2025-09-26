@@ -12,7 +12,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
 import hashlib
-from passlib.context import CryptContext
+
 import base64
 import asyncio
 from emergentintegrations.llm.chat import LlmChat, UserMessage, ImageContent
