@@ -166,12 +166,12 @@ class eBayListingAPITester:
         if success:
             required_fields = ['id', 'original_description', 'optimized_description', 'created_at']
             for field in required_fields:
-                if field not in response:
+                if field not in response_data:
                     self.log_test(f"Listing Response Field - {field}", False, f"Missing field: {field}")
                     return False
             
             # Check if description was actually optimized
-            if len(response['optimized_description']) <= len(test_description):
+            if len(response_data['optimized_description']) <= len(test_description):
                 self.log_test("Description Optimization Quality", False, "Optimized description not significantly enhanced")
                 return False
             
