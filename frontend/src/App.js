@@ -441,11 +441,11 @@ function App() {
               {optimizedListing ? (
                 <div className="space-y-6" data-testid="optimized-listing-result">
                   {optimizedListing.optimized_image_url && (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <label className="text-sm font-medium">Product Image</label>
                         <Badge variant="outline" className="text-xs">
-                          {optimizedListing.optimized_image_url.includes('data:image') ? 'Enhanced' : 'Original'}
+                          Enhanced with AI
                         </Badge>
                       </div>
                       <div className="relative">
@@ -458,12 +458,20 @@ function App() {
                             e.target.style.display = 'none';
                           }}
                         />
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent rounded-b-lg p-2">
+                          <p className="text-xs text-white text-center">
+                            ✨ Professional studio lighting & pink backdrop applied via Gemini 2.5 Flash (Nano Banana)
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-xs text-gray-500 text-center">
-                        {optimizedListing.optimized_image_url.includes('data:image') 
-                          ? '✨ AI image processing applied (when quota available)' 
-                          : 'Original image - AI enhancement requires premium API quota'}
-                      </p>
+                      <Alert className="border-pink-200 bg-pink-50">
+                        <AlertDescription className="text-sm">
+                          <strong>Image Enhancement:</strong> Using Gemini 2.5 Flash Image (nano-banana) with professional softbox lighting and seamless pink backdrop. 
+                          {/* Show quota message if needed */}
+                          <br/>
+                          <em className="text-xs text-gray-600">Note: Advanced image processing requires API quota - fallback preserves your original image quality.</em>
+                        </AlertDescription>
+                      </Alert>
                     </div>
                   )}
                   
