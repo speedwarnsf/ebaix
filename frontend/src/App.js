@@ -440,41 +440,7 @@ function App() {
             <CardContent>
               {optimizedListing ? (
                 <div className="space-y-6" data-testid="optimized-listing-result">
-                  {optimizedListing.optimized_image_url && (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <label className="text-sm font-medium">Product Image</label>
-                        <Badge variant="outline" className="text-xs">
-                          Enhanced with AI
-                        </Badge>
-                      </div>
-                      <div className="relative">
-                        <img
-                          src={optimizedListing.optimized_image_url}
-                          alt="Product image"
-                          className="w-full rounded-lg border shadow-lg"
-                          onError={(e) => {
-                            console.error('Image load error:', e);
-                            e.target.style.display = 'none';
-                          }}
-                        />
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent rounded-b-lg p-2">
-                          <p className="text-xs text-white text-center">
-                            ✨ Professional studio lighting & pink backdrop applied via Gemini 2.5 Flash (Nano Banana)
-                          </p>
-                        </div>
-                      </div>
-                      <Alert className="border-pink-200 bg-pink-50">
-                        <AlertDescription className="text-sm">
-                          <strong>Image Enhancement:</strong> Using Gemini 2.5 Flash Image (nano-banana) with professional softbox lighting and seamless pink backdrop. 
-                          {/* Show quota message if needed */}
-                          <br/>
-                          <em className="text-xs text-gray-600">Note: Advanced image processing requires API quota - fallback preserves your original image quality.</em>
-                        </AlertDescription>
-                      </Alert>
-                    </div>
-                  )}
-                  
+                  {/* Always show optimized description */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Optimized Description</label>
                     <div className="p-4 bg-gray-50 rounded-lg border">
@@ -483,6 +449,42 @@ function App() {
                       </pre>
                     </div>
                   </div>
+                  
+                  {/* Image section - only show if we have an optimized image */}
+                  {optimizedListing.optimized_image_url ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-medium">AI-Enhanced Product Image</label>
+                        <Badge className="bg-gradient-to-r from-pink-500 to-orange-500 text-white">
+                          ✨ Nano Banana Enhanced
+                        </Badge>
+                      </div>
+                      <div className="relative">
+                        <img
+                          src={optimizedListing.optimized_image_url}
+                          alt="AI-enhanced product with pink studio backdrop"
+                          className="w-full rounded-lg border shadow-lg"
+                          onError={(e) => {
+                            console.error('Image load error:', e);
+                            e.target.style.display = 'none';
+                          }}
+                        />
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-pink-600/80 to-transparent rounded-b-lg p-3">
+                          <p className="text-xs text-white text-center font-medium">
+                            Professional studio lighting • Pink seamless backdrop • Imperfections preserved
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <Alert className="border-orange-200 bg-orange-50">
+                      <AlertDescription>
+                        <strong>Image Enhancement Unavailable:</strong> AI image processing with Gemini 2.5 Flash (nano-banana) is currently not available due to API quota limits or configuration issues. 
+                        <br/>
+                        <em className="text-sm">The description optimization above is still fully functional and will help improve your eBay listing performance.</em>
+                      </AlertDescription>
+                    </Alert>
+                  )}
                   
                   <Button 
                     data-testid="copy-description-button"
