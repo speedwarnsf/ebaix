@@ -260,7 +260,8 @@ async def create_optimized_listing(
     optimized_image_data = None
     if image:
         image_bytes = await image.read()
-        optimized_image_data = await optimize_image(image_bytes)
+        # Pass description to image optimization for better context
+        optimized_image_data = await optimize_image(image_bytes, description)
     
     # Create listing record
     listing = Listing(
