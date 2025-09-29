@@ -141,8 +141,8 @@ Format it professionally for eBay with proper formatting and bullet points where
         logging.error(f"Error optimizing description: {e}")
         return f"PREMIUM LISTING: {original_description}\n\n✨ Professional eBay listing optimization available! This item features excellent quality and condition. Perfect for collectors and enthusiasts. Don't miss this opportunity - buy now while available!"
 
-async def optimize_image(image_data: bytes) -> Optional[str]:
-    """Use Gemini to create professional product photo with hot pink backdrop"""
+async def optimize_image(image_data: bytes, description: str = "") -> Optional[str]:
+    """Use Gemini 2.5 Flash Image (nano-banana) to create professional product photo with hot pink backdrop"""
     try:
         # Convert image to base64
         image_base64 = base64.b64encode(image_data).decode('utf-8')
@@ -150,19 +150,25 @@ async def optimize_image(image_data: bytes) -> Optional[str]:
         chat = LlmChat(
             api_key=os.environ['GEMINI_API_KEY'],
             session_id=f"image-{uuid.uuid4()}",
-            system_message="You are a professional product photographer. Create studio-quality product photos."
+            system_message="You are a professional product photographer specializing in e-commerce photography with studio lighting and seamless backdrops."
         ).with_model("gemini", "gemini-2.5-flash-image-preview").with_params(modalities=["image", "text"])
         
-        prompt = """Transform this product photo into a professional eBay listing image:
+        # Use the detailed prompt provided by the user
+        object_description = description if description else "the product shown in the image"
+        
+        prompt = f"""**TASK:** Re-render the user-supplied photo of the object with a **pink seamless studio backdrop** and **professional softbox lighting**.
 
-1. Remove the background completely
-2. Add professional studio lighting with soft shadows
-3. Place the product on a vibrant hot pink seamless backdrop
-4. Ensure the product is the main focus with proper lighting
-5. Make it look like a professional e-commerce product photo
-6. Keep the product exactly as it is, just improve the presentation
+**OBJECT:** {object_description}
 
-Create a clean, professional product shot that will make buyers want to purchase immediately."""
+**SOURCE IMAGE CONSTRAINTS (CRITICAL):** The re-rendered image **MUST** perfectly preserve all existing wear-and-tear, scratches, scuffs, and imperfections from the original photo. The goal is to change only the lighting and backdrop, not the object's condition.
+
+**LIGHTING & ATMOSPHERE:** Studio quality, high-key lighting. Use **large, professional softboxes** to create soft, even, flattering illumination with gentle shadows. The light should reveal the object's texture and condition clearly without harshness or glare.
+
+**BACKDROP & STYLING:** A **seamless pink backdrop** (e.g., Savage Widetone 'Coral' or similar) that extends into the foreground, providing a clean, professional, and modern e-commerce aesthetic.
+
+**TECHNOLOGY INTEGRATION:** Engage **nano banana** capability for hyper-realistic material rendering and flawless preservation of imperfections.
+
+**OUTPUT:** A single, high-resolution JPEG image suitable for a high-end eBay listing."""
 
         msg = UserMessage(
             text=prompt,
@@ -172,18 +178,25 @@ Create a clean, professional product shot that will make buyers want to purchase
         text, images = await chat.send_message_multimodal_response(msg)
         
         if images and len(images) > 0:
+            logging.info("Successfully generated optimized image using Gemini 2.5 Flash Image (nano-banana)")
             return images[0]['data']  # Return base64 data of optimized image
         return None
     except Exception as e:
         logging.error(f"Image optimization failed: {e}")
-        # Check if it's a quota/limit error
-        if "quota" in str(e).lower() or "limit" in str(e).lower() or "429" in str(e):
+        error_str = str(e).lower()
+        
+        # Check specific error types
+        if "quota" in error_str or "limit" in error_str or "429" in str(e):
             logging.info("Gemini API quota exceeded for image processing - using original image")
-            # Return original image as fallback when quota is exceeded
-            return base64.b64encode(image_data).decode('utf-8')
+        elif "404" in str(e) or "not found" in error_str:
+            logging.error("Gemini image model not found - check model name")
+        elif "401" in str(e) or "unauthorized" in error_str:
+            logging.error("API key unauthorized for image generation")
         else:
-            logging.info("Image optimization error - using original image as fallback")
-            return base64.b64encode(image_data).decode('utf-8')
+            logging.error("Unknown image processing error")
+            
+        # Always return original image as fallback
+        return base64.b64encode(image_data).decode('utf-8')
 
 # Auth routes
 @api_router.post("/auth/register", response_model=Token)
