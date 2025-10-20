@@ -251,7 +251,7 @@
     </div>
     
     <script>
-        const API_URL = 'https://ebai-backend.up.railway.app'; // Will be replaced during deployment
+        const API_URL = 'https://cllofhltncusnakhehdw.supabase.co/functions/v1/optimize-listing';
         
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
@@ -295,7 +295,7 @@
             preview.classList.remove('show');
             
             try {
-                const response = await fetch(`${API_URL}/api/optimize`, {
+                const response = await fetch(API_URL, {
                     method: 'POST',
                     body: formData
                 });
