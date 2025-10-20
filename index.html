@@ -205,8 +205,8 @@
                     <line x1="12" y1="3" x2="12" y2="15"></line>
                 </svg>
                 <p style="margin-top: 20px; color: #667eea; font-size: 1.2em;">Click to upload or drag and drop</p>
-                <p style="color: #999; margin-top: 10px;">PNG, JPG up to 10MB</p>
-                <input type="file" id="fileInput" accept="image/*" required>
+                <p style="color: #999; margin-top: 10px;">iPhone HEIC, PNG, JPG - any size</p>
+                <input type="file" id="fileInput" accept="image/*,.heic,.heif" capture="environment" required>
             </div>
             
             <div class="form-group">
@@ -250,6 +250,7 @@
         </div>
     </div>
     
+    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
     <script>
         const API_URL = 'https://cllofhltncusnakhehdw.supabase.co/functions/v1/optimize-listing';
         
@@ -259,7 +260,6 @@
         const loading = document.getElementById('loading');
         const preview = document.getElementById('preview');
         
-        // Drag and drop
         uploadArea.addEventListener('click', () => fileInput.click());
         
         uploadArea.addEventListener('dragover', (e) => {
@@ -280,21 +280,39 @@
             }
         });
         
-        // Form submission
+        async function convertHeicToJpeg(file) {
+            if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+                try {
+                    const convertedBlob = await heic2any({
+                        blob: file,
+                        toType: 'image/jpeg',
+                        quality: 0.9
+                    });
+                    return new File([convertedBlob], file.name.replace(/\.heic$/i, '.jpg'), { type: 'image/jpeg' });
+                } catch (error) {
+                    console.error('HEIC conversion failed:', error);
+                    return file;
+                }
+            }
+            return file;
+        }
+        
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const formData = new FormData();
-            formData.append('image', fileInput.files[0]);
-            formData.append('title', document.getElementById('title').value);
-            formData.append('price', document.getElementById('price').value);
-            
-            // Show loading
             form.style.display = 'none';
             loading.classList.add('show');
             preview.classList.remove('show');
             
             try {
+                let file = fileInput.files[0];
+                file = await convertHeicToJpeg(file);
+                
+                const formData = new FormData();
+                formData.append('image', file);
+                formData.append('title', document.getElementById('title').value);
+                formData.append('price', document.getElementById('price').value);
+                
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     body: formData
@@ -306,12 +324,11 @@
                 
                 const data = await response.json();
                 
-                // Show preview
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     document.getElementById('originalImage').src = e.target.result;
                 };
-                reader.readAsDataURL(fileInput.files[0]);
+                reader.readAsDataURL(file);
                 
                 document.getElementById('enhancedImage').src = data.enhanced_image;
                 document.getElementById('optimizedDescription').textContent = data.optimized_description;
