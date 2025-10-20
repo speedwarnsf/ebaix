@@ -34,7 +34,7 @@ serve(async (req) => {
       new Uint8Array(imageBytes).reduce((data, byte) => data + String.fromCharCode(byte), '')
     )
 
-    // Call Gemini API for description
+    // Call Gemini API for description - NOW WITH IMAGE
     const geminiResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${Deno.env.get('GEMINI_API_KEY')}`,
       {
@@ -42,19 +42,27 @@ serve(async (req) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{
-            parts: [{
-              text: `Create a compelling e-commerce listing description for this item:
+            parts: [
+              {
+                text: `Create a compelling e-commerce listing description for this item:
 Title: ${title}
 Price: $${price}
 
 Write a short, engaging description (3-4 sentences) that:
-- Highlights key features and benefits
+- Highlights key features and benefits visible in the image
 - Creates urgency
 - Builds trust
 - Encourages immediate purchase
 
 Keep it concise and persuasive.`
-            }]
+              },
+              {
+                inline_data: {
+                  mime_type: image.type,
+                  data: base64Image
+                }
+              }
+            ]
           }]
         })
       }
