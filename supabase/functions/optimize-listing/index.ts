@@ -86,23 +86,29 @@ Return ONLY the description text, no other formatting.`
     console.log('Description generated successfully')
     const optimizedDescription = descriptionData.candidates[0].content.parts[0].text.trim()
 
-    // STEP 2: Nano Banana - Image editing with Gemini Imagen
-    console.log('Calling Gemini Imagen for background removal (Nano Banana)...')
+    // STEP 2: Nano Banana - Image editing with Gemini 2.5 Flash Image
+    console.log('Calling Gemini 2.5 Flash Image for background removal (Nano Banana)...')
     const imageEditResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${Deno.env.get('GEMINI_API_KEY')}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${Deno.env.get('GEMINI_API_KEY')}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          instances: [{
-            prompt: "Remove background, replace with clean pink studio backdrop (#F5D5E0), product centered, professional lighting",
-            image: {
-              bytesBase64Encoded: base64Image
-            }
+          contents: [{
+            parts: [
+              {
+                text: "Remove the background and replace it with a clean pink studio backdrop (#F5D5E0). Center the product with professional studio lighting."
+              },
+              {
+                inline_data: {
+                  mime_type: image.type || 'image/jpeg',
+                  data: base64Image
+                }
+              }
+            ]
           }],
-          parameters: {
-            sampleCount: 1,
-            mode: "upscale"
+          generationConfig: {
+            responseModalities: ["IMAGE"]
           }
         })
       }
@@ -110,14 +116,15 @@ Return ONLY the description text, no other formatting.`
 
     if (!imageEditResponse.ok) {
       const errorText = await imageEditResponse.text()
-      console.error('Imagen failed:', imageEditResponse.status, errorText)
-      throw new Error(`Imagen API failed: ${imageEditResponse.status}`)
+      console.error('Gemini 2.5 Flash Image failed:', imageEditResponse.status, errorText)
+      throw new Error(`Gemini 2.5 Flash Image API failed: ${imageEditResponse.status} - ${errorText}`)
     }
 
     const imageEditData = await imageEditResponse.json()
     console.log('Image enhanced with Nano Banana')
     
-    const enhancedBase64 = imageEditData.predictions[0].bytesBase64Encoded
+    // Extract the base64 image data from the response
+    const enhancedBase64 = imageEditData.candidates[0].content.parts[0].inlineData.data
 
     console.log('Saving to database...')
     const { data: listing, error } = await supabaseClient
