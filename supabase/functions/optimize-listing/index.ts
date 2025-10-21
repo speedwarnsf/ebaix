@@ -37,10 +37,17 @@ serve(async (req) => {
     
     console.log('Image converted to base64, length:', base64Image.length)
 
+    // Check if API key exists
+    const geminiKey = Deno.env.get('GEMINI_API_KEY')
+    if (!geminiKey) {
+      throw new Error('GEMINI_API_KEY not configured')
+    }
+    console.log('Gemini API key found')
+
     // STEP 1: Generate AI-optimized description using Gemini
     console.log('Calling Gemini for description...')
     const descriptionResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${Deno.env.get('GEMINI_API_KEY')}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -53,7 +60,7 @@ Title: ${title}
 Price: $${price}
 
 Write 3-4 sentences that:
-- Highlight key features and benefits visible in the image
+- Highlight key features and benefits
 - Create urgency
 - Build trust
 - Encourage immediate purchase
@@ -79,62 +86,22 @@ Return ONLY the description text, no other formatting.`
     if (!descriptionResponse.ok) {
       const errorText = await descriptionResponse.text()
       console.error('Gemini description failed:', descriptionResponse.status, errorText)
-      throw new Error(`Gemini API failed: ${descriptionResponse.status}`)
+      throw new Error(`Gemini API failed: ${descriptionResponse.status} - ${errorText}`)
     }
 
     const descriptionData = await descriptionResponse.json()
-    console.log('Description generated successfully')
+    console.log('Description response:', JSON.stringify(descriptionData, null, 2))
+    
+    if (!descriptionData.candidates || !descriptionData.candidates[0]) {
+      throw new Error('No description generated')
+    }
+    
     const optimizedDescription = descriptionData.candidates[0].content.parts[0].text.trim()
 
-    // STEP 2: Use Gemini Image Generation (Nano Banana) for background replacement
-    console.log('Calling Gemini for image background replacement...')
-    const imageEditResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${Deno.env.get('GEMINI_API_KEY')}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              {
-                text: `Using nano banana capability: Remove all background from this product photo and replace with a seamless pink studio backdrop (hex #F5D5E0). Keep the product exactly as it is - preserve all details, textures, and imperfections. Apply professional studio lighting with large softboxes for a high-end e-commerce look. The output should look like it was photographed in a professional photo studio.`
-              },
-              {
-                inline_data: {
-                  mime_type: image.type || 'image/jpeg',
-                  data: base64Image
-                }
-              }
-            ]
-          }],
-          generationConfig: {
-            temperature: 0.1,
-            candidateCount: 1
-          }
-        })
-      }
-    )
-
-    if (!imageEditResponse.ok) {
-      const errorText = await imageEditResponse.text()
-      console.error('Gemini image edit failed:', imageEditResponse.status, errorText)
-      // Fallback to original image if image generation fails
-      console.log('Using original image as fallback')
-    }
-
-    let enhancedBase64 = base64Image // default to original
-
-    if (imageEditResponse.ok) {
-      const imageEditData = await imageEditResponse.json()
-      console.log('Image edit response:', JSON.stringify(imageEditData, null, 2))
-      
-      // Gemini image generation returns the image in a different format
-      // For now, we'll use the original image with a note that the actual implementation
-      // would extract the generated image from Gemini's response
-      // The actual response format depends on the model capabilities
-      enhancedBase64 = base64Image // This would be the generated image
-      console.log('Note: Using original image - actual Nano Banana implementation would extract generated image here')
-    }
+    // STEP 2: For now, just return the original image with a note about Nano Banana
+    // The actual Gemini image generation endpoint requires different authentication
+    console.log('Note: Nano Banana image generation requires Vertex AI setup')
+    const enhancedBase64 = base64Image
 
     console.log('Saving to database...')
     const { data: listing, error } = await supabaseClient
@@ -152,7 +119,7 @@ Return ONLY the description text, no other formatting.`
 
     if (error) {
       console.error('Database error:', error)
-      throw error
+      throw new Error(`Database error: ${error.message}`)
     }
 
     console.log('Success! Listing ID:', listing.id)
@@ -171,11 +138,12 @@ Return ONLY the description text, no other formatting.`
     )
 
   } catch (error) {
-    console.error('ERROR:', error)
+    console.error('ERROR:', error.message, error.stack)
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        details: error.toString()
+        details: error.toString(),
+        stack: error.stack
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
