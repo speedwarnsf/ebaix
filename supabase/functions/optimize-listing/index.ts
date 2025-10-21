@@ -12,6 +12,8 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Starting image processing...')
+    
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -22,6 +24,8 @@ serve(async (req) => {
     const title = formData.get('title') as string
     const price = parseFloat(formData.get('price') as string)
 
+    console.log('Received:', { title, price, imageType: image?.type, imageSize: image?.size })
+
     if (!image) {
       throw new Error('No image provided')
     }
@@ -31,8 +35,11 @@ serve(async (req) => {
     const base64Image = btoa(
       new Uint8Array(imageBytes).reduce((data, byte) => data + String.fromCharCode(byte), '')
     )
+    
+    console.log('Image converted to base64, length:', base64Image.length)
 
     // STEP 1: Generate AI-optimized description with Gemini Flash
+    console.log('Calling Gemini for description...')
     const descriptionResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${Deno.env.get('GEMINI_API_KEY')}`,
       {
@@ -71,65 +78,21 @@ Return ONLY the description text, no other formatting.`
     )
 
     if (!descriptionResponse.ok) {
-      throw new Error(`Gemini Flash API failed: ${descriptionResponse.status}`)
+      const errorText = await descriptionResponse.text()
+      console.error('Gemini Flash failed:', descriptionResponse.status, errorText)
+      throw new Error(`Gemini Flash API failed: ${descriptionResponse.status} - ${errorText}`)
     }
 
     const descriptionData = await descriptionResponse.json()
+    console.log('Description generated successfully')
     const optimizedDescription = descriptionData.candidates[0].content.parts[0].text.trim()
 
-    // STEP 2: Use Gemini Flash Image (Nano Banana technique) for background removal + pink studio
-    const imageEditResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${Deno.env.get('GEMINI_API_KEY')}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              {
-                text: `Transform this product photo into a professional studio shot:
-
-1. Remove all background distractions and clutter
-2. Replace background with a clean pink studio backdrop (hex color #F5D5E0)
-3. Center the product
-4. Add professional studio lighting
-5. Maintain product authenticity and details
-6. Make it look like a professional e-commerce product photo
-
-Generate the enhanced image with these exact specifications.`
-              },
-              {
-                inline_data: {
-                  mime_type: image.type || 'image/jpeg',
-                  data: base64Image
-                }
-              }
-            ]
-          }],
-          generationConfig: {
-            temperature: 0.4,
-            maxOutputTokens: 8192,
-            response_mime_type: 'image/jpeg'
-          }
-        })
-      }
-    )
-
-    if (!imageEditResponse.ok) {
-      const errorText = await imageEditResponse.text()
-      throw new Error(`Gemini Flash Image API failed: ${imageEditResponse.status} - ${errorText}`)
-    }
-
-    const imageData = await imageEditResponse.json()
-    
-    // Extract enhanced image from response
-    let enhancedBase64 = base64Image // Fallback to original
-    
-    if (imageData.candidates && imageData.candidates[0]?.content?.parts?.[0]?.inline_data) {
-      enhancedBase64 = imageData.candidates[0].content.parts[0].inline_data.data
-    }
+    // STEP 2: For now, just use the original image (skip image enhancement to debug)
+    console.log('Skipping image enhancement, using original image')
+    const enhancedBase64 = base64Image
 
     // Store in Supabase
+    console.log('Saving to database...')
     const { data: listing, error } = await supabaseClient
       .from('listings')
       .insert({
@@ -143,7 +106,12 @@ Generate the enhanced image with these exact specifications.`
       .select()
       .single()
 
-    if (error) throw error
+    if (error) {
+      console.error('Database error:', error)
+      throw error
+    }
+
+    console.log('Success! Listing ID:', listing.id)
 
     return new Response(
       JSON.stringify({
@@ -159,8 +127,12 @@ Generate the enhanced image with these exact specifications.`
     )
 
   } catch (error) {
+    console.error('ERROR:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: error.toString()
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
