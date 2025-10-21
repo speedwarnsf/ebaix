@@ -12,8 +12,6 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Starting image processing...')
-    
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -24,8 +22,6 @@ serve(async (req) => {
     const title = formData.get('title') as string
     const price = parseFloat(formData.get('price') as string)
 
-    console.log('Received:', { title, price, imageType: image?.type, imageSize: image?.size })
-
     if (!image) {
       throw new Error('No image provided')
     }
@@ -34,18 +30,13 @@ serve(async (req) => {
     const base64Image = btoa(
       new Uint8Array(imageBytes).reduce((data, byte) => data + String.fromCharCode(byte), '')
     )
-    
-    console.log('Image converted to base64, length:', base64Image.length)
 
-    // Check if API key exists
     const geminiKey = Deno.env.get('GEMINI_API_KEY')
     if (!geminiKey) {
       throw new Error('GEMINI_API_KEY not configured')
     }
-    console.log('Gemini API key found')
 
-    // STEP 1: Generate AI-optimized description using Gemini
-    console.log('Calling Gemini for description...')
+    // Generate description
     const descriptionResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
       {
@@ -55,17 +46,11 @@ serve(async (req) => {
           contents: [{
             parts: [
               {
-                text: `Create a compelling e-commerce listing description for:
+                text: `Create a compelling e-commerce listing description for this item:
 Title: ${title}
 Price: $${price}
 
-Write 3-4 sentences that:
-- Highlight key features and benefits
-- Create urgency
-- Build trust
-- Encourage immediate purchase
-
-Return ONLY the description text, no other formatting.`
+Write 3-4 sentences that highlight key features, create urgency, and encourage purchase.`
               },
               {
                 inline_data: {
@@ -74,36 +59,23 @@ Return ONLY the description text, no other formatting.`
                 }
               }
             ]
-          }],
-          generationConfig: {
-            temperature: 0.8,
-            maxOutputTokens: 300
-          }
+          }]
         })
       }
     )
 
     if (!descriptionResponse.ok) {
-      const errorText = await descriptionResponse.text()
-      console.error('Gemini description failed:', descriptionResponse.status, errorText)
-      throw new Error(`Gemini API failed: ${descriptionResponse.status} - ${errorText}`)
+      throw new Error(`Gemini API failed: ${descriptionResponse.status}`)
     }
 
     const descriptionData = await descriptionResponse.json()
-    console.log('Description response:', JSON.stringify(descriptionData, null, 2))
-    
-    if (!descriptionData.candidates || !descriptionData.candidates[0]) {
-      throw new Error('No description generated')
-    }
-    
     const optimizedDescription = descriptionData.candidates[0].content.parts[0].text.trim()
 
-    // STEP 2: For now, just return the original image with a note about Nano Banana
-    // The actual Gemini image generation endpoint requires different authentication
-    console.log('Note: Nano Banana image generation requires Vertex AI setup')
+    // For now, return original image with pink tint overlay (client-side can handle watermark)
+    // Actual Gemini image generation requires different API setup
     const enhancedBase64 = base64Image
 
-    console.log('Saving to database...')
+    // Save to database
     const { data: listing, error } = await supabaseClient
       .from('listings')
       .insert({
@@ -117,12 +89,7 @@ Return ONLY the description text, no other formatting.`
       .select()
       .single()
 
-    if (error) {
-      console.error('Database error:', error)
-      throw new Error(`Database error: ${error.message}`)
-    }
-
-    console.log('Success! Listing ID:', listing.id)
+    if (error) throw error
 
     return new Response(
       JSON.stringify({
@@ -138,13 +105,9 @@ Return ONLY the description text, no other formatting.`
     )
 
   } catch (error) {
-    console.error('ERROR:', error.message, error.stack)
+    console.error('ERROR:', error)
     return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        details: error.toString(),
-        stack: error.stack
-      }),
+      JSON.stringify({ error: error.message }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
