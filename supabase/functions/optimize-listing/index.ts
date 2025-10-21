@@ -7,7 +7,6 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -18,7 +17,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Get form data
     const formData = await req.formData()
     const image = formData.get('image') as File
     const title = formData.get('title') as string
@@ -34,7 +32,30 @@ serve(async (req) => {
       new Uint8Array(imageBytes).reduce((data, byte) => data + String.fromCharCode(byte), '')
     )
 
-    // Call Gemini API for description - NOW WITH IMAGE
+    // Step 1: Remove background using remove.bg API
+    const removeBgFormData = new FormData()
+    removeBgFormData.append('image_file_b64', base64Image)
+    removeBgFormData.append('size', 'auto')
+    removeBgFormData.append('bg_color', 'F5D5E0') // Pink backdrop
+    
+    const removeBgResponse = await fetch('https://api.remove.bg/v1.0/removebg', {
+      method: 'POST',
+      headers: {
+        'X-Api-Key': Deno.env.get('REMOVE_BG_API_KEY') ?? '',
+      },
+      body: removeBgFormData
+    })
+
+    if (!removeBgResponse.ok) {
+      throw new Error(`Background removal failed: ${removeBgResponse.status}`)
+    }
+
+    const enhancedImageBytes = await removeBgResponse.arrayBuffer()
+    const enhancedBase64 = btoa(
+      new Uint8Array(enhancedImageBytes).reduce((data, byte) => data + String.fromCharCode(byte), '')
+    )
+
+    // Step 2: Call Gemini API for description
     const geminiResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${Deno.env.get('GEMINI_API_KEY')}`,
       {
@@ -58,8 +79,8 @@ Keep it concise and persuasive.`
               },
               {
                 inline_data: {
-                  mime_type: image.type,
-                  data: base64Image
+                  mime_type: 'image/png',
+                  data: enhancedBase64
                 }
               }
             ]
@@ -71,14 +92,14 @@ Keep it concise and persuasive.`
     const geminiData = await geminiResponse.json()
     const optimizedDescription = geminiData.candidates[0].content.parts[0].text
 
-    // Store in Supabase
+    // Step 3: Store in Supabase
     const { data: listing, error } = await supabaseClient
       .from('listings')
       .insert({
         title,
         price,
         original_image_url: `data:${image.type};base64,${base64Image}`,
-        enhanced_image_url: `data:${image.type};base64,${base64Image}`,
+        enhanced_image_url: `data:image/png;base64,${enhancedBase64}`,
         original_description: title,
         optimized_description: optimizedDescription
       })
@@ -90,7 +111,7 @@ Keep it concise and persuasive.`
     return new Response(
       JSON.stringify({
         success: true,
-        enhanced_image: `data:${image.type};base64,${base64Image}`,
+        enhanced_image: `data:image/png;base64,${enhancedBase64}`,
         optimized_description: optimizedDescription,
         listing_id: listing.id
       }),
