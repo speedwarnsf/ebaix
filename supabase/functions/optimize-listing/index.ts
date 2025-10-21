@@ -87,9 +87,48 @@ Return ONLY the description text, no other formatting.`
     console.log('Description generated successfully')
     const optimizedDescription = descriptionData.candidates[0].content.parts[0].text.trim()
 
-    // STEP 2: For now, just use the original image (skip image enhancement to debug)
-    console.log('Skipping image enhancement, using original image')
-    const enhancedBase64 = base64Image
+    // STEP 2: Image enhancement with Gemini imagen-3.0-generate
+    console.log('Calling Gemini imagen for background removal...')
+    const imageResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:generateContent?key=${Deno.env.get('GEMINI_API_KEY')}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              {
+                text: "Remove background and replace with clean pink studio backdrop (hex #F5D5E0). Keep product centered, well-lit, professional for e-commerce."
+              },
+              {
+                inline_data: {
+                  mime_type: image.type || 'image/jpeg',
+                  data: base64Image
+                }
+              }
+            ]
+          }],
+          generationConfig: {
+            temperature: 0.4,
+            candidateCount: 1
+          }
+        })
+      }
+    )
+
+    if (!imageResponse.ok) {
+      const errorText = await imageResponse.text()
+      console.error('Imagen API failed:', imageResponse.status, errorText)
+      throw new Error(`Imagen API failed: ${imageResponse.status} - ${errorText}`)
+    }
+
+    const imageData = await imageResponse.json()
+    console.log('Image enhanced successfully')
+    
+    // Extract the generated image from response
+    const enhancedBase64 = imageData.candidates[0].content.parts.find(
+      (part: any) => part.inline_data
+    )?.inline_data?.data || base64Image
 
     // Store in Supabase
     console.log('Saving to database...')
