@@ -37,10 +37,10 @@ serve(async (req) => {
     
     console.log('Image converted to base64, length:', base64Image.length)
 
-    // STEP 1: Generate AI-optimized description
+    // STEP 1: Generate AI-optimized description using Gemini
     console.log('Calling Gemini for description...')
     const descriptionResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${Deno.env.get('GEMINI_API_KEY')}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${Deno.env.get('GEMINI_API_KEY')}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -59,12 +59,6 @@ Write 3-4 sentences that:
 - Encourage purchase
 
 Return ONLY the description text, no other formatting.`
-              },
-              {
-                inline_data: {
-                  mime_type: image.type || 'image/jpeg',
-                  data: base64Image
-                }
               }
             ]
           }],
@@ -78,53 +72,43 @@ Return ONLY the description text, no other formatting.`
 
     if (!descriptionResponse.ok) {
       const errorText = await descriptionResponse.text()
-      console.error('Gemini Flash failed:', descriptionResponse.status, errorText)
-      throw new Error(`Gemini Flash API failed: ${descriptionResponse.status} - ${errorText}`)
+      console.error('Gemini failed:', descriptionResponse.status, errorText)
+      throw new Error(`Gemini API failed: ${descriptionResponse.status}`)
     }
 
     const descriptionData = await descriptionResponse.json()
     console.log('Description generated successfully')
     const optimizedDescription = descriptionData.candidates[0].content.parts[0].text.trim()
 
-    // STEP 2: Nano Banana - Image editing with Gemini 2.5 Flash Image
-    console.log('Calling Gemini 2.5 Flash Image for background removal (Nano Banana)...')
-    const imageEditResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${Deno.env.get('GEMINI_API_KEY')}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              {
-                text: "Remove the background and replace it with a clean pink studio backdrop (#F5D5E0). Center the product with professional studio lighting."
-              },
-              {
-                inline_data: {
-                  mime_type: image.type || 'image/jpeg',
-                  data: base64Image
-                }
-              }
-            ]
-          }],
-          generationConfig: {
-            responseModalities: ["IMAGE"]
-          }
-        })
-      }
-    )
+    // STEP 2: Use remove.bg API for background removal (Nano Banana alternative)
+    console.log('Removing background with remove.bg...')
+    const removeBgResponse = await fetch('https://api.remove.bg/v1.0/removebg', {
+      method: 'POST',
+      headers: {
+        'X-Api-Key': Deno.env.get('REMOVE_BG_API_KEY') || 'demo'
+      },
+      body: (() => {
+        const formData = new FormData()
+        formData.append('image_file_b64', base64Image)
+        formData.append('size', 'auto')
+        formData.append('bg_color', 'F5D5E0') // Pink studio backdrop
+        return formData
+      })()
+    })
 
-    if (!imageEditResponse.ok) {
-      const errorText = await imageEditResponse.text()
-      console.error('Gemini 2.5 Flash Image failed:', imageEditResponse.status, errorText)
-      throw new Error(`Gemini 2.5 Flash Image API failed: ${imageEditResponse.status} - ${errorText}`)
+    let enhancedBase64: string
+
+    if (removeBgResponse.ok) {
+      const removeBgBuffer = await removeBgResponse.arrayBuffer()
+      enhancedBase64 = btoa(
+        new Uint8Array(removeBgBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+      )
+      console.log('Background removed and replaced with pink backdrop')
+    } else {
+      console.warn('Remove.bg failed, using original image')
+      // Fallback: return original image if remove.bg fails
+      enhancedBase64 = base64Image
     }
-
-    const imageEditData = await imageEditResponse.json()
-    console.log('Image enhanced with Nano Banana')
-    
-    // Extract the base64 image data from the response
-    const enhancedBase64 = imageEditData.candidates[0].content.parts[0].inlineData.data
 
     console.log('Saving to database...')
     const { data: listing, error } = await supabaseClient
