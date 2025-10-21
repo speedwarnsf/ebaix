@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>eBai - E-commerce Background AI</title>
+    <title>eBai - AI-Powered E-commerce Tools</title>
     <style>
         * {
             margin: 0;
@@ -11,38 +11,51 @@
             box-sizing: border-box;
         }
         
+        :root {
+            --primary: #0066ff;
+            --primary-hover: #0052cc;
+            --text-dark: #1a1a1a;
+            --text-gray: #666;
+            --bg-light: #f8f9fa;
+            --border: #e5e7eb;
+            --success: #16a34a;
+            --pink-bg: #F5D5E0;
+        }
+        
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f9fafb;
-            color: #111827;
+            background: var(--bg-light);
+            color: var(--text-dark);
+            line-height: 1.6;
         }
         
         /* Header */
         header {
             background: white;
-            padding: 20px 40px;
+            padding: 20px 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
             display: flex;
-            align-items: center;
             justify-content: space-between;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            align-items: center;
+        }
+        
+        .logo {
+            height: 40px;
+            width: auto;
         }
         
         .logo-text {
             font-size: 32px;
             font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .e { color: #2563eb; }
-        .b { color: #f59e0b; }
-        .ai-text { color: #111827; }
-        
-        .brain-icon {
-            width: 32px;
-            height: 32px;
-            margin-left: 2px;
         }
         
         nav {
@@ -52,227 +65,81 @@
         }
         
         nav a {
-            color: #3b82f6;
+            color: var(--text-gray);
             text-decoration: none;
-            font-weight: 500;
-            font-size: 15px;
+            font-size: 16px;
+            transition: color 0.2s;
         }
         
-        nav a:hover {
-            text-decoration: underline;
+        nav a:hover, nav a.active {
+            color: var(--primary);
         }
         
-        .btn {
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            border: none;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-        
-        .btn-primary {
-            background: #2563eb;
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background: #1d4ed8;
-        }
-        
-        .btn-outline {
-            background: white;
-            color: #2563eb;
-            border: 2px solid #2563eb;
-        }
-        
-        .btn-outline:hover {
-            background: #eff6ff;
-        }
-        
-        .hamburger {
+        .mobile-menu {
             display: none;
-            flex-direction: column;
-            gap: 5px;
+            background: none;
+            border: none;
             cursor: pointer;
-            padding: 8px;
+            padding: 5px;
+            position: relative;
         }
         
-        .hamburger span {
-            width: 24px;
+        .mobile-menu span {
+            display: block;
+            width: 25px;
             height: 3px;
-            background: #111827;
-            border-radius: 2px;
+            background: var(--text-dark);
+            margin: 5px 0;
+            transition: 0.3s;
         }
         
-        /* Main Content */
-        main {
+        .mobile-menu.active span:nth-child(1) {
+            transform: rotate(-45deg) translate(-5px, 6px);
+        }
+        
+        .mobile-menu.active span:nth-child(2) {
+            opacity: 0;
+        }
+        
+        .mobile-menu.active span:nth-child(3) {
+            transform: rotate(45deg) translate(-5px, -6px);
+        }
+        
+        .mobile-nav {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            padding: 20px;
+            min-width: 200px;
+        }
+        
+        .mobile-nav.active {
+            display: block;
+        }
+        
+        .mobile-nav a {
+            display: block;
+            padding: 10px 0;
+            color: var(--text-gray);
+            text-decoration: none;
+        }
+        
+        .mobile-nav a:hover {
+            color: var(--primary);
+        }
+        
+        /* Container */
+        .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 60px 20px;
         }
         
-        h1 {
-            font-size: 48px;
-            margin-bottom: 10px;
-            color: #111827;
-        }
-        
-        .subtitle {
-            color: #6b7280;
-            font-size: 18px;
-            margin-bottom: 40px;
-            line-height: 1.6;
-        }
-        
-        .tokens-info {
-            text-align: center;
-            margin: 30px 0 50px;
-        }
-        
-        .tokens-info .label {
-            color: #6b7280;
-            font-size: 14px;
-            margin-bottom: 8px;
-        }
-        
-        .tokens-info .count {
-            font-size: 36px;
-            font-weight: 600;
-            color: #111827;
-            margin-bottom: 10px;
-        }
-        
-        .tokens-info .crown {
-            font-size: 32px;
-        }
-        
-        /* Cards */
-        .cards-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-        
-        .card {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        
-        .card-header {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-        
-        .card-icon {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 32px;
-            flex-shrink: 0;
-        }
-        
-        .card-icon.blue {
-            background: #dbeafe;
-            color: #2563eb;
-        }
-        
-        .card-icon.green {
-            background: #d1fae5;
-            color: #059669;
-        }
-        
-        .card-title h2 {
-            font-size: 24px;
-            margin-bottom: 8px;
-            color: #111827;
-        }
-        
-        .card-title p {
-            color: #6b7280;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-        
-        .feature-list {
-            list-style: none;
-            margin: 20px 0;
-        }
-        
-        .feature-list li {
-            padding: 8px 0;
-            padding-left: 32px;
-            position: relative;
-            color: #374151;
-            font-size: 15px;
-        }
-        
-        .feature-list li::before {
-            content: "✓";
-            position: absolute;
-            left: 0;
-            color: #10b981;
-            font-weight: bold;
-            font-size: 20px;
-            width: 24px;
-            height: 24px;
-            background: #d1fae5;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .card .btn-full {
-            width: 100%;
-            padding: 14px;
-            font-size: 16px;
-            margin-top: 10px;
-        }
-        
-        .card-link {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: #2563eb;
-            text-decoration: none;
-            font-weight: 600;
-            padding: 12px 0;
-            font-size: 16px;
-        }
-        
-        .card-link:hover {
-            text-decoration: underline;
-        }
-        
-        .arrow {
-            font-size: 24px;
-        }
-        
-        /* Listings Section */
-        .listings-section {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        
-        .listings-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        /* Photo Enhancer Page */
+        /* Pages */
         .page {
             display: none;
         }
@@ -281,84 +148,149 @@
             display: block;
         }
         
-        .photo-grid {
+        /* Dashboard */
+        .dashboard-header {
+            margin-bottom: 50px;
+            text-align: center;
+        }
+        
+        .dashboard-header h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .dashboard-header p {
+            font-size: 20px;
+            color: var(--text-gray);
+        }
+        
+        .tools-grid {
             display: grid;
-            grid-template-columns: 450px 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 30px;
-            margin-top: 40px;
+            margin-bottom: 60px;
         }
         
-        .section-card {
+        .tool-card {
             background: white;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: all 0.3s;
+            cursor: pointer;
         }
         
-        .tokens-display {
+        .tool-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+        
+        .tool-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            padding: 20px;
-            background: #f9fafb;
-            border-radius: 8px;
+            justify-content: center;
+            font-size: 36px;
             margin-bottom: 30px;
         }
         
-        .tokens-display .count {
-            font-size: 32px;
-            font-weight: bold;
-            color: #2563eb;
+        .text-icon {
+            background: #93c5fd;
+            color: var(--primary);
         }
         
-        .tokens-display .label {
-            color: #6b7280;
-            font-size: 14px;
+        .photo-icon {
+            background: var(--pink-bg);
+            color: #ec4899;
         }
         
-        .tokens-display .plan {
-            text-align: right;
+        .tool-card h2 {
+            font-size: 28px;
+            margin-bottom: 15px;
         }
         
-        .upload-box {
-            border: 2px dashed #d1d5db;
-            border-radius: 8px;
-            padding: 40px 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
+        .tool-card p {
+            color: var(--text-gray);
             margin-bottom: 20px;
         }
         
-        .upload-box:hover {
-            border-color: #2563eb;
-            background: #f0f9ff;
+        .tool-features {
+            list-style: none;
+            margin-bottom: 30px;
         }
         
-        .upload-box.has-image {
-            border-style: solid;
-            border-color: #2563eb;
-            padding: 20px;
+        .tool-features li {
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #4b5563;
         }
         
-        .upload-box input {
-            display: none;
+        .check {
+            color: var(--success);
+            font-size: 20px;
         }
         
-        .upload-icon {
-            font-size: 48px;
-            margin-bottom: 10px;
-        }
-        
-        .preview-image {
-            max-width: 100%;
-            max-height: 300px;
+        .btn {
+            padding: 12px 24px;
             border-radius: 8px;
-            margin-top: 10px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 102, 255, 0.3);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-full {
+            width: 100%;
+        }
+        
+        /* Text Assistant Page */
+        .back-btn {
+            margin-bottom: 30px;
+        }
+        
+        .form-section {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 40px;
         }
         
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
         
         .form-group label {
@@ -366,7 +298,6 @@
             margin-bottom: 8px;
             font-weight: 600;
             color: #374151;
-            font-size: 14px;
         }
         
         .form-group input,
@@ -374,112 +305,129 @@
         .form-group textarea {
             width: 100%;
             padding: 12px;
-            border: 1px solid #d1d5db;
+            border: 1px solid var(--border);
             border-radius: 6px;
-            font-size: 14px;
-            font-family: inherit;
+            font-size: 16px;
+            transition: border-color 0.2s;
         }
         
-        .form-group textarea {
-            min-height: 100px;
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        textarea {
             resize: vertical;
+            min-height: 120px;
         }
         
-        .stats-box {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 20px;
-            background: #f9fafb;
-            border-radius: 8px;
+        /* Photo Enhancer Page */
+        .upload-section {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 40px;
+        }
+        
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 60px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: var(--bg-light);
+        }
+        
+        .upload-area:hover {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+        
+        .upload-area.active {
+            border-color: var(--primary);
+            border-style: solid;
+        }
+        
+        .upload-icon {
+            font-size: 48px;
             margin-bottom: 20px;
         }
         
-        .stats-box .icon {
-            font-size: 32px;
-        }
-        
-        .stats-box .count {
-            font-size: 32px;
-            font-weight: bold;
-        }
-        
-        .enhanced-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-        }
-        
-        .enhanced-item {
-            position: relative;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            cursor: pointer;
-        }
-        
-        .enhanced-item img {
-            width: 100%;
-            display: block;
-        }
-        
-        /* Modal */
-        .modal {
+        #file-input {
             display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
         }
         
-        .modal.active {
-            display: flex;
-        }
-        
-        .modal-content {
-            background: white;
-            border-radius: 12px;
-            padding: 40px;
-            max-width: 600px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-            position: relative;
-        }
-        
-        .modal-close {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: none;
-            border: none;
-            font-size: 28px;
-            cursor: pointer;
-            color: #9ca3af;
-            line-height: 1;
-        }
-        
-        .modal h2 {
-            margin-bottom: 30px;
-            font-size: 28px;
-        }
-        
-        .modal-buttons {
-            display: flex;
-            gap: 15px;
+        .preview-section {
+            display: none;
             margin-top: 30px;
         }
         
-        .modal-buttons .btn {
-            flex: 1;
-            padding: 14px;
+        .preview-image {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        /* Results */
+        .results-section {
+            display: none;
+        }
+        
+        .result-card {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 40px;
+        }
+        
+        .result-images {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .image-container {
+            text-align: center;
+        }
+        
+        .image-container img {
+            width: 100%;
+            height: 300px;
+            object-fit: contain;
+            background: var(--bg-light);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        
+        .image-label {
+            font-weight: 600;
+            margin-top: 10px;
+            color: var(--text-gray);
+        }
+        
+        .description-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: var(--bg-light);
+            border-radius: 8px;
+            line-height: 1.8;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
         }
         
         /* Loading */
@@ -489,13 +437,9 @@
             padding: 40px;
         }
         
-        .loading.active {
-            display: block;
-        }
-        
         .spinner {
-            border: 4px solid #f3f4f6;
-            border-top: 4px solid #2563eb;
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid var(--primary);
             border-radius: 50%;
             width: 50px;
             height: 50px;
@@ -508,431 +452,697 @@
             100% { transform: rotate(360deg); }
         }
         
-        /* Responsive */
+        /* Pricing */
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .pricing-card {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            position: relative;
+            transition: all 0.3s;
+        }
+        
+        .pricing-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+        
+        .pricing-card.featured {
+            border: 2px solid var(--primary);
+        }
+        
+        .badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--primary);
+            color: white;
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .price {
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 20px 0;
+        }
+        
+        .price-unit {
+            font-size: 18px;
+            color: var(--text-gray);
+        }
+        
+        /* FAQ */
+        .faq-section {
+            background: white;
+            padding: 60px 40px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 40px;
+        }
+        
+        .faq-item {
+            border-bottom: 1px solid var(--border);
+            padding: 25px 0;
+        }
+        
+        .faq-item:last-child {
+            border-bottom: none;
+        }
+        
+        .faq-question {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 10px;
+        }
+        
+        .faq-answer {
+            color: var(--text-gray);
+            line-height: 1.8;
+        }
+        
+        /* Footer */
+        footer {
+            background: white;
+            padding: 40px 0;
+            margin-top: 80px;
+            border-top: 1px solid var(--border);
+        }
+        
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            text-align: center;
+        }
+        
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .footer-links a {
+            color: var(--text-gray);
+            text-decoration: none;
+        }
+        
+        .footer-links a:hover {
+            color: var(--primary);
+        }
+        
+        /* Watermark on canvas (applied in JS) */
+        .watermark {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.7);
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+        }
+        
+        /* Mobile Responsive */
         @media (max-width: 768px) {
-            header {
-                padding: 15px 20px;
-            }
-            
-            .logo-text {
-                font-size: 28px;
-            }
-            
-            .brain-icon {
-                width: 28px;
-                height: 28px;
-            }
-            
-            nav {
+            nav a:not(.mobile-menu) {
                 display: none;
             }
             
-            .hamburger {
-                display: flex;
+            .mobile-menu {
+                display: block;
             }
             
-            h1 {
-                font-size: 32px;
+            .dashboard-header h1 {
+                font-size: 36px;
             }
             
-            .subtitle {
-                font-size: 16px;
-            }
-            
-            .photo-grid {
+            .tools-grid {
                 grid-template-columns: 1fr;
             }
             
-            .cards-grid {
+            .result-images {
                 grid-template-columns: 1fr;
             }
-        }
-        
-        .hidden {
-            display: none !important;
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .action-buttons .btn {
+                width: 100%;
+            }
+            
+            .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .footer-links {
+                flex-direction: column;
+                gap: 15px;
+            }
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 </head>
 <body>
     <header>
-        <div class="logo-text">
-            <span class="e">e</span><span class="b">b</span><span class="ai-text">ai</span>
-            <svg class="brain-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="50" cy="50" r="40" fill="none" stroke="#9ca3af" stroke-width="2"/>
-                <circle cx="30" cy="40" r="4" fill="#3b82f6"/>
-                <circle cx="50" cy="30" r="4" fill="#f59e0b"/>
-                <circle cx="70" cy="40" r="4" fill="#10b981"/>
-                <circle cx="40" cy="60" r="4" fill="#8b5cf6"/>
-                <circle cx="60" cy="60" r="4" fill="#ef4444"/>
-                <line x1="30" y1="40" x2="50" y2="30" stroke="#9ca3af" stroke-width="1.5"/>
-                <line x1="50" y1="30" x2="70" y2="40" stroke="#9ca3af" stroke-width="1.5"/>
-                <line x1="30" y1="40" x2="40" y2="60" stroke="#9ca3af" stroke-width="1.5"/>
-                <line x1="70" y1="40" x2="60" y2="60" stroke="#9ca3af" stroke-width="1.5"/>
-                <line x1="40" y1="60" x2="60" y2="60" stroke="#9ca3af" stroke-width="1.5"/>
-            </svg>
-        </div>
-        <nav id="mainNav">
-            <a href="#" onclick="showPage('dashboard')">Dashboard</a>
-            <a href="#" onclick="showPage('photo-enhancer')">Photo Enhancer</a>
-            <a href="#">Export</a>
-            <a href="#">Profile</a>
-            <button class="btn btn-primary">Log In</button>
-            <button class="btn btn-outline">Sign Up</button>
-        </nav>
-        <div class="hamburger" onclick="toggleMenu()">
-            <span></span>
-            <span></span>
-            <span></span>
+        <div class="header-content">
+            <div class="logo-text">
+                <span style="color: #0066ff;">e</span><span style="color: #ffc107;">b</span><span style="color: #000;">ai</span>
+            </div>
+            <nav>
+                <a href="#" onclick="showPage('dashboard')" class="nav-link active">Dashboard</a>
+                <a href="#" onclick="showPage('pricing')" class="nav-link">Pricing</a>
+                <a href="#" onclick="showPage('faq')" class="nav-link">FAQ</a>
+                <button class="mobile-menu" onclick="toggleMobileMenu()">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <div class="mobile-nav" id="mobile-nav">
+                    <a href="#" onclick="showPage('dashboard'); closeMobileMenu()">Dashboard</a>
+                    <a href="#" onclick="showPage('pricing'); closeMobileMenu()">Pricing</a>
+                    <a href="#" onclick="showPage('faq'); closeMobileMenu()">FAQ</a>
+                </div>
+            </nav>
         </div>
     </header>
 
     <!-- Dashboard Page -->
-    <main id="dashboard" class="page active">
-        <h1>Dashboard</h1>
-        <p class="subtitle">Create high-performing eBay listings with AI-powered tools</p>
-        
-        <div class="tokens-info">
-            <div class="label">Tokens Used</div>
-            <div class="count">0 / ∞</div>
-            <div class="crown">👑</div>
-        </div>
-        
-        <div class="cards-grid">
-            <!-- Text Assistant -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-icon blue">✏️</div>
-                    <div class="card-title">
-                        <h2>Text Assistant</h2>
-                        <p>AI-powered writing tools for compelling eBay listings</p>
-                    </div>
-                </div>
-                <ul class="feature-list">
-                    <li>Auto-suggested optimized titles</li>
-                    <li>Keyword optimization for better visibility</li>
-                    <li>Multiple tone options for your brand voice</li>
-                </ul>
-                <button class="btn btn-primary btn-full" onclick="openTextModal()">Start Creating Listing</button>
+    <div id="dashboard-page" class="page active">
+        <div class="container">
+            <div class="dashboard-header">
+                <h1>Transform Your Product Photos</h1>
+                <p>AI-powered tools to create professional e-commerce listings in seconds</p>
             </div>
             
-            <!-- Photo Enhancer -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-icon green">🖼️</div>
-                    <div class="card-title">
-                        <h2>Photo Enhancer</h2>
-                        <p>Professional photo enhancements for standout listings</p>
-                    </div>
-                </div>
-                <a href="#" onclick="showPage('photo-enhancer'); return false;" class="card-link">
-                    Go to Photo Enhancer <span class="arrow">→</span>
-                </a>
-            </div>
-        </div>
-        
-        <div class="listings-section">
-            <div class="listings-header">
-                <h2>Your Listings</h2>
-                <button class="btn btn-outline" onclick="openTextModal()">Create New Listing</button>
-            </div>
-            <div id="listings-grid"></div>
-        </div>
-    </main>
-
-    <!-- Photo Enhancer Page -->
-    <main id="photo-enhancer" class="page">
-        <h1>Photo Enhancer</h1>
-        <p class="subtitle">Upload your product photos and let AI enhance them with improved lighting, cropping, and professional backgrounds to make your eBay listings stand out.</p>
-        
-        <div class="photo-grid">
-            <div class="section-card">
-                <div class="tokens-display">
-                    <div>
-                        <div class="label">Tokens Remaining</div>
-                        <div class="count">650</div>
-                    </div>
-                    <div class="plan">
-                        <div class="label">Current Plan</div>
-                        <div style="font-weight: 600;">Basic</div>
-                    </div>
+            <div class="tools-grid">
+                <div class="tool-card" onclick="showPage('text-assistant')">
+                    <div class="tool-icon text-icon">✏️</div>
+                    <h2>Text Assistant</h2>
+                    <p>Generate compelling product descriptions that sell</p>
+                    <ul class="tool-features">
+                        <li><span class="check">✓</span> SEO-optimized titles</li>
+                        <li><span class="check">✓</span> Persuasive descriptions</li>
+                        <li><span class="check">✓</span> Keyword suggestions</li>
+                    </ul>
+                    <button class="btn btn-primary btn-full">Create Listing Text</button>
                 </div>
                 
-                <h3 style="margin-bottom: 20px;">Upload Photos</h3>
-                
-                <div class="form-group">
-                    <label>Select Photos</label>
-                    <div class="upload-box" id="uploadBox" onclick="document.getElementById('fileInput').click()">
-                        <div id="uploadPrompt">
-                            <div class="upload-icon">📸</div>
-                            <div style="font-weight: 600; margin-bottom: 5px;">Click to upload an image</div>
-                            <div style="color: #6b7280; font-size: 14px;">iPhone HEIC, PNG, JPG - any size</div>
-                        </div>
-                        <img id="previewImage" class="preview-image" style="display: none;">
-                        <input type="file" id="fileInput" accept="image/*,.heic,.heif" capture="environment">
-                    </div>
+                <div class="tool-card" onclick="showPage('photo-enhancer')">
+                    <div class="tool-icon photo-icon">📸</div>
+                    <h2>Photo Enhancer</h2>
+                    <p>Transform any photo into a professional studio shot</p>
+                    <ul class="tool-features">
+                        <li><span class="check">✓</span> AI background removal</li>
+                        <li><span class="check">✓</span> Pink studio backdrop</li>
+                        <li><span class="check">✓</span> Professional lighting</li>
+                    </ul>
+                    <button class="btn btn-primary btn-full">Enhance Photos</button>
                 </div>
-                
-                <div class="form-group">
-                    <label>Aspect Ratio</label>
-                    <select id="aspectRatio">
-                        <option value="">Select aspect ratio</option>
-                        <option value="1:1">Square (1:1)</option>
-                        <option value="4:3">Standard (4:3)</option>
-                        <option value="16:9">Widescreen (16:9)</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label>Product Title</label>
-                    <input type="text" id="photoTitle" placeholder="e.g., Vintage Leather Stool">
-                </div>
-                
-                <div class="form-group">
-                    <label>Price ($)</label>
-                    <input type="number" id="photoPrice" placeholder="0.00" step="0.01" min="0">
-                </div>
-                
-                <button class="btn btn-primary btn-full" onclick="cleanImage()">Clean Image</button>
-                
-                <div class="loading" id="photoLoading">
-                    <div class="spinner"></div>
-                    <p>Enhancing your image with AI...</p>
-                </div>
-            </div>
-            
-            <div class="section-card">
-                <h2>Enhanced Images</h2>
-                <p class="subtitle">Your AI-enhanced photos will appear here. Click to download or save to your listings.</p>
-                
-                <div class="stats-box">
-                    <div class="icon">🖼️</div>
-                    <div>
-                        <div style="color: #6b7280; font-size: 14px;">Images Enhanced</div>
-                        <div class="count" id="enhancedCount">0</div>
-                    </div>
-                    <button class="btn btn-outline" style="margin-left: auto;">Batch Download</button>
-                </div>
-                
-                <div class="enhanced-grid" id="enhancedGrid"></div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Text Modal -->
-    <div class="modal" id="textModal">
-        <div class="modal-content">
-            <button class="modal-close" onclick="closeTextModal()">×</button>
-            <h2>Create New Listing</h2>
-            
-            <div class="form-group">
-                <label>Product Title</label>
-                <input type="text" id="modalTitle" placeholder="Enter your product title">
-            </div>
-            
-            <div class="form-group">
-                <label>Product Description</label>
-                <textarea id="modalDescription" placeholder="Describe your product in detail"></textarea>
-            </div>
-            
-            <div class="form-group">
-                <label>Tone</label>
-                <select id="modalTone">
-                    <option value="">Select tone for your listing</option>
-                    <option value="professional">Professional</option>
-                    <option value="friendly">Friendly</option>
-                    <option value="enthusiastic">Enthusiastic</option>
-                    <option value="luxury">Luxury</option>
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label>Keywords</label>
-                <input type="text" id="modalKeywords" placeholder="Enter relevant keywords separated by commas">
-            </div>
-            
-            <div class="modal-buttons">
-                <button class="btn btn-outline" onclick="closeTextModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="generateContent()">Generate Optimized Content</button>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+    <!-- Text Assistant Page -->
+    <div id="text-assistant-page" class="page">
+        <div class="container">
+            <button class="btn btn-secondary back-btn" onclick="showPage('dashboard')">← Back to Dashboard</button>
+            <h1>Create Your Product Listing</h1>
+            
+            <div class="form-section">
+                <div class="form-group">
+                    <label for="product-title">Product Name</label>
+                    <input type="text" id="product-title" placeholder="e.g., Vintage Leather Jacket">
+                </div>
+                
+                <div class="form-group">
+                    <label for="product-category">Category</label>
+                    <select id="product-category">
+                        <option>Fashion & Accessories</option>
+                        <option>Electronics</option>
+                        <option>Home & Garden</option>
+                        <option>Sports & Outdoors</option>
+                        <option>Toys & Games</option>
+                        <option>Beauty & Personal Care</option>
+                        <option>Books & Media</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="product-price">Price</label>
+                    <input type="number" id="product-price" placeholder="29.99" step="0.01">
+                </div>
+                
+                <div class="form-group">
+                    <label for="product-description">Brief Description</label>
+                    <textarea id="product-description" placeholder="Describe your product's key features, condition, size, etc."></textarea>
+                </div>
+                
+                <button class="btn btn-primary btn-full" onclick="generateListing()">Generate Optimized Listing</button>
+            </div>
+            
+            <div class="loading" id="text-loading">
+                <div class="spinner"></div>
+                <p>Creating your optimized listing...</p>
+            </div>
+            
+            <div class="results-section" id="text-results">
+                <div class="result-card">
+                    <h2>Your Optimized Listing</h2>
+                    <div class="form-group">
+                        <label>Title</label>
+                        <input type="text" id="result-title" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <div class="description-section" id="result-description"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Suggested Keywords</label>
+                        <div id="result-keywords" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;"></div>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" onclick="copyListing()">Copy to Clipboard</button>
+                        <button class="btn btn-secondary" onclick="generateListing()">Generate Again</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Photo Enhancer Page -->
+    <div id="photo-enhancer-page" class="page">
+        <div class="container">
+            <button class="btn btn-secondary back-btn" onclick="showPage('dashboard')">← Back to Dashboard</button>
+            <h1>Enhance Your Product Photo</h1>
+            
+            <div class="upload-section">
+                <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
+                    <div class="upload-icon">📤</div>
+                    <h3>Click to upload or drag and drop</h3>
+                    <p>PNG, JPG, HEIC up to 10MB</p>
+                    <input type="file" id="file-input" accept="image/*" onchange="handleFileUpload(event)">
+                </div>
+                
+                <div class="preview-section" id="preview-section">
+                    <img id="preview-image" class="preview-image" alt="Preview">
+                    <div class="form-group">
+                        <label for="photo-title">Product Title</label>
+                        <input type="text" id="photo-title" placeholder="Enter product name">
+                    </div>
+                    <div class="form-group">
+                        <label for="photo-price">Price</label>
+                        <input type="number" id="photo-price" placeholder="0.00" step="0.01">
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="enhancePhoto()">Transform Photo & Generate Description</button>
+                </div>
+            </div>
+            
+            <div class="loading" id="photo-loading">
+                <div class="spinner"></div>
+                <p>Transforming your photo with AI magic...</p>
+            </div>
+            
+            <div class="results-section" id="photo-results">
+                <div class="result-card">
+                    <h2>Your Enhanced Listing</h2>
+                    <div class="result-images">
+                        <div class="image-container">
+                            <img id="original-image" alt="Original">
+                            <div class="image-label">Original</div>
+                        </div>
+                        <div class="image-container">
+                            <img id="enhanced-image" alt="Enhanced">
+                            <div class="image-label">Enhanced</div>
+                        </div>
+                    </div>
+                    <div class="description-section" id="photo-description"></div>
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" onclick="downloadEnhanced()">Download Enhanced Image</button>
+                        <button class="btn btn-secondary" onclick="resetPhotoEnhancer()">Upload Another</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pricing Page -->
+    <div id="pricing-page" class="page">
+        <div class="container">
+            <div class="dashboard-header">
+                <h1>Simple, Transparent Pricing</h1>
+                <p>Choose the plan that works best for your business</p>
+            </div>
+            
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <h3>Starter</h3>
+                    <div class="price">$9.99</div>
+                    <div class="price-unit">10 credits</div>
+                    <ul class="tool-features" style="margin: 30px 0;">
+                        <li><span class="check">✓</span> Photo enhancement</li>
+                        <li><span class="check">✓</span> AI descriptions</li>
+                        <li><span class="check">✓</span> All features included</li>
+                        <li><span class="check">✓</span> No expiration</li>
+                    </ul>
+                    <button class="btn btn-primary btn-full">Get Started</button>
+                </div>
+                
+                <div class="pricing-card featured">
+                    <div class="badge">Most Popular</div>
+                    <h3>Professional</h3>
+                    <div class="price">$24.99</div>
+                    <div class="price-unit">30 credits</div>
+                    <ul class="tool-features" style="margin: 30px 0;">
+                        <li><span class="check">✓</span> Everything in Starter</li>
+                        <li><span class="check">✓</span> Priority processing</li>
+                        <li><span class="check">✓</span> Bulk upload (5 at once)</li>
+                        <li><span class="check">✓</span> Save 17% per credit</li>
+                    </ul>
+                    <button class="btn btn-primary btn-full">Get Started</button>
+                </div>
+                
+                <div class="pricing-card">
+                    <h3>Business</h3>
+                    <div class="price">$99.99</div>
+                    <div class="price-unit">150 credits</div>
+                    <ul class="tool-features" style="margin: 30px 0;">
+                        <li><span class="check">✓</span> Everything in Pro</li>
+                        <li><span class="check">✓</span> Bulk upload (20 at once)</li>
+                        <li><span class="check">✓</span> API access</li>
+                        <li><span class="check">✓</span> Save 33% per credit</li>
+                    </ul>
+                    <button class="btn btn-primary btn-full">Get Started</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FAQ Page -->
+    <div id="faq-page" class="page">
+        <div class="container">
+            <div class="dashboard-header">
+                <h1>Frequently Asked Questions</h1>
+                <p>Everything you need to know about eBai</p>
+            </div>
+            
+            <div class="faq-section">
+                <div class="faq-item">
+                    <div class="faq-question">What marketplaces can I use eBai for?</div>
+                    <div class="faq-answer">eBai works for any e-commerce platform including eBay, Amazon, Etsy, Poshmark, Mercari, Facebook Marketplace, and your own online store. Our AI-optimized listings are designed to work everywhere.</div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question">How does the photo enhancement work?</div>
+                    <div class="faq-answer">We use advanced AI to automatically remove backgrounds and replace them with a professional pink studio backdrop. This creates consistent, eye-catching product photos that increase sales by up to 40%.</div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question">What file types are supported?</div>
+                    <div class="faq-answer">We support all major image formats including JPG, PNG, and HEIC (iPhone photos). Files up to 10MB are accepted.</div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question">How quickly are photos processed?</div>
+                    <div class="faq-answer">Most photos are enhanced within 5-10 seconds. Complex images may take up to 20 seconds.</div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question">Do credits expire?</div>
+                    <div class="faq-answer">No, credits never expire. Use them whenever you need them.</div>
+                </div>
+                
+                <div class="faq-item">
+                    <div class="faq-question">Is there a watermark on enhanced images?</div>
+                    <div class="faq-answer">Yes, a small "ebai.me" watermark is added to the bottom-right corner. It's designed to be unobtrusive while promoting our service.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="#" onclick="alert('Terms of Service')">Terms</a>
+                <a href="#" onclick="alert('Privacy Policy')">Privacy</a>
+                <a href="mailto:support@ebai.me">Contact</a>
+            </div>
+            <p style="color: var(--text-gray);">© 2025 eBai. AI-powered e-commerce tools.</p>
+        </div>
+    </footer>
+
     <script>
-        const API_URL = 'https://cllofhltncusnakhehdw.supabase.co/functions/v1/optimize-listing';
-        let enhancedImages = [];
+        // State
+        let currentFile = null;
+        let currentPage = 'dashboard';
         
         // Navigation
-        function showPage(pageId) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById(pageId).classList.add('active');
+        function showPage(pageName) {
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            document.getElementById(`${pageName}-page`).classList.add('active');
+            
+            // Update nav links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+                if (link.textContent.toLowerCase().includes(pageName)) {
+                    link.classList.add('active');
+                }
+            });
+            
+            currentPage = pageName;
+            window.scrollTo(0, 0);
         }
         
-        function toggleMenu() {
-            const nav = document.getElementById('mainNav');
-            nav.style.display = nav.style.display === 'flex' ? 'none' : 'flex';
+        // Mobile menu
+        function toggleMobileMenu() {
+            const menu = document.querySelector('.mobile-menu');
+            const nav = document.getElementById('mobile-nav');
+            menu.classList.toggle('active');
+            nav.classList.toggle('active');
         }
         
-        // Text Modal
-        function openTextModal() {
-            document.getElementById('textModal').classList.add('active');
+        function closeMobileMenu() {
+            document.querySelector('.mobile-menu').classList.remove('active');
+            document.getElementById('mobile-nav').classList.remove('active');
         }
         
-        function closeTextModal() {
-            document.getElementById('textModal').classList.remove('active');
-        }
-        
-        // File Upload
-        document.getElementById('fileInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById('previewImage').src = e.target.result;
-                    document.getElementById('previewImage').style.display = 'block';
-                    document.getElementById('uploadPrompt').style.display = 'none';
-                    document.getElementById('uploadBox').classList.add('has-image');
-                };
-                reader.readAsDataURL(file);
+        // Text Assistant
+        async function generateListing() {
+            const title = document.getElementById('product-title').value;
+            const category = document.getElementById('product-category').value;
+            const price = document.getElementById('product-price').value;
+            const description = document.getElementById('product-description').value;
+            
+            if (!title || !price) {
+                alert('Please enter product name and price');
+                return;
             }
-        });
+            
+            document.getElementById('text-results').style.display = 'none';
+            document.getElementById('text-loading').style.display = 'block';
+            
+            // Simulate API call
+            setTimeout(() => {
+                // Mock response
+                const optimizedTitle = `${title} - ${category} - Fast Shipping, Excellent Condition`;
+                const optimizedDescription = `🌟 PREMIUM ${title.toUpperCase()} - Don't Miss This Deal! 🌟\n\n${description || 'High-quality product in excellent condition.'}\n\n✅ Authentic and genuine product\n✅ Fast shipping within 24 hours\n✅ 100% satisfaction guaranteed\n✅ Carefully packaged for safe delivery\n\nThis ${title} is perfect for anyone looking for quality at an unbeatable price. Our customers love the attention to detail and fast shipping.\n\n🚀 Order now and receive it within 2-3 business days!\n💯 30-day money-back guarantee\n📦 Free returns if not completely satisfied`;
+                
+                const keywords = ['fast shipping', 'authentic', 'premium quality', category.toLowerCase(), 'best price', 'free returns'];
+                
+                document.getElementById('result-title').value = optimizedTitle;
+                document.getElementById('result-description').textContent = optimizedDescription;
+                
+                const keywordsDiv = document.getElementById('result-keywords');
+                keywordsDiv.innerHTML = keywords.map(k => 
+                    `<span style="background: #eff6ff; color: #0066ff; padding: 6px 12px; border-radius: 20px;">${k}</span>`
+                ).join('');
+                
+                document.getElementById('text-loading').style.display = 'none';
+                document.getElementById('text-results').style.display = 'block';
+            }, 2000);
+        }
         
-        // Convert HEIC
-        async function convertHeicToJpeg(file) {
-            if (file.type === 'image/heic' || file.type === 'image/heif' || 
-                file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+        function copyListing() {
+            const title = document.getElementById('result-title').value;
+            const description = document.getElementById('result-description').textContent;
+            const text = `Title: ${title}\n\nDescription:\n${description}`;
+            navigator.clipboard.writeText(text);
+            alert('Listing copied to clipboard!');
+        }
+        
+        // Photo Enhancer
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Convert HEIC if needed
+            if (file.type === 'image/heic' || file.name.toLowerCase().endsWith('.heic')) {
                 try {
-                    const convertedBlob = await heic2any({
+                    const blob = await heic2any({
                         blob: file,
                         toType: 'image/jpeg',
                         quality: 0.9
                     });
-                    return new File([convertedBlob], file.name.replace(/\.heic$/i, '.jpg'), { type: 'image/jpeg' });
+                    currentFile = new File([blob], file.name.replace(/\.heic$/i, '.jpg'), { type: 'image/jpeg' });
                 } catch (error) {
                     console.error('HEIC conversion failed:', error);
-                    return file;
+                    currentFile = file;
                 }
+            } else {
+                currentFile = file;
             }
-            return file;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('preview-image').src = e.target.result;
+                document.getElementById('upload-area').style.display = 'none';
+                document.getElementById('preview-section').style.display = 'block';
+            };
+            reader.readAsDataURL(currentFile);
         }
         
-        // Watermark Image
-        async function addWatermark(imageDataUrl) {
-            return new Promise((resolve) => {
+        // Drag and drop
+        const uploadArea = document.getElementById('upload-area');
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => uploadArea.classList.add('active'), false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => uploadArea.classList.remove('active'), false);
+        });
+        
+        uploadArea.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                document.getElementById('file-input').files = files;
+                handleFileUpload({ target: { files: files } });
+            }
+        }
+        
+        async function enhancePhoto() {
+            if (!currentFile) {
+                alert('Please upload a photo first');
+                return;
+            }
+            
+            const title = document.getElementById('photo-title').value || 'Product';
+            const price = document.getElementById('photo-price').value || '0';
+            
+            document.getElementById('photo-results').style.display = 'none';
+            document.getElementById('photo-loading').style.display = 'block';
+            
+            const formData = new FormData();
+            formData.append('image', currentFile);
+            formData.append('title', title);
+            formData.append('price', price);
+            
+            try {
+                const response = await fetch('https://cllofhltncusnakhehdw.supabase.co/functions/v1/optimize-listing', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Processing failed');
+                }
+                
+                // Display original
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('original-image').src = e.target.result;
+                };
+                reader.readAsDataURL(currentFile);
+                
+                // Add watermark to enhanced image
                 const img = new Image();
-                img.onload = () => {
+                img.onload = function() {
                     const canvas = document.createElement('canvas');
                     canvas.width = img.width;
                     canvas.height = img.height;
                     const ctx = canvas.getContext('2d');
                     
-                    // Draw main image
+                    // Draw enhanced image
                     ctx.drawImage(img, 0, 0);
                     
-                    // Add watermark text "ebai.me"
-                    const fontSize = Math.max(20, img.width * 0.03);
-                    ctx.font = `bold ${fontSize}px Arial`;
+                    // Add watermark
+                    ctx.font = 'bold 20px Arial';
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
-                    ctx.lineWidth = 2;
+                    ctx.textAlign = 'right';
+                    ctx.fillText('ebai.me', canvas.width - 10, canvas.height - 10);
                     
-                    const text = 'ebai.me';
-                    const metrics = ctx.measureText(text);
-                    const x = img.width - metrics.width - 20;
-                    const y = img.height - 20;
+                    // Display watermarked image
+                    document.getElementById('enhanced-image').src = canvas.toDataURL('image/png');
                     
-                    ctx.strokeText(text, x, y);
-                    ctx.fillText(text, x, y);
-                    
-                    resolve(canvas.toDataURL('image/png'));
+                    // Store for download
+                    window.enhancedImageData = canvas.toDataURL('image/png');
                 };
-                img.src = imageDataUrl;
-            });
-        }
-        
-        // Clean Image
-        async function cleanImage() {
-            const fileInput = document.getElementById('fileInput');
-            const title = document.getElementById('photoTitle').value;
-            const price = document.getElementById('photoPrice').value;
-            
-            if (!fileInput.files[0]) {
-                alert('Please upload an image first');
-                return;
-            }
-            
-            if (!title || !price) {
-                alert('Please enter product title and price');
-                return;
-            }
-            
-            document.getElementById('photoLoading').classList.add('active');
-            document.querySelector('.btn-full').disabled = true;
-            
-            try {
-                let file = fileInput.files[0];
-                file = await convertHeicToJpeg(file);
+                img.src = data.enhanced_image;
                 
-                const formData = new FormData();
-                formData.append('image', file);
-                formData.append('title', title);
-                formData.append('price', price);
+                // Display description
+                document.getElementById('photo-description').innerHTML = `
+                    <h3>AI-Generated Description</h3>
+                    <p>${data.optimized_description}</p>
+                `;
                 
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Processing failed');
-                }
-                
-                const data = await response.json();
-                
-                // Add watermark to enhanced image
-                const watermarkedImage = await addWatermark(data.enhanced_image);
-                
-                // Display result
-                const grid = document.getElementById('enhancedGrid');
-                const item = document.createElement('div');
-                item.className = 'enhanced-item';
-                item.innerHTML = `<img src="${watermarkedImage}" alt="Enhanced">`;
-                item.onclick = () => downloadImage(watermarkedImage, `enhanced-${title}.png`);
-                grid.prepend(item);
-                
-                enhancedImages.push({ image: watermarkedImage, description: data.optimized_description });
-                document.getElementById('enhancedCount').textContent = enhancedImages.length;
-                
-                alert('Image enhanced successfully! Click on the image to download.');
+                document.getElementById('photo-loading').style.display = 'none';
+                document.getElementById('photo-results').style.display = 'block';
                 
             } catch (error) {
-                alert('Error: ' + error.message);
-            } finally {
-                document.getElementById('photoLoading').classList.remove('active');
-                document.querySelector('.btn-full').disabled = false;
+                console.error('Error:', error);
+                document.getElementById('photo-loading').style.display = 'none';
+                alert('Error processing image. Please try again.');
             }
         }
         
-        // Download Image
-        function downloadImage(dataUrl, filename) {
-            const link = document.createElement('a');
-            link.href = dataUrl;
-            link.download = filename;
-            link.click();
+        function downloadEnhanced() {
+            if (!window.enhancedImageData) return;
+            
+            const a = document.createElement('a');
+            a.href = window.enhancedImageData;
+            a.download = 'enhanced-product-photo.png';
+            a.click();
         }
         
-        // Generate Content (Text Assistant)
-        async function generateContent() {
-            const title = document.getElementById('modalTitle').value;
-            const description = document.getElementById('modalDescription').value;
-            
-            if (!title || !description) {
-                alert('Please enter title and description');
-                return;
-            }
-            
-            alert('Text optimization coming soon! For now, use Photo Enhancer.');
-            closeTextModal();
+        function resetPhotoEnhancer() {
+            currentFile = null;
+            document.getElementById('file-input').value = '';
+            document.getElementById('upload-area').style.display = 'block';
+            document.getElementById('preview-section').style.display = 'none';
+            document.getElementById('photo-results').style.display = 'none';
+            document.getElementById('photo-title').value = '';
+            document.getElementById('photo-price').value = '';
         }
     </script>
 </body>
