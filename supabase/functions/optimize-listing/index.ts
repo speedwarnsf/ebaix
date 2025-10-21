@@ -87,48 +87,65 @@ Return ONLY the description text, no other formatting.`
     console.log('Description generated successfully')
     const optimizedDescription = descriptionData.candidates[0].content.parts[0].text.trim()
 
-    // STEP 2: Image enhancement with Gemini imagen-3.0-generate
-    console.log('Calling Gemini imagen for background removal...')
-    const imageResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:generateContent?key=${Deno.env.get('GEMINI_API_KEY')}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              {
-                text: "Remove background and replace with clean pink studio backdrop (hex #F5D5E0). Keep product centered, well-lit, professional for e-commerce."
-              },
-              {
-                inline_data: {
-                  mime_type: image.type || 'image/jpeg',
-                  data: base64Image
-                }
-              }
-            ]
-          }],
-          generationConfig: {
-            temperature: 0.4,
-            candidateCount: 1
-          }
-        })
-      }
-    )
+    // STEP 2: Remove background with remove.bg API
+    console.log('Calling remove.bg API for background removal...')
+    
+    const removeBgFormData = new FormData()
+    removeBgFormData.append('image_file_b64', base64Image)
+    removeBgFormData.append('bg_color', 'f5d5e0') // Pink backdrop
+    removeBgFormData.append('size', 'auto')
+    
+    const removeBgResponse = await fetch('https://api.remove.bg/v1.0/removebg', {
+      method: 'POST',
+      headers: {
+        'X-Api-Key': Deno.env.get('REMOVE_BG_API_KEY') ?? ''
+      },
+      body: removeBgFormData
+    })
 
-    if (!imageResponse.ok) {
-      const errorText = await imageResponse.text()
-      console.error('Imagen API failed:', imageResponse.status, errorText)
-      throw new Error(`Imagen API failed: ${imageResponse.status} - ${errorText}`)
+    if (!removeBgResponse.ok) {
+      const errorText = await removeBgResponse.text()
+      console.error('Remove.bg failed:', removeBgResponse.status, errorText)
+      // Fallback to original image if remove.bg fails
+      console.log('Falling back to original image')
+      const enhancedBase64 = base64Image
+      
+      const { data: listing, error } = await supabaseClient
+        .from('listings')
+        .insert({
+          title,
+          price,
+          original_image_url: `data:${image.type || 'image/jpeg'};base64,${base64Image}`,
+          enhanced_image_url: `data:image/jpeg;base64,${enhancedBase64}`,
+          original_description: title,
+          optimized_description: optimizedDescription
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          enhanced_image: `data:image/jpeg;base64,${enhancedBase64}`,
+          optimized_description: optimizedDescription,
+          listing_id: listing.id,
+          note: 'Background removal unavailable - using original image'
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      )
     }
 
-    const imageData = await imageResponse.json()
-    console.log('Image enhanced successfully')
+    const enhancedImageBuffer = await removeBgResponse.arrayBuffer()
+    const enhancedBase64 = btoa(
+      new Uint8Array(enhancedImageBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+    )
     
-    // Extract the generated image from response
-    const enhancedBase64 = imageData.candidates[0].content.parts.find(
-      (part: any) => part.inline_data
-    )?.inline_data?.data || base64Image
+    console.log('Image enhanced successfully')
 
     // Store in Supabase
     console.log('Saving to database...')
@@ -138,7 +155,7 @@ Return ONLY the description text, no other formatting.`
         title,
         price,
         original_image_url: `data:${image.type || 'image/jpeg'};base64,${base64Image}`,
-        enhanced_image_url: `data:image/jpeg;base64,${enhancedBase64}`,
+        enhanced_image_url: `data:image/png;base64,${enhancedBase64}`,
         original_description: title,
         optimized_description: optimizedDescription
       })
@@ -155,7 +172,7 @@ Return ONLY the description text, no other formatting.`
     return new Response(
       JSON.stringify({
         success: true,
-        enhanced_image: `data:image/jpeg;base64,${enhancedBase64}`,
+        enhanced_image: `data:image/png;base64,${enhancedBase64}`,
         optimized_description: optimizedDescription,
         listing_id: listing.id
       }),
