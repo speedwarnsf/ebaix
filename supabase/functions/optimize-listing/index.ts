@@ -32,8 +32,8 @@ serve(async (req) => {
       new Uint8Array(imageBytes).reduce((data, byte) => data + String.fromCharCode(byte), '')
     )
 
-    // Use Gemini 2.0 Flash with nano banana technique for BOTH image and description
-    const geminiResponse = await fetch(
+    // STEP 1: Generate AI-optimized description with Gemini Flash
+    const descriptionResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${Deno.env.get('GEMINI_API_KEY')}`,
       {
         method: 'POST',
@@ -42,18 +42,7 @@ serve(async (req) => {
           contents: [{
             parts: [
               {
-                text: `You are a professional product photographer and copywriter for e-commerce.
-
-TASK 1 - Image Enhancement:
-Generate a professional studio photo of this product with:
-- Clean pink studio backdrop (#F5D5E0)
-- Professional lighting
-- Product centered and well-composed
-- Remove any distracting background elements
-- Maintain product authenticity
-
-TASK 2 - Description:
-Create a compelling e-commerce listing description for:
+                text: `Create a compelling e-commerce listing description for:
 Title: ${title}
 Price: $${price}
 
@@ -75,26 +64,70 @@ Return ONLY the description text, no other formatting.`
           }],
           generationConfig: {
             temperature: 0.8,
-            maxOutputTokens: 2048
+            maxOutputTokens: 300
           }
         })
       }
     )
 
-    if (!geminiResponse.ok) {
-      throw new Error(`Gemini API failed: ${geminiResponse.status}`)
+    if (!descriptionResponse.ok) {
+      throw new Error(`Gemini Flash API failed: ${descriptionResponse.status}`)
     }
 
-    const geminiData = await geminiResponse.json()
-    
-    // Extract description from Gemini response
-    const optimizedDescription = geminiData.candidates[0].content.parts[0].text.trim()
+    const descriptionData = await descriptionResponse.json()
+    const optimizedDescription = descriptionData.candidates[0].content.parts[0].text.trim()
 
-    // For now, use the original image with pink backdrop instruction
-    // Gemini 2.0 Flash can generate images but via different endpoint
-    // Using the nano banana technique requires imagen generation which is in beta
-    // So we'll process the original image with base64 for now
-    const enhancedBase64 = base64Image // Placeholder until we implement full imagen
+    // STEP 2: Use Gemini Flash Image (Nano Banana technique) for background removal + pink studio
+    const imageEditResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${Deno.env.get('GEMINI_API_KEY')}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              {
+                text: `Transform this product photo into a professional studio shot:
+
+1. Remove all background distractions and clutter
+2. Replace background with a clean pink studio backdrop (hex color #F5D5E0)
+3. Center the product
+4. Add professional studio lighting
+5. Maintain product authenticity and details
+6. Make it look like a professional e-commerce product photo
+
+Generate the enhanced image with these exact specifications.`
+              },
+              {
+                inline_data: {
+                  mime_type: image.type || 'image/jpeg',
+                  data: base64Image
+                }
+              }
+            ]
+          }],
+          generationConfig: {
+            temperature: 0.4,
+            maxOutputTokens: 8192,
+            response_mime_type: 'image/jpeg'
+          }
+        })
+      }
+    )
+
+    if (!imageEditResponse.ok) {
+      const errorText = await imageEditResponse.text()
+      throw new Error(`Gemini Flash Image API failed: ${imageEditResponse.status} - ${errorText}`)
+    }
+
+    const imageData = await imageEditResponse.json()
+    
+    // Extract enhanced image from response
+    let enhancedBase64 = base64Image // Fallback to original
+    
+    if (imageData.candidates && imageData.candidates[0]?.content?.parts?.[0]?.inline_data) {
+      enhancedBase64 = imageData.candidates[0].content.parts[0].inline_data.data
+    }
 
     // Store in Supabase
     const { data: listing, error } = await supabaseClient
@@ -103,7 +136,7 @@ Return ONLY the description text, no other formatting.`
         title,
         price,
         original_image_url: `data:${image.type || 'image/jpeg'};base64,${base64Image}`,
-        enhanced_image_url: `data:${image.type || 'image/jpeg'};base64,${enhancedBase64}`,
+        enhanced_image_url: `data:image/jpeg;base64,${enhancedBase64}`,
         original_description: title,
         optimized_description: optimizedDescription
       })
@@ -115,7 +148,7 @@ Return ONLY the description text, no other formatting.`
     return new Response(
       JSON.stringify({
         success: true,
-        enhanced_image: `data:${image.type || 'image/jpeg'};base64,${enhancedBase64}`,
+        enhanced_image: `data:image/jpeg;base64,${enhancedBase64}`,
         optimized_description: optimizedDescription,
         listing_id: listing.id
       }),
