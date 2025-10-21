@@ -72,64 +72,41 @@ Return ONLY the description text, no other formatting.`
 
     if (!descriptionResponse.ok) {
       const errorText = await descriptionResponse.text()
-      console.error('Gemini Flash failed:', descriptionResponse.status, errorText)
-      throw new Error(`Gemini Flash API failed: ${descriptionResponse.status}`)
+      console.error('Gemini failed:', descriptionResponse.status, errorText)
+      throw new Error(`Gemini API failed: ${descriptionResponse.status}`)
     }
 
     const descriptionData = await descriptionResponse.json()
     console.log('Description generated successfully')
     const optimizedDescription = descriptionData.candidates[0].content.parts[0].text.trim()
 
-    // STEP 2: Nano Banana - Image generation with Gemini 2.5 Flash Image
-    console.log('Calling Gemini 2.5 Flash Image for nano banana background...')
-    const imageEditResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${Deno.env.get('GEMINI_API_KEY')}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              {
-                text: "Transform this product photo: Remove all background completely and replace with a clean, seamless pink studio backdrop (#F5D5E0). Professional e-commerce style with soft studio lighting, no shadows, product centered. Make it look like it was photographed in a high-end photo studio."
-              },
-              {
-                inline_data: {
-                  mime_type: image.type || 'image/jpeg',
-                  data: base64Image
-                }
-              }
-            ]
-          }],
-          generationConfig: {
-            temperature: 0.2,
-            maxOutputTokens: 8192
-          }
-        })
-      }
-    )
+    // STEP 2: Remove background using Remove.bg API
+    console.log('Removing background...')
+    const removeBgResponse = await fetch('https://api.remove.bg/v1.0/removebg', {
+      method: 'POST',
+      headers: {
+        'X-Api-Key': Deno.env.get('REMOVE_BG_API_KEY') || '',
+      },
+      body: (() => {
+        const formData = new FormData()
+        formData.append('image_file_b64', base64Image)
+        formData.append('size', 'auto')
+        formData.append('bg_color', 'F5D5E0') // Pink background
+        return formData
+      })()
+    })
 
-    if (!imageEditResponse.ok) {
-      const errorText = await imageEditResponse.text()
-      console.error('Gemini 2.5 Flash Image failed:', imageEditResponse.status, errorText)
-      throw new Error(`Nano Banana API failed: ${imageEditResponse.status}`)
-    }
+    let enhancedBase64 = base64Image // fallback to original
 
-    const imageEditData = await imageEditResponse.json()
-    console.log('Image enhanced with nano banana')
-    
-    // Extract the generated image from the response
-    let enhancedBase64 = base64Image // fallback
-    
-    if (imageEditData.candidates && imageEditData.candidates[0]) {
-      const parts = imageEditData.candidates[0].content.parts
-      for (const part of parts) {
-        if (part.inline_data && part.inline_data.data) {
-          enhancedBase64 = part.inline_data.data
-          console.log('Found nano banana enhanced image')
-          break
-        }
-      }
+    if (removeBgResponse.ok) {
+      const buffer = await removeBgResponse.arrayBuffer()
+      enhancedBase64 = btoa(
+        new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+      )
+      console.log('Background removed successfully')
+    } else {
+      console.error('Remove.bg failed:', removeBgResponse.status, await removeBgResponse.text())
+      console.log('Using original image as fallback')
     }
 
     console.log('Saving to database...')
