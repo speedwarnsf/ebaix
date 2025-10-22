@@ -12,13 +12,25 @@ import {
 interface DashboardProps {
   userCredits: number;
   onCreditsUpdate: (credits: number) => void;
+  userEmail?: string; // Optional: for owner access check
 }
 
-export function Dashboard({ userCredits, onCreditsUpdate }: DashboardProps) {
+// Owner emails with unlimited access (for testing)
+const OWNER_EMAILS = [
+  'speedwarnsf@gmail.com',
+  'admin@ebai.me',
+  'test@ebai.me'
+];
+
+export function Dashboard({ userCredits, onCreditsUpdate, userEmail }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<"home" | "photo" | "text">("home");
   const [ebaiLogo, setEbaiLogo] = useState<string>("");
   const [showPricing, setShowPricing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Check if current user is owner (unlimited access)
+  const isOwner = userEmail && OWNER_EMAILS.includes(userEmail.toLowerCase());
+  const effectiveCredits = isOwner ? 999999 : userCredits;
 
   useEffect(() => {
     setEbaiLogo("/ebai-logo.png");
@@ -44,11 +56,17 @@ export function Dashboard({ userCredits, onCreditsUpdate }: DashboardProps) {
   };
 
   const handlePhotoEnhanced = () => {
-    onCreditsUpdate(userCredits - 1);
+    if (!isOwner) {
+      onCreditsUpdate(userCredits - 1);
+    }
+    // Owners don't lose credits
   };
 
   const handleTextGenerated = () => {
-    onCreditsUpdate(userCredits - 1);
+    if (!isOwner) {
+      onCreditsUpdate(userCredits - 1);
+    }
+    // Owners don't lose credits
   };
 
   return (
@@ -62,8 +80,15 @@ export function Dashboard({ userCredits, onCreditsUpdate }: DashboardProps) {
             <h1 className="text-2xl font-bold text-gray-900">eBai</h1>
           </div>
           <div className="flex items-center gap-4">
+            {isOwner && (
+              <span className="text-xs bg-purple-600 text-white px-2 py-1 rounded-full font-bold">
+                OWNER ACCESS
+              </span>
+            )}
             <span className="text-sm font-medium text-gray-700">
-              Tokens Used: <span className="font-semibold text-gray-900">{userCredits}</span>
+              Credits: <span className="font-semibold text-gray-900">
+                {isOwner ? '∞' : effectiveCredits}
+              </span>
             </span>
           </div>
         </div>
@@ -134,7 +159,7 @@ export function Dashboard({ userCredits, onCreditsUpdate }: DashboardProps) {
               </h3>
               <p className="text-blue-800 mb-4">
                 Each photo enhancement and text generation uses 1 credit. You currently have{" "}
-                <span className="font-bold">{userCredits}</span> credits available.
+                <span className="font-bold">{isOwner ? 'unlimited' : effectiveCredits}</span> credits available.
               </p>
               <button
                 onClick={() => setShowPricing(!showPricing)}
@@ -220,7 +245,7 @@ export function Dashboard({ userCredits, onCreditsUpdate }: DashboardProps) {
             </button>
             <PhotoEnhancer
               onSuccess={handlePhotoEnhanced}
-              userCredits={userCredits}
+              userCredits={effectiveCredits}
             />
           </div>
         )}
@@ -235,7 +260,7 @@ export function Dashboard({ userCredits, onCreditsUpdate }: DashboardProps) {
             </button>
             <TextAssistant
               onSuccess={handleTextGenerated}
-              userCredits={userCredits}
+              userCredits={effectiveCredits}
             />
           </div>
         )}

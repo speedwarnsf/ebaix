@@ -170,7 +170,11 @@ function App() {
 
   return (
     <div>
-      <Dashboard userCredits={userCredits} onCreditsUpdate={handleCreditsUpdate} />
+      <Dashboard
+        userCredits={userCredits}
+        onCreditsUpdate={handleCreditsUpdate}
+        userEmail={user?.email}
+      />
       <Toaster position="top-right" />
     </div>
   );
