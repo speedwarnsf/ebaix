@@ -38,6 +38,36 @@ export function PhotoEnhancer({ userCredits, onSuccess }: PhotoEnhancerProps) {
     reader.readAsDataURL(file);
   };
 
+  const addPinkBackground = async (imageBase64: string): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const padding = 100; // Add padding around the product
+        canvas.width = img.width + padding * 2;
+        canvas.height = img.height + padding * 2;
+        const ctx = canvas.getContext("2d");
+
+        if (!ctx) {
+          resolve(imageBase64);
+          return;
+        }
+
+        // Fill with pink background (#F5D5E0)
+        ctx.fillStyle = "#F5D5E0";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Center the product image
+        const x = padding;
+        const y = padding;
+        ctx.drawImage(img, x, y);
+
+        resolve(canvas.toDataURL("image/jpeg", 0.95));
+      };
+      img.src = imageBase64;
+    });
+  };
+
   const addWatermark = async (imageBase64: string): Promise<string> => {
     return new Promise((resolve) => {
       const img = new Image();
@@ -120,7 +150,9 @@ export function PhotoEnhancer({ userCredits, onSuccess }: PhotoEnhancerProps) {
             throw new Error("No enhanced image returned");
           }
 
-          const watermarkedImage = await addWatermark(result.image);
+          // Apply pink background, then watermark
+          const pinkBgImage = await addPinkBackground(result.image);
+          const watermarkedImage = await addWatermark(pinkBgImage);
           setEnhancedImage(watermarkedImage);
           onSuccess();
         } catch (err) {
