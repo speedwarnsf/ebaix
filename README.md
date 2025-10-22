@@ -1,6 +1,6 @@
 # eBai - E-commerce Background AI
 
-Transform your product photos into professional studio shots with AI-powered descriptions.
+Transform your product photos into pink professional studio shots with AI-powered descriptions.
 
 ## Architecture
 
