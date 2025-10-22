@@ -1,6 +1,6 @@
 import { loadStripe } from "@stripe/stripe-js";
 
-const STRIPE_PUBLIC_KEY = process.env.REACT_APP_STRIPE_PUBLIC_KEY!;
+const STRIPE_PUBLIC_KEY = process.env.REACT_APP_STRIPE_PUBLIC_KEY;
 export const stripe = loadStripe(STRIPE_PUBLIC_KEY);
 
 export const CREDIT_BUNDLES = {
@@ -38,15 +38,7 @@ export const SUBSCRIPTION = {
   recurring: true,
 };
 
-interface CheckoutSessionRequest {
-  bundleType: keyof typeof CREDIT_BUNDLES | "subscription";
-  userId: string;
-  email: string;
-}
-
-export async function createCheckoutSession(
-  request: CheckoutSessionRequest
-): Promise<string> {
+export async function createCheckoutSession(request) {
   const { bundleType, userId, email } = request;
   const bundle = bundleType === "subscription" ? SUBSCRIPTION : CREDIT_BUNDLES[bundleType];
 
@@ -74,7 +66,7 @@ export async function createCheckoutSession(
   return sessionId;
 }
 
-export async function redirectToCheckout(sessionId: string) {
+export async function redirectToCheckout(sessionId) {
   const stripeInstance = await stripe;
   if (!stripeInstance) throw new Error("Stripe failed to load");
 
