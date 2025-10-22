@@ -1,4 +1,4 @@
-// Dashboard.tsx - Main dashboard component with exact design match
+// Dashboard.jsx - Main dashboard component with exact design match
 import React, { useState, useEffect } from "react";
 import { PhotoEnhancer } from "./PhotoEnhancer";
 import { TextAssistant } from "./TextAssistant";
@@ -9,12 +9,6 @@ import {
   redirectToCheckout
 } from "../../stripeIntegration";
 
-interface DashboardProps {
-  userCredits: number;
-  onCreditsUpdate: (credits: number) => void;
-  userEmail?: string; // Optional: for owner access check
-}
-
 // Owner emails with unlimited access (for testing)
 const OWNER_EMAILS = [
   'speedwarnsf@gmail.com',
@@ -22,9 +16,9 @@ const OWNER_EMAILS = [
   'test@ebai.me'
 ];
 
-export function Dashboard({ userCredits, onCreditsUpdate, userEmail }: DashboardProps) {
-  const [activeTab, setActiveTab] = useState<"home" | "photo" | "text">("home");
-  const [ebaiLogo, setEbaiLogo] = useState<string>("");
+export function Dashboard({ userCredits, onCreditsUpdate, userEmail }) {
+  const [activeTab, setActiveTab] = useState("home");
+  const [ebaiLogo, setEbaiLogo] = useState("");
   const [showPricing, setShowPricing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -36,7 +30,7 @@ export function Dashboard({ userCredits, onCreditsUpdate, userEmail }: Dashboard
     setEbaiLogo("/ebai-logo.png");
   }, []);
 
-  const handlePurchase = async (bundleType: keyof typeof CREDIT_BUNDLES | "subscription") => {
+  const handlePurchase = async (bundleType) => {
     setIsProcessing(true);
     try {
       // TODO: Get actual userId and email from your auth context
@@ -199,7 +193,7 @@ export function Dashboard({ userCredits, onCreditsUpdate, userEmail }: Dashboard
                         ${(bundle.price / bundle.credits).toFixed(2)} per credit
                       </p>
                       <button
-                        onClick={() => handlePurchase(key as keyof typeof CREDIT_BUNDLES)}
+                        onClick={() => handlePurchase(key)}
                         disabled={isProcessing}
                         className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white font-medium py-2 px-4 rounded-lg transition-colors"
                       >

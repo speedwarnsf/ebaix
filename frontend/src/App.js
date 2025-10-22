@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { Badge } from "./components/ui/badge";
 import { Toaster, toast } from "sonner";
-import { Sparkles, Zap, Crown, CheckCircle } from "lucide-react";
+import { Sparkles, Zap, Crown, CheckCircle, FileText } from "lucide-react";
 import { Dashboard } from "./components/ui/Dashboard";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;

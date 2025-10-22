@@ -1,20 +1,15 @@
-// PhotoEnhancer.tsx - Photo enhancement component
+// PhotoEnhancer.jsx - Photo enhancement component
 import React, { useState, useRef } from "react";
 
-interface PhotoEnhancerProps {
-  userCredits: number;
-  onSuccess: () => void;
-}
-
-export function PhotoEnhancer({ userCredits, onSuccess }: PhotoEnhancerProps) {
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string>("");
-  const [enhancedImage, setEnhancedImage] = useState<string>("");
+export function PhotoEnhancer({ userCredits, onSuccess }) {
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [preview, setPreview] = useState("");
+  const [enhancedImage, setEnhancedImage] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string>("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState("");
+  const fileInputRef = useRef(null);
 
-  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -33,12 +28,12 @@ export function PhotoEnhancer({ userCredits, onSuccess }: PhotoEnhancerProps) {
 
     const reader = new FileReader();
     reader.onload = (e) => {
-      setPreview(e.target?.result as string);
+      setPreview(e.target?.result);
     };
     reader.readAsDataURL(file);
   };
 
-  const addPinkBackground = async (imageBase64: string): Promise<string> => {
+  const addPinkBackground = async (imageBase64) => {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
@@ -68,7 +63,7 @@ export function PhotoEnhancer({ userCredits, onSuccess }: PhotoEnhancerProps) {
     });
   };
 
-  const addWatermark = async (imageBase64: string): Promise<string> => {
+  const addWatermark = async (imageBase64) => {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
@@ -122,7 +117,7 @@ export function PhotoEnhancer({ userCredits, onSuccess }: PhotoEnhancerProps) {
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
-          const base64Image = e.target?.result as string;
+          const base64Image = e.target?.result;
 
           const response = await fetch(
             `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/process-listing`,
@@ -156,14 +151,14 @@ export function PhotoEnhancer({ userCredits, onSuccess }: PhotoEnhancerProps) {
           setEnhancedImage(watermarkedImage);
           onSuccess();
         } catch (err) {
-          setError(err instanceof Error ? err.message : "Failed to enhance image");
+          setError(err?.message || "Failed to enhance image");
         } finally {
           setLoading(false);
         }
       };
       reader.readAsDataURL(selectedImage);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(err?.message || "An error occurred");
       setLoading(false);
     }
   };
