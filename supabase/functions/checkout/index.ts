@@ -76,7 +76,10 @@ Deno.serve(async (req) => {
     console.log('Checkout session created:', session.id)
 
     return new Response(
-      JSON.stringify({ sessionId: session.id }),
+      JSON.stringify({
+        sessionId: session.id,
+        url: session.url
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
