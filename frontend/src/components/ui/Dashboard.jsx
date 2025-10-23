@@ -20,7 +20,7 @@ export function Dashboard({ userCredits, onCreditsUpdate, userEmail }) {
   const [activeTab, setActiveTab] = useState("home");
   const [ebaiLogo, setEbaiLogo] = useState("");
   const [showPricing, setShowPricing] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingBundle, setProcessingBundle] = useState(null);
 
   // Check if current user is owner (unlimited access)
   const isOwner = userEmail && OWNER_EMAILS.includes(userEmail.toLowerCase());
@@ -31,7 +31,7 @@ export function Dashboard({ userCredits, onCreditsUpdate, userEmail }) {
   }, []);
 
   const handlePurchase = async (bundleType) => {
-    setIsProcessing(true);
+    setProcessingBundle(bundleType);
     try {
       // TODO: Get actual userId and email from your auth context
       const checkoutData = await createCheckoutSession({
@@ -45,7 +45,7 @@ export function Dashboard({ userCredits, onCreditsUpdate, userEmail }) {
       console.error("Purchase failed:", error);
       alert("Failed to start checkout. Please try again.");
     } finally {
-      setIsProcessing(false);
+      setProcessingBundle(null);
     }
   };
 
@@ -90,7 +90,10 @@ export function Dashboard({ userCredits, onCreditsUpdate, userEmail }) {
       <main className="max-w-7xl mx-auto px-6 py-12">
         {activeTab === "home" && (
           <div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-12">Dashboard</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-3">E-commerce Background AI</h2>
+            <p className="text-lg text-gray-600 mb-12">
+              "Studio-Quality Product Photos for Any Marketplace" - eBay, Poshmark, Mercari, Facebook, Craigslist, Reverb, wherever you sell
+            </p>
 
             <div className="grid md:grid-cols-2 gap-8">
               <div className="bg-white border border-gray-200 rounded-lg p-8 hover:shadow-lg transition-shadow">
@@ -193,10 +196,10 @@ export function Dashboard({ userCredits, onCreditsUpdate, userEmail }) {
                       </p>
                       <button
                         onClick={() => handlePurchase(key)}
-                        disabled={isProcessing}
+                        disabled={processingBundle === key}
                         className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white font-medium py-2 px-4 rounded-lg transition-colors"
                       >
-                        {isProcessing ? "Processing..." : "Purchase"}
+                        {processingBundle === key ? "Processing..." : "Purchase"}
                       </button>
                     </div>
                   ))}
@@ -231,10 +234,10 @@ export function Dashboard({ userCredits, onCreditsUpdate, userEmail }) {
                   </ul>
                   <button
                     onClick={() => handlePurchase("subscription")}
-                    disabled={isProcessing}
+                    disabled={processingBundle === "subscription"}
                     className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:from-gray-300 disabled:to-gray-400 text-white font-medium py-3 px-6 rounded-lg transition-colors"
                   >
-                    {isProcessing ? "Processing..." : "Subscribe Now"}
+                    {processingBundle === "subscription" ? "Processing..." : "Subscribe Now"}
                   </button>
                 </div>
               </div>

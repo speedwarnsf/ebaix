@@ -83,16 +83,16 @@ export function PhotoEnhancer({ userCredits, onSuccess }) {
           // Draw the main image
           ctx.drawImage(img, 0, 0);
 
-          // Calculate logo size (small enough to fit in white border)
-          const logoMaxWidth = img.width * 0.08; // 8% of image width
+          // Calculate logo size (30% larger than before)
+          const logoMaxWidth = img.width * 0.104; // 10.4% of image width (was 8%, now 30% larger)
           const logoScale = logoMaxWidth / logo.width;
           const logoWidth = logo.width * logoScale;
           const logoHeight = logo.height * logoScale;
 
-          // Position in lower right corner with padding
+          // Position in lower right corner with padding, adjusted per user request
           const padding = img.width * 0.015; // 1.5% padding
-          const x = img.width - logoWidth - padding;
-          const y = img.height - logoHeight - padding;
+          const x = img.width - logoWidth - padding - 35; // Move left 35px
+          const y = img.height - logoHeight - padding - 20; // Move up 20px
 
           // Draw logo at 100% opacity
           ctx.globalAlpha = 1.0;
@@ -241,14 +241,37 @@ export function PhotoEnhancer({ userCredits, onSuccess }) {
         )}
 
         {enhancedImage && (
-          <div className="grid md:grid-cols-2 gap-8">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Original</h3>
-              <img src={preview} alt="Original" className="w-full h-64 object-cover rounded-lg border border-gray-200" />
+          <div>
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Enhanced Photo</h3>
+              <div className="bg-gray-100 rounded-lg p-4">
+                <img
+                  src={enhancedImage}
+                  alt="Enhanced"
+                  className="w-full max-w-2xl mx-auto rounded-lg border-2 border-gray-300 shadow-lg"
+                />
+                <p className="text-sm text-gray-600 text-center mt-4 md:hidden">
+                  📱 <strong>Tap and hold</strong> the image above, then select "Save Image" or "Add to Photos" to save to your camera roll
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Enhanced</h3>
-              <img src={enhancedImage} alt="Enhanced" className="w-full h-64 object-cover rounded-lg border border-gray-200" />
+
+            <div className="grid md:grid-cols-2 gap-8 mb-8">
+              <div>
+                <h3 className="text-base font-semibold text-gray-700 mb-2">Original</h3>
+                <img src={preview} alt="Original" className="w-full h-48 object-cover rounded-lg border border-gray-200" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-gray-700 mb-2">Enhanced Preview</h3>
+                <div className="w-full h-48 rounded-lg border border-gray-200 overflow-hidden">
+                  <img
+                    src={enhancedImage}
+                    alt="Enhanced Preview"
+                    className="w-full h-full object-cover"
+                    style={{ transform: 'scale(1.1)' }}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -279,7 +302,8 @@ export function PhotoEnhancer({ userCredits, onSuccess }) {
                 onClick={handleDownload}
                 className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-lg transition-colors"
               >
-                Download Enhanced Image
+                <span className="hidden md:inline">Download Enhanced Image</span>
+                <span className="md:hidden">Download (Desktop)</span>
               </button>
               <button
                 onClick={() => {
