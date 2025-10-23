@@ -1,16 +1,11 @@
-// TextAssistant.tsx - Product description generation component
+// TextAssistant.jsx - Product description generation component
 import React, { useState } from "react";
 
-interface TextAssistantProps {
-  userCredits: number;
-  onSuccess: () => void;
-}
-
-export function TextAssistant({ userCredits, onSuccess }: TextAssistantProps) {
+export function TextAssistant({ userCredits, onSuccess }) {
   const [productInfo, setProductInfo] = useState("");
   const [generatedDescription, setGeneratedDescription] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string>("");
+  const [error, setError] = useState("");
 
   const handleGenerateDescription = async () => {
     if (!productInfo.trim()) {

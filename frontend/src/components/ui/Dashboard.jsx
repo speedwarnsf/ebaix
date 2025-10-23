@@ -67,11 +67,10 @@ export function Dashboard({ userCredits, onCreditsUpdate, userEmail }) {
     <div className="min-h-screen bg-white">
       <header className="border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center">
             {ebaiLogo && (
-              <img src={ebaiLogo} alt="eBai" className="h-10 w-auto" />
+              <img src={ebaiLogo} alt="eBai" className="h-24 w-auto" />
             )}
-            <h1 className="text-2xl font-bold text-gray-900">eBai</h1>
           </div>
           <div className="flex items-center gap-4">
             {isOwner && (
@@ -96,32 +95,6 @@ export function Dashboard({ userCredits, onCreditsUpdate, userEmail }) {
             <div className="grid md:grid-cols-2 gap-8">
               <div className="bg-white border border-gray-200 rounded-lg p-8 hover:shadow-lg transition-shadow">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="bg-blue-50 p-3 rounded-lg">
-                    <svg
-                      className="w-6 h-6 text-blue-500"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900">
-                    Text Assistant
-                  </h3>
-                </div>
-                <p className="text-gray-600 mb-6">
-                  Generate compelling, SEO-optimized product descriptions for your eBay listings.
-                </p>
-                <button
-                  onClick={() => setActiveTab("text")}
-                  className="bg-blue-500 hover:bg-blue-600 text-white font-medium px-6 py-2 rounded-lg transition-colors"
-                >
-                  Go to Text Assistant
-                </button>
-              </div>
-
-              <div className="bg-white border border-gray-200 rounded-lg p-8 hover:shadow-lg transition-shadow">
-                <div className="flex items-center gap-3 mb-4">
                   <div className="bg-green-50 p-3 rounded-lg">
                     <svg
                       className="w-6 h-6 text-green-500"
@@ -143,6 +116,32 @@ export function Dashboard({ userCredits, onCreditsUpdate, userEmail }) {
                   className="bg-green-500 hover:bg-green-600 text-white font-medium px-6 py-2 rounded-lg transition-colors"
                 >
                   Go to Photo Enhancer
+                </button>
+              </div>
+
+              <div className="bg-white border border-gray-200 rounded-lg p-8 hover:shadow-lg transition-shadow">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="bg-blue-50 p-3 rounded-lg">
+                    <svg
+                      className="w-6 h-6 text-blue-500"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    Text Assistant
+                  </h3>
+                </div>
+                <p className="text-gray-600 mb-6">
+                  Generate compelling, SEO-optimized product descriptions for your eBay listings.
+                </p>
+                <button
+                  onClick={() => setActiveTab("text")}
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-medium px-6 py-2 rounded-lg transition-colors"
+                >
+                  Go to Text Assistant
                 </button>
               </div>
             </div>
@@ -216,6 +215,20 @@ export function Dashboard({ userCredits, onCreditsUpdate, userEmail }) {
                       <span className="text-gray-600 ml-1">/month</span>
                     </div>
                   </div>
+                  <ul className="text-gray-700 mb-4 space-y-2">
+                    <li className="flex items-center gap-2">
+                      <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                      </svg>
+                      <span>200 listings per month</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                      </svg>
+                      <span className="font-semibold">No watermark on images</span>
+                    </li>
+                  </ul>
                   <button
                     onClick={() => handlePurchase("subscription")}
                     disabled={isProcessing}
