@@ -28,7 +28,7 @@ export function TextAssistant({ userCredits, onSuccess }: TextAssistantProps) {
 
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/process-listing`,
+        `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/optimize-listing`,
         {
           method: "POST",
           headers: {
