@@ -83,16 +83,16 @@ export function PhotoEnhancer({ userCredits, onSuccess }) {
           // Draw the main image
           ctx.drawImage(img, 0, 0);
 
-          // Calculate logo size (small enough to fit in white border)
-          const logoMaxWidth = img.width * 0.08; // 8% of image width
+          // Calculate logo size (30% larger than before)
+          const logoMaxWidth = img.width * 0.104; // 10.4% of image width (was 8%, now 30% larger)
           const logoScale = logoMaxWidth / logo.width;
           const logoWidth = logo.width * logoScale;
           const logoHeight = logo.height * logoScale;
 
-          // Position in lower right corner with padding
+          // Position in lower right corner with padding, adjusted per user request
           const padding = img.width * 0.015; // 1.5% padding
-          const x = img.width - logoWidth - padding;
-          const y = img.height - logoHeight - padding;
+          const x = img.width - logoWidth - padding - 35; // Move left 35px
+          const y = img.height - logoHeight - padding - 20; // Move up 20px
 
           // Draw logo at 100% opacity
           ctx.globalAlpha = 1.0;
