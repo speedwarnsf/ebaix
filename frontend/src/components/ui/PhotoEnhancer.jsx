@@ -33,43 +33,55 @@ export function PhotoEnhancer({ userCredits, onSuccess }) {
     reader.readAsDataURL(file);
   };
 
-  // Gemini creates the professional pink studio background
-  // No need for client-side background processing
+  // Gemini creates the professional pink studio background with white border
 
   const addWatermark = async (imageBase64) => {
     return new Promise((resolve) => {
       const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext("2d");
+      const logo = new Image();
 
-        if (!ctx) {
-          resolve(imageBase64);
-          return;
-        }
+      logo.onload = () => {
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext("2d");
 
-        ctx.drawImage(img, 0, 0);
+          if (!ctx) {
+            resolve(imageBase64);
+            return;
+          }
 
-        const fontSize = Math.max(20, img.width / 20);
-        ctx.font = `${fontSize}px sans-serif`;
-        ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-        ctx.textAlign = "right";
-        ctx.textBaseline = "bottom";
+          // Draw the main image
+          ctx.drawImage(img, 0, 0);
 
-        const padding = 20;
-        const text = "ebai.me";
-        ctx.fillText(text, img.width - padding, img.height - padding);
+          // Calculate logo size (small enough to fit in white border)
+          const logoMaxWidth = img.width * 0.08; // 8% of image width
+          const logoScale = logoMaxWidth / logo.width;
+          const logoWidth = logo.width * logoScale;
+          const logoHeight = logo.height * logoScale;
 
-        ctx.strokeStyle = "rgba(0, 0, 0, 0.3)";
-        ctx.lineWidth = 1;
-        ctx.strokeText(text, img.width - padding, img.height - padding);
+          // Position in lower right corner with padding
+          const padding = img.width * 0.015; // 1.5% padding
+          const x = img.width - logoWidth - padding;
+          const y = img.height - logoHeight - padding;
 
-        // Use PNG for lossless quality (Gemini returns PNG)
-        resolve(canvas.toDataURL("image/png"));
+          // Draw logo at 100% opacity
+          ctx.globalAlpha = 1.0;
+          ctx.drawImage(logo, x, y, logoWidth, logoHeight);
+
+          // Use PNG for lossless quality (Gemini returns PNG)
+          resolve(canvas.toDataURL("image/png"));
+        };
+        img.src = imageBase64;
       };
-      img.src = imageBase64;
+
+      logo.onerror = () => {
+        // If logo fails to load, just return original image
+        resolve(imageBase64);
+      };
+
+      logo.src = "/ebai-logo.png";
     });
   };
 
