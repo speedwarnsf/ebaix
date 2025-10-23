@@ -62,14 +62,15 @@ export async function createCheckoutSession(request) {
   );
 
   if (!response.ok) throw new Error("Failed to create checkout session");
-  const { sessionId } = await response.json();
-  return sessionId;
+  const { sessionId, url } = await response.json();
+  return { sessionId, url };
 }
 
-export async function redirectToCheckout(sessionId) {
-  const stripeInstance = await stripe;
-  if (!stripeInstance) throw new Error("Stripe failed to load");
-
-  const { error } = await stripeInstance.redirectToCheckout({ sessionId });
-  if (error) throw new Error(error.message);
+export async function redirectToCheckout(checkoutData) {
+  // Use direct URL redirect instead of deprecated redirectToCheckout
+  if (checkoutData.url) {
+    window.location.href = checkoutData.url;
+  } else {
+    throw new Error("No checkout URL provided");
+  }
 }

@@ -34,13 +34,13 @@ export function Dashboard({ userCredits, onCreditsUpdate, userEmail }) {
     setIsProcessing(true);
     try {
       // TODO: Get actual userId and email from your auth context
-      const sessionId = await createCheckoutSession({
+      const checkoutData = await createCheckoutSession({
         bundleType,
         userId: "temp-user-id", // Replace with actual user ID
-        email: "user@example.com", // Replace with actual user email
+        email: userEmail || "user@example.com", // Use actual user email
       });
 
-      await redirectToCheckout(sessionId);
+      await redirectToCheckout(checkoutData);
     } catch (error) {
       console.error("Purchase failed:", error);
       alert("Failed to start checkout. Please try again.");
