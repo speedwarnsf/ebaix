@@ -203,14 +203,14 @@ export function Dashboard({ userCredits, onCreditsUpdate, userEmail }) {
                 </div>
 
                 <div className="border-2 border-purple-500 rounded-lg p-6 bg-gradient-to-br from-purple-50 to-pink-50">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
                     <div>
                       <h4 className="text-xl font-semibold text-gray-900 mb-1">
                         {SUBSCRIPTION.name}
                       </h4>
                       <p className="text-gray-600">Best for power sellers</p>
                     </div>
-                    <div className="text-right">
+                    <div className="sm:text-right">
                       <span className="text-3xl font-bold text-gray-900">${SUBSCRIPTION.price}</span>
                       <span className="text-gray-600 ml-1">/month</span>
                     </div>
