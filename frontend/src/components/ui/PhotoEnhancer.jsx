@@ -241,14 +241,30 @@ export function PhotoEnhancer({ userCredits, onSuccess }) {
         )}
 
         {enhancedImage && (
-          <div className="grid md:grid-cols-2 gap-8">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Original</h3>
-              <img src={preview} alt="Original" className="w-full h-64 object-cover rounded-lg border border-gray-200" />
+          <div>
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Enhanced Photo</h3>
+              <div className="bg-gray-100 rounded-lg p-4">
+                <img
+                  src={enhancedImage}
+                  alt="Enhanced"
+                  className="w-full max-w-2xl mx-auto rounded-lg border-2 border-gray-300 shadow-lg"
+                />
+                <p className="text-sm text-gray-600 text-center mt-4 md:hidden">
+                  📱 <strong>Tap and hold</strong> the image above, then select "Save Image" or "Add to Photos" to save to your camera roll
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Enhanced</h3>
-              <img src={enhancedImage} alt="Enhanced" className="w-full h-64 object-cover rounded-lg border border-gray-200" />
+
+            <div className="grid md:grid-cols-2 gap-8 mb-8">
+              <div>
+                <h3 className="text-base font-semibold text-gray-700 mb-2">Original</h3>
+                <img src={preview} alt="Original" className="w-full h-48 object-cover rounded-lg border border-gray-200" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-gray-700 mb-2">Enhanced Preview</h3>
+                <img src={enhancedImage} alt="Enhanced Preview" className="w-full h-48 object-cover rounded-lg border border-gray-200" />
+              </div>
             </div>
           </div>
         )}
@@ -279,7 +295,8 @@ export function PhotoEnhancer({ userCredits, onSuccess }) {
                 onClick={handleDownload}
                 className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-lg transition-colors"
               >
-                Download Enhanced Image
+                <span className="hidden md:inline">Download Enhanced Image</span>
+                <span className="md:hidden">Download (Desktop)</span>
               </button>
               <button
                 onClick={() => {
