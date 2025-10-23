@@ -120,7 +120,7 @@ export function PhotoEnhancer({ userCredits, onSuccess }) {
           const base64Image = e.target?.result;
 
           const response = await fetch(
-            `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/process-listing`,
+            `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/optimize-listing`,
             {
               method: "POST",
               headers: {
