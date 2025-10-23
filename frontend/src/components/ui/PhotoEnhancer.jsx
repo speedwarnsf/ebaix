@@ -33,69 +33,55 @@ export function PhotoEnhancer({ userCredits, onSuccess }) {
     reader.readAsDataURL(file);
   };
 
-  const addPinkBackground = async (imageBase64) => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const padding = 100; // Add padding around the product
-        canvas.width = img.width + padding * 2;
-        canvas.height = img.height + padding * 2;
-        const ctx = canvas.getContext("2d");
-
-        if (!ctx) {
-          resolve(imageBase64);
-          return;
-        }
-
-        // Fill with pink background (#F5D5E0)
-        ctx.fillStyle = "#F5D5E0";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // Center the product image
-        const x = padding;
-        const y = padding;
-        ctx.drawImage(img, x, y);
-
-        resolve(canvas.toDataURL("image/jpeg", 0.95));
-      };
-      img.src = imageBase64;
-    });
-  };
+  // Gemini creates the professional pink studio background with white border
 
   const addWatermark = async (imageBase64) => {
     return new Promise((resolve) => {
       const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext("2d");
+      const logo = new Image();
 
-        if (!ctx) {
-          resolve(imageBase64);
-          return;
-        }
+      logo.onload = () => {
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext("2d");
 
-        ctx.drawImage(img, 0, 0);
+          if (!ctx) {
+            resolve(imageBase64);
+            return;
+          }
 
-        const fontSize = Math.max(20, img.width / 20);
-        ctx.font = `${fontSize}px sans-serif`;
-        ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-        ctx.textAlign = "right";
-        ctx.textBaseline = "bottom";
+          // Draw the main image
+          ctx.drawImage(img, 0, 0);
 
-        const padding = 20;
-        const text = "ebai.me";
-        ctx.fillText(text, img.width - padding, img.height - padding);
+          // Calculate logo size (small enough to fit in white border)
+          const logoMaxWidth = img.width * 0.08; // 8% of image width
+          const logoScale = logoMaxWidth / logo.width;
+          const logoWidth = logo.width * logoScale;
+          const logoHeight = logo.height * logoScale;
 
-        ctx.strokeStyle = "rgba(0, 0, 0, 0.3)";
-        ctx.lineWidth = 1;
-        ctx.strokeText(text, img.width - padding, img.height - padding);
+          // Position in lower right corner with padding
+          const padding = img.width * 0.015; // 1.5% padding
+          const x = img.width - logoWidth - padding;
+          const y = img.height - logoHeight - padding;
 
-        resolve(canvas.toDataURL("image/jpeg", 0.95));
+          // Draw logo at 100% opacity
+          ctx.globalAlpha = 1.0;
+          ctx.drawImage(logo, x, y, logoWidth, logoHeight);
+
+          // Use PNG for lossless quality (Gemini returns PNG)
+          resolve(canvas.toDataURL("image/png"));
+        };
+        img.src = imageBase64;
       };
-      img.src = imageBase64;
+
+      logo.onerror = () => {
+        // If logo fails to load, just return original image
+        resolve(imageBase64);
+      };
+
+      logo.src = "/ebai-logo.png";
     });
   };
 
@@ -145,9 +131,9 @@ export function PhotoEnhancer({ userCredits, onSuccess }) {
             throw new Error("No enhanced image returned");
           }
 
-          // Apply pink background, then watermark
-          const pinkBgImage = await addPinkBackground(result.image);
-          const watermarkedImage = await addWatermark(pinkBgImage);
+          // Gemini already created the professional pink background
+          // Just add watermark
+          const watermarkedImage = await addWatermark(result.image);
           setEnhancedImage(watermarkedImage);
           onSuccess();
         } catch (err) {
@@ -168,7 +154,7 @@ export function PhotoEnhancer({ userCredits, onSuccess }) {
 
     const link = document.createElement("a");
     link.href = enhancedImage;
-    link.download = `ebai-enhanced-${Date.now()}.jpg`;
+    link.download = `ebai-enhanced-${Date.now()}.png`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

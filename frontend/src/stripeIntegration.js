@@ -43,7 +43,7 @@ export async function createCheckoutSession(request) {
   const bundle = bundleType === "subscription" ? SUBSCRIPTION : CREDIT_BUNDLES[bundleType];
 
   const response = await fetch(
-    `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/create-checkout-session`,
+    `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/checkout`,
     {
       method: "POST",
       headers: {
