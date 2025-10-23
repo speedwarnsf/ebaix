@@ -263,7 +263,14 @@ export function PhotoEnhancer({ userCredits, onSuccess }) {
               </div>
               <div>
                 <h3 className="text-base font-semibold text-gray-700 mb-2">Enhanced Preview</h3>
-                <img src={enhancedImage} alt="Enhanced Preview" className="w-full h-48 object-cover rounded-lg border border-gray-200" />
+                <div className="w-full h-48 rounded-lg border border-gray-200 overflow-hidden">
+                  <img
+                    src={enhancedImage}
+                    alt="Enhanced Preview"
+                    className="w-full h-full object-cover"
+                    style={{ transform: 'scale(1.1)' }}
+                  />
+                </div>
               </div>
             </div>
           </div>

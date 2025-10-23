@@ -90,7 +90,10 @@ export function Dashboard({ userCredits, onCreditsUpdate, userEmail }) {
       <main className="max-w-7xl mx-auto px-6 py-12">
         {activeTab === "home" && (
           <div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-12">Dashboard</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-3">E-commerce Background AI</h2>
+            <p className="text-lg text-gray-600 mb-12">
+              "Studio-Quality Product Photos for Any Marketplace" - eBay, Poshmark, Mercari, Facebook, Craigslist, Reverb, wherever you sell
+            </p>
 
             <div className="grid md:grid-cols-2 gap-8">
               <div className="bg-white border border-gray-200 rounded-lg p-8 hover:shadow-lg transition-shadow">
