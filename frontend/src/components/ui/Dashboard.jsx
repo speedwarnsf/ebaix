@@ -67,11 +67,10 @@ export function Dashboard({ userCredits, onCreditsUpdate, userEmail }) {
     <div className="min-h-screen bg-white">
       <header className="border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center">
             {ebaiLogo && (
-              <img src={ebaiLogo} alt="eBai" className="h-10 w-auto" />
+              <img src={ebaiLogo} alt="eBai" className="h-24 w-auto" />
             )}
-            <h1 className="text-2xl font-bold text-gray-900">eBai</h1>
           </div>
           <div className="flex items-center gap-4">
             {isOwner && (
