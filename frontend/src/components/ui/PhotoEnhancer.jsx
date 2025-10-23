@@ -33,7 +33,35 @@ export function PhotoEnhancer({ userCredits, onSuccess }) {
     reader.readAsDataURL(file);
   };
 
-  // Gemini creates the professional pink studio background with white border
+  // Gemini creates the professional pink studio background
+
+  const addWhiteBorder = async (imageBase64) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const borderSize = Math.max(40, Math.floor(img.width * 0.03)); // 3% of image width or 40px minimum
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width + (borderSize * 2);
+        canvas.height = img.height + (borderSize * 2);
+        const ctx = canvas.getContext("2d");
+
+        if (!ctx) {
+          resolve(imageBase64);
+          return;
+        }
+
+        // Fill with white background
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw the image centered with border
+        ctx.drawImage(img, borderSize, borderSize);
+
+        resolve(canvas.toDataURL("image/png"));
+      };
+      img.src = imageBase64;
+    });
+  };
 
   const addWatermark = async (imageBase64) => {
     return new Promise((resolve) => {
@@ -131,9 +159,10 @@ export function PhotoEnhancer({ userCredits, onSuccess }) {
             throw new Error("No enhanced image returned");
           }
 
-          // Gemini already created the professional pink background
-          // Just add watermark
-          const watermarkedImage = await addWatermark(result.image);
+          // Gemini created the professional pink background at full resolution
+          // Add white border first, then watermark
+          const borderedImage = await addWhiteBorder(result.image);
+          const watermarkedImage = await addWatermark(borderedImage);
           setEnhancedImage(watermarkedImage);
           onSuccess();
         } catch (err) {
