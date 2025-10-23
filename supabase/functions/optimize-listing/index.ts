@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
             contents: [{
               parts: [
                 {
-                  text: "Cut out the object from the uploaded iPhone photo and place it on a Savage Seamless Light Pink (#08, hex #F6CADC) paper background inside a professional photo studio.\n\nLight the scene with high-end Broncolor studio equipment — large softboxes, reflectors, and balanced overhead fills — to create realistic, flattering highlights and natural shadows.\n\nMaintain authentic color fidelity and texture. Preserve all visible imperfections, scuffs, and surface details exactly as they appear in the original photo. Do not clean, smooth, or retouch the object in any way.\n\nRender the image as though it were shot professionally: soft shadow falloff on the pink seamless background, gentle gradient from light to mid-tone, and subtle depth of field (f/4-style separation) to emphasize the object.\n\nAvoid artificial gloss, exaggerated reflections, or cartoonish edges. The result should look like a genuine studio product photograph illuminated by Broncolor lights, on authentic Savage #08 Light Pink seamless paper, with crisp yet natural realism."
+                  text: "Output a high-resolution image at maximum quality. Cut out the object from the uploaded iPhone photo and place it on a Savage Seamless Light Pink (#08, hex #F6CADC) paper background inside a professional photo studio.\n\nLight the scene with high-end Broncolor studio equipment — large softboxes, reflectors, and balanced overhead fills — to create realistic, flattering highlights and natural shadows.\n\nMaintain authentic color fidelity and texture. Preserve all visible imperfections, scuffs, and surface details exactly as they appear in the original photo. Do not clean, smooth, or retouch the object in any way.\n\nRender the image as though it were shot professionally: soft shadow falloff on the pink seamless background, gentle gradient from light to mid-tone, and subtle depth of field (f/4-style separation) to emphasize the object.\n\nAvoid artificial gloss, exaggerated reflections, or cartoonish edges. The result should look like a genuine studio product photograph illuminated by Broncolor lights, on authentic Savage #08 Light Pink seamless paper, with crisp yet natural realism. Maintain the original image resolution and quality."
                 },
                 {
                   inline_data: {
@@ -48,7 +48,12 @@ Deno.serve(async (req) => {
                   }
                 }
               ]
-            }]
+            }],
+            generationConfig: {
+              temperature: 0.4,
+              topP: 0.95,
+              topK: 40
+            }
           })
         }
       )

@@ -66,7 +66,8 @@ export function PhotoEnhancer({ userCredits, onSuccess }) {
         ctx.lineWidth = 1;
         ctx.strokeText(text, img.width - padding, img.height - padding);
 
-        resolve(canvas.toDataURL("image/jpeg", 0.95));
+        // Use PNG for lossless quality (Gemini returns PNG)
+        resolve(canvas.toDataURL("image/png"));
       };
       img.src = imageBase64;
     });
@@ -141,7 +142,7 @@ export function PhotoEnhancer({ userCredits, onSuccess }) {
 
     const link = document.createElement("a");
     link.href = enhancedImage;
-    link.download = `ebai-enhanced-${Date.now()}.jpg`;
+    link.download = `ebai-enhanced-${Date.now()}.png`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
