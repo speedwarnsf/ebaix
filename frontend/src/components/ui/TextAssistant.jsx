@@ -1,7 +1,7 @@
 // TextAssistant.jsx - Product description generation component
 import React, { useState, useEffect } from "react";
 
-export function TextAssistant({ userCredits, onSuccess, defaultImageUrl }) {
+export function TextAssistant({ onSuccess, defaultImageUrl }) {
   const [productInfo, setProductInfo] = useState("");
   const [generatedDescription, setGeneratedDescription] = useState("");
   const [generationSource, setGenerationSource] = useState(null);
@@ -31,11 +31,6 @@ export function TextAssistant({ userCredits, onSuccess, defaultImageUrl }) {
       return;
     }
 
-    if (userCredits < 1) {
-      setError("Insufficient credits. Please purchase more credits.");
-      return;
-    }
-
     setLoading(true);
     setError("");
     setGenerationReason("");
@@ -47,7 +42,7 @@ export function TextAssistant({ userCredits, onSuccess, defaultImageUrl }) {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-              Authorization: `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`,
+            Authorization: `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`,
           },
           body: JSON.stringify({
             imageUrl: (imageUrl && imageUrl.trim()) || defaultImageUrl || undefined,
@@ -72,7 +67,7 @@ export function TextAssistant({ userCredits, onSuccess, defaultImageUrl }) {
       setGeneratedDescription(result.listingText);
       setGenerationSource(result.source ?? (result.success === false ? "fallback" : "gemini"));
       setGenerationReason(result.reason ?? "");
-      onSuccess?.(result.success !== false);
+      onSuccess?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate listing text");
     } finally {
@@ -126,7 +121,7 @@ export function TextAssistant({ userCredits, onSuccess, defaultImageUrl }) {
               <select
                 value={toneOption}
                 onChange={(e) => setToneOption(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 bg-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {toneOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -140,7 +135,7 @@ export function TextAssistant({ userCredits, onSuccess, defaultImageUrl }) {
               <select
                 value={lengthOption}
                 onChange={(e) => setLengthOption(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 bg-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="short">Short (60-80 words)</option>
                 <option value="long">Long (180-250 words)</option>
@@ -168,7 +163,7 @@ export function TextAssistant({ userCredits, onSuccess, defaultImageUrl }) {
             value={imageUrl}
             onChange={(e) => setImageUrl(e.target.value)}
             placeholder="Override with a hosted image URL (optional)"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 bg-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <p className="text-xs text-gray-500">
             Use a public URL if you want Gemini to reference a hosted product photo instead.
@@ -183,21 +178,19 @@ export function TextAssistant({ userCredits, onSuccess, defaultImageUrl }) {
       )}
 
       {generatedDescription && (
-        <div className="bg-white border border-green-200 rounded-lg p-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <h4 className="text-sm font-semibold text-green-800 uppercase tracking-wide">
-              Listing ready
-            </h4>
-            <span className="text-xs text-green-600">
+        <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-4">
+          <div className="flex items-center justify-between text-gray-600 text-sm">
+            <p className="font-medium text-gray-800">Listing ready</p>
+            <span className="text-xs">
               Saved {new Date().toLocaleTimeString()}
             </span>
           </div>
           {generationSource === "fallback" && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2 text-xs text-yellow-800">
+            <div className="bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-700">
               Gemini hit a rate limit, so we provided a backup description. Feel free to retry in a moment for a fresh take.
             </div>
           )}
-          <div className="bg-green-50 border border-green-100 rounded-lg p-4 font-serif text-gray-800 leading-relaxed">
+          <div className="bg-gray-100 border border-gray-200 rounded-lg p-4 text-gray-800 leading-relaxed whitespace-pre-line">
             {generatedDescription}
           </div>
           {generationReason && generationSource === "fallback" && (
@@ -208,13 +201,13 @@ export function TextAssistant({ userCredits, onSuccess, defaultImageUrl }) {
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <button
               onClick={handleCopyToClipboard}
-              className="w-full sm:w-auto flex-1 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm"
+              className="w-full sm:w-auto flex-1 bg-gray-900 hover:bg-black text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm"
             >
               Copy to Clipboard
             </button>
             <button
               onClick={handleDownloadAsText}
-              className="w-full sm:w-auto flex-1 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm"
+              className="w-full sm:w-auto flex-1 bg-gray-900 hover:bg-black text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm"
             >
               Download as Text
             </button>
@@ -225,15 +218,13 @@ export function TextAssistant({ userCredits, onSuccess, defaultImageUrl }) {
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <button
           onClick={handleGenerateDescription}
-          disabled={!productInfo.trim() || loading || userCredits < 1}
-          className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+          disabled={!productInfo.trim() || loading}
+          className="w-full sm:w-auto bg-gray-900 hover:bg-black disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-lg transition-colors"
         >
           {loading ? "Generating..." : "Generate Listing"}
         </button>
-        <p className="text-sm text-gray-600">
-          1 credit per listing •{" "}
-          <span className="font-semibold text-gray-900">{userCredits}</span>{" "}
-          credits remaining
+        <p className="text-sm text-gray-500">
+          Add as much detail as you like—the more specific, the better the copy.
         </p>
       </div>
     </div>
