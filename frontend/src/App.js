@@ -12,23 +12,21 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-5xl mx-auto px-6 py-8 flex flex-col gap-4">
-          <div className="inline-flex items-center justify-center bg-white border border-slate-200 rounded-lg px-6 py-4 shadow-sm w-fit">
-            <img
-              src="/ebai-logo.png"
-              alt="eBai"
-              className="h-16 md:h-[4.75rem] w-auto object-contain"
-            />
-          </div>
-          <p className="text-sm tracking-[0.14em] text-slate-500">
+    <div className="min-h-screen bg-slate-50">
+      <header className="bg-white border-b border-slate-200">
+        <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 flex flex-col items-start gap-2 sm:gap-3">
+          <img
+            src="/ebai-logo.png"
+            alt="eBai"
+            className="h-20 sm:h-24 md:h-28 w-auto object-contain"
+          />
+          <p className="text-sm tracking-[0.12em] text-slate-500">
             E-commerce Background AI
           </p>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 py-12">
+      <main className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <PhotoEnhancer
           userCredits={userCredits}
           onCreditUse={handleCreditUse}

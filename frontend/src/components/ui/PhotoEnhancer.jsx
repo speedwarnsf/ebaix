@@ -267,25 +267,25 @@ export function PhotoEnhancer({ userCredits, onCreditUse, userEmail }) {
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm px-6 py-10 space-y-10">
-      <section className="space-y-8">
+    <div className="w-full space-y-8 sm:space-y-10">
+      <section className="space-y-6">
         {!enhancedImage && (
           <div
-            className={`relative rounded-2xl border-2 ${
-              preview ? "border-gray-200" : "border-dashed border-gray-300"
-            } min-h-[280px] flex items-center justify-center text-center transition-colors cursor-pointer`}
+            className={`relative rounded-lg border ${
+              preview ? "border-slate-200" : "border-dashed border-slate-300"
+            } min-h-[260px] flex items-center justify-center text-center transition-colors cursor-pointer bg-white`}
             onClick={() => fileInputRef.current?.click()}
           >
             {preview ? (
               <img
                 src={preview}
                 alt="Selected product"
-                className="w-full max-h-[520px] object-contain rounded-2xl"
+                className="w-full max-h-[520px] object-contain rounded-lg"
               />
             ) : (
               <div className="space-y-4 px-6">
                 <svg
-                  className="mx-auto h-12 w-12 text-gray-400"
+                  className="mx-auto h-12 w-12 text-slate-400"
                   stroke="currentColor"
                   fill="none"
                   viewBox="0 0 48 48"
@@ -298,10 +298,10 @@ export function PhotoEnhancer({ userCredits, onCreditUse, userEmail }) {
                   />
                 </svg>
                 <div className="space-y-2">
-                  <p className="text-lg font-medium text-gray-800">
+                  <p className="text-base font-semibold text-slate-900">
                     Click to upload or drag a product photo
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-slate-500">
                     High-resolution JPG or PNG up to 10MB
                   </p>
                 </div>
@@ -318,7 +318,7 @@ export function PhotoEnhancer({ userCredits, onCreditUse, userEmail }) {
         )}
 
         {preview && !enhancedImage && (
-          <p className="text-sm text-gray-600 text-center">
+          <p className="text-sm text-slate-500 text-center">
             Ready to enhance? Tap the button below to generate the studio shot.
           </p>
         )}
@@ -329,12 +329,12 @@ export function PhotoEnhancer({ userCredits, onCreditUse, userEmail }) {
               <img
                 src={enhancedImage}
                 alt="Enhanced product"
-                className="w-full max-h-[560px] object-contain rounded-[32px]"
+                className="w-full max-h-[560px] object-contain rounded-lg bg-white"
               />
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={() => setShowSaveOptions((prev) => !prev)}
-                  className="bg-gray-900 hover:bg-black text-white font-semibold px-5 py-3 rounded-lg transition-colors"
+                  className="bg-slate-900 hover:bg-slate-800 text-white font-semibold px-5 py-2.5 rounded-md transition-colors"
                 >
                   {showSaveOptions ? "Hide save options" : "Save image"}
                 </button>
@@ -342,19 +342,19 @@ export function PhotoEnhancer({ userCredits, onCreditUse, userEmail }) {
                   <div className="flex flex-wrap gap-3">
                     <button
                       onClick={handleShare}
-                      className="bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium px-4 py-2 rounded-lg transition-colors"
+                      className="bg-slate-100 hover:bg-slate-200 text-slate-900 font-medium px-4 py-2 rounded-md transition-colors"
                     >
                       Share
                     </button>
                     <button
                       onClick={handleSaveToCameraRoll}
-                      className="bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium px-4 py-2 rounded-lg transition-colors"
+                      className="bg-slate-100 hover:bg-slate-200 text-slate-900 font-medium px-4 py-2 rounded-md transition-colors"
                     >
                       Save to camera roll
                     </button>
                     <button
                       onClick={handleSaveToFiles}
-                      className="bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium px-4 py-2 rounded-lg transition-colors"
+                      className="bg-slate-100 hover:bg-slate-200 text-slate-900 font-medium px-4 py-2 rounded-md transition-colors"
                     >
                       Save to files
                     </button>
@@ -364,20 +364,20 @@ export function PhotoEnhancer({ userCredits, onCreditUse, userEmail }) {
             </div>
 
             <div className="space-y-3">
-              <h3 className="text-base font-semibold text-gray-800">
+              <h3 className="text-base font-semibold text-slate-800">
                 Original photo
               </h3>
               <img
                 src={preview}
                 alt="Original upload"
-                className="w-full max-h-[320px] object-contain rounded-2xl border border-gray-200"
+                className="w-full max-h-[320px] object-contain rounded-lg border border-slate-200 bg-white"
               />
             </div>
           </div>
         )}
 
         {error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+          <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3">
             <p className="text-sm text-red-700">{error}</p>
           </div>
         )}
@@ -386,14 +386,14 @@ export function PhotoEnhancer({ userCredits, onCreditUse, userEmail }) {
           <button
             onClick={handleEnhancePhoto}
             disabled={!preview || loading || userCredits < 1}
-            className="w-full sm:w-auto bg-gray-900 hover:bg-black disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+            className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-md transition-colors"
           >
             {loading ? "Enhancing..." : "Enhance photo"}
           </button>
           {enhancedImage && (
             <button
               onClick={resetWorkspace}
-              className="w-full sm:w-auto bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium px-6 py-3 rounded-lg transition-colors"
+              className="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-900 font-medium px-6 py-2.5 rounded-md transition-colors"
             >
               Start another photo
             </button>
@@ -403,7 +403,7 @@ export function PhotoEnhancer({ userCredits, onCreditUse, userEmail }) {
 
       {enhancedImage && <TextAssistant defaultImageUrl={enhancedImage} />}
 
-      <section className="space-y-6 border border-slate-200 rounded-lg px-6 py-6 bg-white shadow-sm">
+      <section className="space-y-6 border border-slate-200 rounded-md px-5 py-6 bg-white">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="space-y-1.5">
             <p className="text-lg font-semibold text-slate-900">Credits</p>
@@ -422,7 +422,7 @@ export function PhotoEnhancer({ userCredits, onCreditUse, userEmail }) {
         {showPricing && (
           <div className="space-y-8 pt-4 border-t border-slate-200">
             <div className="space-y-2">
-              <h3 className="text-base font-semibold text-slate-800">
+              <h3 className="text-base font-semibold text-slate-900">
                 Choose the bundle that fits
               </h3>
               <p className="text-sm text-slate-500">
@@ -430,11 +430,11 @@ export function PhotoEnhancer({ userCredits, onCreditUse, userEmail }) {
               </p>
             </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid gap-4 md:grid-cols-3">
               {Object.entries(CREDIT_BUNDLES).map(([key, bundle]) => (
                 <div
                   key={key}
-                  className="relative flex flex-col gap-4 border border-slate-200 rounded-lg bg-slate-50/80 px-6 py-5 hover:border-slate-400 transition-colors"
+                  className="relative flex flex-col gap-4 border border-slate-200 rounded-md bg-slate-50 px-5 py-5 hover:border-slate-400 transition-colors"
                 >
                   {bundle.badge && (
                     <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-medium text-slate-600 bg-white border border-slate-200 px-3 py-1 rounded-full shadow-sm">
@@ -445,7 +445,7 @@ export function PhotoEnhancer({ userCredits, onCreditUse, userEmail }) {
                     <p className="text-base font-semibold text-slate-900">
                       {bundle.name}
                     </p>
-                    <p className="text-xs text-slate-500 uppercase tracking-[0.12em]">
+                    <p className="text-xs text-slate-500">
                       One-time bundle
                     </p>
                   </div>
@@ -469,7 +469,7 @@ export function PhotoEnhancer({ userCredits, onCreditUse, userEmail }) {
               ))}
             </div>
 
-            <div className="border border-slate-900/70 bg-slate-900 text-slate-50 rounded-lg px-6 py-6 shadow-sm space-y-4">
+            <div className="border border-slate-900 bg-slate-900 text-slate-50 rounded-md px-6 py-6 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="space-y-1">
                   <p className="text-lg font-semibold">{SUBSCRIPTION.name}</p>
