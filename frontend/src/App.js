@@ -14,15 +14,17 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="bg-white border-b border-slate-200">
-        <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-5 flex flex-col items-start gap-2 sm:gap-3">
+        <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-5 flex flex-col items-start">
+          <div className="relative">
           <img
             src="/ebai-logo.png"
             alt="eBai"
             className="h-28 sm:h-32 md:h-40 w-auto object-contain"
           />
-          <p className="text-sm tracking-[0.12em] text-slate-500">
-            E-commerce Background AI
-          </p>
+            <span className="absolute top-[10px] left-[10px] text-sm tracking-[0.12em] text-black font-medium">
+              e-commerce background ai
+            </span>
+          </div>
         </div>
       </header>
 
