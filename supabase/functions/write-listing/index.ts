@@ -1,62 +1,139 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+const toneMap: Record<string, string> = {
+  streetwise: "Write in a sardonic, Bukowski-like voice: raw, unfiltered, slightly humorous, but real.",
+  contemplative: "Write in a Sartre-like tone: philosophical, introspective, and quietly intense.",
+  transcendent: "Write in a Whitman-like tone: poetic, open-hearted, and celebratory of existence.",
+};
+
+const fallbackDescription = (userDescription: string) =>
+  `Premium quality product ready for its next owner: ${userDescription}. Ships fast with care and comes from a smoke-free home. This is a smart buy for shoppers who appreciate value—grab it before it's gone.`;
+
 serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
   try {
-    const { imageUrl, userDescription, length = "short", tone = "streetwise" } = await req.json();
+    const body = await req.json();
+    const {
+      imageUrl,
+      userDescription,
+      length = "short",
+      tone = "streetwise",
+    } = body ?? {};
 
-    const systemRole = `
-You are a 46-year-old linguistics professor at Colgate University with extensive creative-writing experience.
-You are world-renowned for your ability to channel the literary tone of famous authors—capturing their rhythm, cadence, and worldview
-without drifting into imitation or parody. Your work has earned praise for its subtlety, emotional intelligence, and insight.
-By day, you craft short, high-performing listings for eBay and Craigslist; by night, you host poetry slams that keep your writing sharp and experimental.
-This unique mix of discipline and play makes you a master of tone in avant-garde advertising copy.
-Stay grounded, imaginative, and concise; every word must serve persuasion, truth, and texture.
-`;
+    if (!userDescription || !String(userDescription).trim()) {
+      throw new Error("No product description provided");
+    }
 
-    // Tone mapping — easy to expand later
-    const toneMap: Record<string, string> = {
-      streetwise: "Write in a sardonic, Bukowski-like voice: raw, unfiltered, slightly humorous, but real.",
-      contemplative: "Write in a Sartre-like tone: philosophical, introspective, and quietly intense.",
-      transcendent: "Write in a Whitman-like tone: poetic, open-hearted, and celebratory of existence.",
-    };
+    const geminiKey = Deno.env.get("GEMINI_API_KEY");
+    if (!geminiKey) {
+      throw new Error("GEMINI_API_KEY not configured");
+    }
 
+    const toneInstruction = toneMap[tone] ?? toneMap.streetwise;
     const lengthHint =
-      length === "short"
-        ? "Write one concise paragraph (about 60-80 words)."
-        : "Write three to four expressive paragraphs (180-250 words).";
+      length === "long"
+        ? "Write three to four expressive paragraphs (180-250 words)."
+        : "Write one concise paragraph (about 60-80 words).";
 
     const prompt = `
-${toneMap[tone]}
+${toneInstruction}
 
-Analyze the provided image: ${imageUrl}
-User input / project description: ${userDescription || "none provided"}
+Analyze the provided image reference: ${imageUrl ? imageUrl : "no image available"}
+Listing notes from the seller: ${userDescription}
 
-Combine visual cues and description into an engaging promotional listing.
+Blend the visual cues and seller notes into a persuasive e-commerce listing.
 ${lengthHint}
-Return only the finished text, no commentary.
+Return only the finished listing copy—no headings, labels, or commentary.
 `;
 
-    const model = "gemini-1.5-flash-latest"; // or whichever text model you’re using
+    const models = [
+      "gemini-2.0-flash-exp",
+      "gemini-1.5-flash-latest",
+      "gemini-1.5-flash",
+    ];
 
-    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + Deno.env.get("GEMINI_API_KEY"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [
-          { role: "system", parts: [{ text: systemRole }] },
-          { role: "user", parts: [{ text: prompt }] },
-        ],
+    let descriptionData: any = null;
+    let lastError: string | null = null;
+
+    for (const model of models) {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [{ text: prompt }],
+              },
+            ],
+          }),
+        },
+      );
+
+      if (response.ok) {
+        descriptionData = await response.json();
+        break;
+      }
+
+      const errorText = await response.text();
+      console.error(`write-listing model ${model} error:`, errorText);
+
+      if (response.status !== 404) {
+        lastError = `Description generation failed: ${response.status}`;
+        break;
+      }
+    }
+
+    if (!descriptionData) {
+      throw new Error(lastError ?? "Description generation failed: all Gemini models unavailable (404)");
+    }
+
+    let listingText = "";
+    const candidates = Array.isArray(descriptionData?.candidates)
+      ? descriptionData.candidates
+      : [];
+
+    for (const candidate of candidates) {
+      const parts = candidate?.content?.parts ?? [];
+      for (const part of parts) {
+        if (typeof part?.text === "string" && part.text.trim().length > 0) {
+          listingText = part.text.trim();
+          break;
+        }
+      }
+      if (listingText) break;
+    }
+
+    if (!listingText) {
+      listingText = fallbackDescription(userDescription);
+    }
+
+    return new Response(
+      JSON.stringify({
+        listingText,
+        success: true,
       }),
-    });
-
-    const data = await response.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "Error: no response.";
-
-    return new Response(JSON.stringify({ listingText: text }), {
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (err) {
-    console.error("write-listing error:", err);
-    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
+  } catch (error) {
+    console.error("write-listing error:", error);
+    return new Response(
+      JSON.stringify({ error: error.message ?? "Unexpected error" }),
+      {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });
