@@ -1,13 +1,21 @@
-// PhotoEnhancer.jsx - Unified creative workspace
 import React, { useState, useRef } from "react";
 import { TextAssistant } from "./TextAssistant";
+import {
+  CREDIT_BUNDLES,
+  SUBSCRIPTION,
+  createCheckoutSession,
+  redirectToCheckout,
+} from "../../stripeIntegration";
 
-export function PhotoEnhancer({ userCredits, onCreditUse }) {
+export function PhotoEnhancer({ userCredits, onCreditUse, userEmail }) {
   const [selectedImage, setSelectedImage] = useState(null);
   const [preview, setPreview] = useState("");
   const [enhancedImage, setEnhancedImage] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showSaveOptions, setShowSaveOptions] = useState(false);
+  const [showPricing, setShowPricing] = useState(false);
+  const [processingBundle, setProcessingBundle] = useState(null);
   const fileInputRef = useRef(null);
 
   const handleImageSelect = (event) => {
@@ -26,6 +34,7 @@ export function PhotoEnhancer({ userCredits, onCreditUse }) {
 
     setSelectedImage(file);
     setError("");
+    setShowSaveOptions(false);
 
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -35,8 +44,8 @@ export function PhotoEnhancer({ userCredits, onCreditUse }) {
     reader.readAsDataURL(file);
   };
 
-  const addWhiteBorder = async (imageBase64) => {
-    return new Promise((resolve) => {
+  const addWhiteBorder = async (imageBase64) =>
+    new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
         const borderSize = Math.max(40, Math.floor(img.width * 0.03));
@@ -58,10 +67,9 @@ export function PhotoEnhancer({ userCredits, onCreditUse }) {
       };
       img.src = imageBase64;
     });
-  };
 
-  const addWatermark = async (imageBase64) => {
-    return new Promise((resolve) => {
+  const addWatermark = async (imageBase64) =>
+    new Promise((resolve) => {
       const img = new Image();
       const logo = new Image();
 
@@ -99,7 +107,6 @@ export function PhotoEnhancer({ userCredits, onCreditUse }) {
       logo.onerror = () => resolve(imageBase64);
       logo.src = "/ebai-logo.png";
     });
-  };
 
   const enhanceWithGemini = async (base64Image) => {
     const response = await fetch(
@@ -130,6 +137,66 @@ export function PhotoEnhancer({ userCredits, onCreditUse }) {
     return result.image;
   };
 
+  const dataUrlToBlob = (dataUrl) => {
+    const parts = dataUrl.split(",");
+    if (parts.length < 2) return null;
+    const mimeMatch = parts[0].match(/:(.*?);/);
+    const mime = mimeMatch ? mimeMatch[1] : "image/png";
+    const binary = atob(parts[1]);
+    const array = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+      array[i] = binary.charCodeAt(i);
+    }
+    return new Blob([array], { type: mime });
+  };
+
+  const downloadImage = (filename) => {
+    if (!enhancedImage) return;
+    const link = document.createElement("a");
+    link.href = enhancedImage;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleShare = async () => {
+    if (!enhancedImage || !navigator.share) {
+      downloadImage(`ebai-enhanced-${Date.now()}.png`);
+      return;
+    }
+
+    try {
+      const blob = dataUrlToBlob(enhancedImage);
+      if (!blob) throw new Error("Unable to prepare file for sharing");
+      const file = new File([blob], `ebai-enhanced-${Date.now()}.png`, {
+        type: blob.type,
+      });
+
+      if (navigator.canShare && !navigator.canShare({ files: [file] })) {
+        downloadImage(`ebai-enhanced-${Date.now()}.png`);
+        return;
+      }
+
+      await navigator.share({
+        files: [file],
+        title: "Enhanced product photo",
+        text: "Ready to post on your marketplace listing.",
+      });
+    } catch (shareError) {
+      console.warn("Share unavailable, falling back to download", shareError);
+      downloadImage(`ebai-enhanced-${Date.now()}.png`);
+    }
+  };
+
+  const handleSaveToCameraRoll = () => {
+    downloadImage(`ebai-camera-roll-${Date.now()}.png`);
+  };
+
+  const handleSaveToFiles = () => {
+    downloadImage(`ebai-files-${Date.now()}.png`);
+  };
+
   const handleEnhancePhoto = async () => {
     if (!selectedImage || !preview) {
       setError("Please select an image first");
@@ -137,12 +204,13 @@ export function PhotoEnhancer({ userCredits, onCreditUse }) {
     }
 
     if (userCredits < 1) {
-      setError("Insufficient credits. Please purchase more credits.");
+      setError("You need at least one credit to enhance a photo.");
       return;
     }
 
     setLoading(true);
     setError("");
+    setShowSaveOptions(false);
 
     try {
       const reader = new FileReader();
@@ -154,6 +222,7 @@ export function PhotoEnhancer({ userCredits, onCreditUse }) {
           const watermarkedImage = await addWatermark(borderedImage);
 
           setEnhancedImage(watermarkedImage);
+          setShowSaveOptions(false);
           onCreditUse?.();
         } catch (err) {
           setError(err?.message || "Failed to enhance image");
@@ -168,15 +237,22 @@ export function PhotoEnhancer({ userCredits, onCreditUse }) {
     }
   };
 
-  const handleDownload = () => {
-    if (!enhancedImage) return;
+  const handlePurchase = async (bundleType) => {
+    setProcessingBundle(bundleType);
+    try {
+      const checkoutData = await createCheckoutSession({
+        bundleType,
+        userId: "temp-user-id",
+        email: userEmail || "user@example.com",
+      });
 
-    const link = document.createElement("a");
-    link.href = enhancedImage;
-    link.download = `ebai-enhanced-${Date.now()}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      await redirectToCheckout(checkoutData);
+    } catch (purchaseError) {
+      console.error("Purchase failed:", purchaseError);
+      alert("Checkout could not start. Please try again.");
+    } finally {
+      setProcessingBundle(null);
+    }
   };
 
   const resetWorkspace = () => {
@@ -184,110 +260,124 @@ export function PhotoEnhancer({ userCredits, onCreditUse }) {
     setPreview("");
     setEnhancedImage("");
     setError("");
+    setShowSaveOptions(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-8 space-y-10">
-      <section className="space-y-6">
-        <div
-          className={`relative border-2 ${
-            preview ? "border-gray-200" : "border-dashed border-gray-300"
-          } rounded-xl p-6 transition-colors cursor-pointer`}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          {preview ? (
-            <div className="relative">
+    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm px-6 py-10 space-y-10">
+      <section className="space-y-8">
+        {!enhancedImage && (
+          <div
+            className={`relative rounded-2xl border-2 ${
+              preview ? "border-gray-200" : "border-dashed border-gray-300"
+            } min-h-[280px] flex items-center justify-center text-center transition-colors cursor-pointer`}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {preview ? (
               <img
                 src={preview}
-                alt="Selected preview"
-                className="w-full max-h-[420px] object-contain rounded-lg"
+                alt="Selected product"
+                className="w-full max-h-[520px] object-contain rounded-2xl"
               />
-              <span className="absolute top-3 left-3 bg-white/80 text-gray-800 text-xs font-semibold uppercase tracking-wide px-3 py-1 rounded-full">
-                Original upload
-              </span>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-16 text-center text-gray-500 space-y-3">
-              <svg
-                className="h-12 w-12 text-gray-400"
-                stroke="currentColor"
-                fill="none"
-                viewBox="0 0 48 48"
-              >
-                <path
-                  d="M28 8H12a4 4 0 00-4 4v20a4 4 0 004 4h24a4 4 0 004-4V20m-14-8v12m6-6l-6 6-6-6"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <p className="text-lg font-medium text-gray-900">
-                Click to upload or drag a product photo
-              </p>
-              <p className="text-sm">
-                High-resolution JPG or PNG up to 10MB
-              </p>
-            </div>
-          )}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleImageSelect}
-            className="hidden"
-          />
-        </div>
+            ) : (
+              <div className="space-y-4 px-6">
+                <svg
+                  className="mx-auto h-12 w-12 text-gray-400"
+                  stroke="currentColor"
+                  fill="none"
+                  viewBox="0 0 48 48"
+                >
+                  <path
+                    d="M28 8H12a4 4 0 00-4 4v20a4 4 0 004 4h24a4 4 0 004-4V20m-14-8v12m6-6l-6 6-6-6"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <div className="space-y-2">
+                  <p className="text-lg font-medium text-gray-800">
+                    Click to upload or drag a product photo
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    High-resolution JPG or PNG up to 10MB
+                  </p>
+                </div>
+              </div>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageSelect}
+              className="hidden"
+            />
+          </div>
+        )}
+
+        {preview && !enhancedImage && (
+          <p className="text-sm text-gray-600 text-center">
+            Ready to enhance? Tap the button below to generate the studio shot.
+          </p>
+        )}
 
         {enhancedImage && (
           <div className="space-y-6">
-            <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
-              <div className="flex flex-col md:flex-row md:items-start md:gap-6">
-                <div className="flex-1">
-                  <img
-                    src={enhancedImage}
-                    alt="Enhanced"
-                    className="w-full rounded-lg border border-gray-200 shadow-sm"
-                  />
-                  <p className="text-xs text-gray-500 text-center mt-3 md:hidden">
-                    Tip: tap and hold the image to save it to your camera roll
-                  </p>
-                </div>
-                <div className="md:w-64 space-y-4 mt-4 md:mt-0">
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-800 uppercase tracking-wide">
-                      Before & After
-                    </h4>
-                    <div className="grid grid-cols-2 gap-3 mt-3">
-                      <img
-                        src={preview}
-                        alt="Original thumbnail"
-                        className="w-full h-24 object-cover rounded-lg border border-gray-200"
-                      />
-                      <img
-                        src={enhancedImage}
-                        alt="Enhanced thumbnail"
-                        className="w-full h-24 object-cover rounded-lg border border-gray-200"
-                        style={{ transform: "scale(1.05)" }}
-                      />
-                    </div>
+            <div className="space-y-4">
+              <img
+                src={enhancedImage}
+                alt="Enhanced product"
+                className="w-full max-h-[560px] object-contain rounded-[32px]"
+              />
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={() => setShowSaveOptions((prev) => !prev)}
+                  className="bg-gray-900 hover:bg-black text-white font-semibold px-5 py-3 rounded-lg transition-colors"
+                >
+                  {showSaveOptions ? "Hide save options" : "Save image"}
+                </button>
+                {showSaveOptions && (
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      onClick={handleShare}
+                      className="bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium px-4 py-2 rounded-lg transition-colors"
+                    >
+                      Share
+                    </button>
+                    <button
+                      onClick={handleSaveToCameraRoll}
+                      className="bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium px-4 py-2 rounded-lg transition-colors"
+                    >
+                      Save to camera roll
+                    </button>
+                    <button
+                      onClick={handleSaveToFiles}
+                      className="bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium px-4 py-2 rounded-lg transition-colors"
+                    >
+                      Save to files
+                    </button>
                   </div>
-                  <button
-                    onClick={handleDownload}
-                    className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
-                  >
-                    Download Enhanced Image
-                  </button>
-                </div>
+                )}
               </div>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="text-base font-semibold text-gray-800">
+                Original photo
+              </h3>
+              <img
+                src={preview}
+                alt="Original upload"
+                className="w-full max-h-[320px] object-contain rounded-2xl border border-gray-200"
+              />
             </div>
           </div>
         )}
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
             <p className="text-sm text-red-700">{error}</p>
           </div>
         )}
@@ -296,63 +386,117 @@ export function PhotoEnhancer({ userCredits, onCreditUse }) {
           <button
             onClick={handleEnhancePhoto}
             disabled={!preview || loading || userCredits < 1}
-            className="w-full sm:w-auto bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+            className="w-full sm:w-auto bg-gray-900 hover:bg-black disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-lg transition-colors"
           >
-            {loading ? "Enhancing..." : "Enhance Photo"}
+            {loading ? "Enhancing..." : "Enhance photo"}
           </button>
           {enhancedImage && (
             <button
               onClick={resetWorkspace}
-              className="w-full sm:w-auto bg-gray-200 hover:bg-gray-300 text-gray-900 font-semibold px-6 py-3 rounded-lg transition-colors"
+              className="w-full sm:w-auto bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium px-6 py-3 rounded-lg transition-colors"
             >
-              Start Another Photo
+              Start another photo
             </button>
-          )}
-          {!enhancedImage && userCredits < 1 && (
-            <p className="text-sm text-red-600 self-center">
-              Add more credits to continue
-            </p>
           )}
         </div>
       </section>
 
-      {enhancedImage && (
-        <TextAssistant
-          userCredits={userCredits}
-          onSuccess={(chargeCredit) => {
-            if (chargeCredit) {
-              onCreditUse?.();
-            }
-          }}
-          defaultImageUrl={enhancedImage}
-        />
-      )}
+      {enhancedImage && <TextAssistant defaultImageUrl={enhancedImage} />}
 
-      <section className="border border-gray-200 rounded-xl p-6 bg-gray-50">
-        <div className="flex items-center justify-between">
+      <section className="space-y-4 border border-gray-200 rounded-xl px-5 py-5 bg-gray-50">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div>
-            <p className="text-sm uppercase tracking-wide text-gray-500">
-              Credits available
-            </p>
-            <p className="text-3xl font-semibold text-gray-900 mt-1">
-              {userCredits}
+            <p className="text-base font-semibold text-gray-900">Credits</p>
+            <p className="text-sm text-gray-600">
+              {userCredits} remaining · each enhanced image uses 1 credit
             </p>
           </div>
-          <div className="text-right text-sm text-gray-600">
-            <p>Photo enhancement • 1 credit</p>
-            <p>Listing copy • 1 credit</p>
+          <button
+            onClick={() => setShowPricing((prev) => !prev)}
+            className="w-full md:w-auto bg-gray-900 hover:bg-black text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          >
+            {showPricing ? "Hide pricing" : "Buy more credits"}
+          </button>
+        </div>
+
+        {showPricing && (
+          <div className="space-y-8">
+            <h3 className="text-xl font-semibold text-gray-900 text-center">
+              Choose your plan
+            </h3>
+
+            <div className="grid md:grid-cols-3 gap-6">
+              {Object.entries(CREDIT_BUNDLES).map(([key, bundle]) => (
+                <div
+                  key={key}
+                  className="relative border-2 border-gray-200 rounded-xl p-6 bg-white hover:border-gray-400 transition-colors"
+                >
+                  {bundle.badge && (
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-semibold text-gray-700 bg-gray-100 px-3 py-1 rounded-full">
+                      {bundle.badge}
+                    </span>
+                  )}
+                  <p className="text-lg font-semibold text-gray-900 mb-2">
+                    {bundle.name}
+                  </p>
+                  <p className="text-3xl font-semibold text-gray-900">
+                    ${bundle.price}
+                  </p>
+                  <p className="text-sm text-gray-500 mb-4">one-time</p>
+                  <p className="text-sm text-gray-600 mb-4">
+                    {bundle.credits} credits · $
+                    {(bundle.price / bundle.credits).toFixed(2)} per credit
+                  </p>
+                  <button
+                    onClick={() => handlePurchase(key)}
+                    disabled={processingBundle === key}
+                    className="w-full bg-gray-900 hover:bg-black disabled:bg-gray-300 text-white text-sm font-medium py-2 rounded-lg transition-colors"
+                  >
+                    {processingBundle === key ? "Processing..." : "Purchase"}
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="border-2 border-gray-300 rounded-xl p-6 bg-white space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <p className="text-lg font-semibold text-gray-900">
+                    {SUBSCRIPTION.name}
+                  </p>
+                  <p className="text-sm text-gray-600">Ideal for power sellers</p>
+                </div>
+                <p className="text-3xl font-semibold text-gray-900">
+                  ${SUBSCRIPTION.price}
+                  <span className="text-sm font-normal text-gray-500">/month</span>
+                </p>
+              </div>
+              <ul className="text-sm text-gray-600 space-y-2">
+                <li className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-gray-400" />
+                  <span>200 listings per month</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-gray-400" />
+                  <span>No watermark on images</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-gray-400" />
+                  <span>Priority enhancement queue</span>
+                </li>
+              </ul>
+              <button
+                onClick={() => handlePurchase("subscription")}
+                disabled={processingBundle === "subscription"}
+                className="w-full bg-gray-900 hover:bg-black disabled:bg-gray-300 text-white text-sm font-medium py-2 rounded-lg transition-colors"
+              >
+                {processingBundle === "subscription"
+                  ? "Processing..."
+                  : "Subscribe"}
+              </button>
+            </div>
           </div>
-        </div>
-        <div className="mt-5 border-t border-gray-200 pt-5">
-          <h4 className="text-sm font-semibold text-gray-800 uppercase tracking-wide">
-            About your credits
-          </h4>
-          <p className="text-sm text-gray-600 mt-2">
-            Each enhanced photo and listing description uses one credit. Credits
-            never expire, and you can top up at any time. Keep at least two
-            credits handy to finish a full listing in one sitting.
-          </p>
-        </div>
+        )}
       </section>
     </div>
   );

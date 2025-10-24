@@ -11,8 +11,41 @@ const toneMap: Record<string, string> = {
   transcendent: "Write in a Whitman-like tone: poetic, open-hearted, and celebratory of existence.",
 };
 
-const fallbackDescription = (userDescription: string) =>
-  `Premium quality product ready for its next owner: ${userDescription}. Ships fast with care and comes from a smoke-free home. This is a smart buy for shoppers who appreciate value—grab it before it's gone.`;
+const capitalize = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+};
+
+const fallbackDescription = (userDescription: string) => {
+  const clean = userDescription
+    .replace(/\s+/g, " ")
+    .replace(/[\r\n]+/g, " ")
+    .trim();
+
+  if (!clean) {
+    return "Well-cared-for item ready to ship quickly. Trusted seller, responsive communication, and accurate descriptions. Message for more photos or details.";
+  }
+
+  const rawChunks = clean
+    .split(/[,;•\-|\n]+/)
+    .map((chunk) => chunk.trim())
+    .filter((chunk) => chunk.length > 2);
+
+  const uniqueChunks = Array.from(new Set(rawChunks)).slice(0, 6);
+  const headline = capitalize(uniqueChunks[0] ?? clean);
+  const featureLines = uniqueChunks.slice(1, 5).map((feature) => `- ${capitalize(feature)}`);
+
+  return [
+    `${headline}.`,
+    featureLines.length
+      ? "Key details:\n" + featureLines.join("\n")
+      : "",
+    "Ships fast with careful packaging, tracked delivery, and responsive support. Reach out with questions—this one moves quick.",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+};
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
