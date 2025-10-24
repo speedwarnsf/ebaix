@@ -99,9 +99,12 @@ Deno.serve(async (req) => {
 
       console.log('Generating optimized description for:', productDescription)
       const textModels = [
+        'gemini-2.5-flash',
+        'gemini-2.0-flash',
+        'gemini-2.5-pro',
+        'gemini-2.0-flash-lite',
         'gemini-2.0-flash-exp',
-        'gemini-1.5-flash-latest',
-        'gemini-1.5-flash'
+        'gemma-3-12b'
       ]
 
       let descriptionData: any = null
