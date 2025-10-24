@@ -6,6 +6,15 @@ export function TextAssistant({ userCredits, onSuccess }) {
   const [generatedDescription, setGeneratedDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [lengthOption, setLengthOption] = useState("short");
+  const [toneOption, setToneOption] = useState("streetwise");
+
+  const toneOptions = [
+    { value: "streetwise", label: "Streetwise · sardonic & raw" },
+    { value: "contemplative", label: "Contemplative · philosophical calm" },
+    { value: "transcendent", label: "Transcendent · poetic & expansive" },
+  ];
 
   const handleGenerateDescription = async () => {
     if (!productInfo.trim()) {
@@ -23,7 +32,7 @@ export function TextAssistant({ userCredits, onSuccess }) {
 
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/optimize-listing`,
+        `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/write-listing`,
         {
           method: "POST",
           headers: {
@@ -31,8 +40,10 @@ export function TextAssistant({ userCredits, onSuccess }) {
             Authorization: `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`,
           },
           body: JSON.stringify({
-            productDescription: productInfo,
-            mode: "text",
+            imageUrl: imageUrl.trim() || undefined,
+            userDescription: productInfo,
+            length: lengthOption,
+            tone: toneOption,
           }),
         }
       );
@@ -44,14 +55,14 @@ export function TextAssistant({ userCredits, onSuccess }) {
 
       const result = await response.json();
 
-      if (!result.success || !result.description) {
-        throw new Error("No description generated");
+      if (!result.listingText) {
+        throw new Error("No listing text generated");
       }
 
-      setGeneratedDescription(result.description);
+      setGeneratedDescription(result.listingText);
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to generate description");
+      setError(err instanceof Error ? err.message : "Failed to generate listing text");
     } finally {
       setLoading(false);
     }
@@ -97,6 +108,51 @@ export function TextAssistant({ userCredits, onSuccess }) {
           <p className="text-sm text-gray-500 mt-3">
             Include details like material, condition, size, color, brand, and any special features.
           </p>
+
+          <div className="mt-6 grid gap-6 md:grid-cols-2">
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-2">Tone</label>
+              <select
+                value={toneOption}
+                onChange={(e) => setToneOption(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {toneOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-2">Length</label>
+              <select
+                value={lengthOption}
+                onChange={(e) => setLengthOption(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="short">Short (60-80 words)</option>
+                <option value="long">Long (180-250 words)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <label htmlFor="imageUrl" className="block text-sm font-semibold text-gray-900 mb-2">
+              Image URL (optional)
+            </label>
+            <input
+              id="imageUrl"
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              placeholder="Paste the enhanced photo URL to blend visual details into the listing"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="text-sm text-gray-500 mt-2">
+              Use the URL from the Photo Enhancer download or any hosted product image.
+            </p>
+          </div>
         </div>
 
         {error && (
