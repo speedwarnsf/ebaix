@@ -125,17 +125,17 @@ export function TextAssistant({ onSuccess, defaultImageUrl }) {
   };
 
   return (
-    <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 space-y-6">
+    <div className="bg-white border border-slate-200 rounded-md p-5 space-y-6">
       <div>
-        <h3 className="text-xl font-semibold text-gray-900">Write the Listing</h3>
-        <p className="text-sm text-gray-600 mt-1">
+        <h3 className="text-lg font-semibold text-slate-900">Write the listing</h3>
+        <p className="text-sm text-slate-500 mt-1">
           Blend your product details with the enhanced photo to create a high-converting marketplace description.
         </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-[2fr,1fr]">
         <div className="space-y-4">
-          <label htmlFor="productInfo" className="text-sm font-semibold text-gray-800">
+          <label htmlFor="productInfo" className="text-sm font-semibold text-slate-800">
             Describe the product in your own words
           </label>
           <textarea
@@ -143,17 +143,17 @@ export function TextAssistant({ onSuccess, defaultImageUrl }) {
             value={productInfo}
             onChange={(e) => setProductInfo(e.target.value)}
             placeholder="Example: Vintage wooden bar stool with woven seat, white legs, good condition..."
-            className="w-full border border-gray-300 rounded-lg p-4 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-slate-200 rounded-md p-4 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
             rows={5}
           />
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <span className="text-sm font-semibold text-gray-800">Tone</span>
+              <span className="text-sm font-semibold text-slate-800">Tone</span>
               <select
                 value={toneOption}
                 onChange={(e) => setToneOption(e.target.value)}
-                className="w-full border border-gray-300 bg-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-slate-200 bg-slate-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
               >
                 {toneOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -163,11 +163,11 @@ export function TextAssistant({ onSuccess, defaultImageUrl }) {
               </select>
             </div>
             <div className="space-y-2">
-              <span className="text-sm font-semibold text-gray-800">Length</span>
+              <span className="text-sm font-semibold text-slate-800">Length</span>
               <select
                 value={lengthOption}
                 onChange={(e) => setLengthOption(e.target.value)}
-                className="w-full border border-gray-300 bg-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-slate-200 bg-slate-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
               >
                 <option value="short">Short (60-80 words)</option>
                 <option value="long">Long (180-250 words)</option>
@@ -177,8 +177,8 @@ export function TextAssistant({ onSuccess, defaultImageUrl }) {
         </div>
 
         <div className="space-y-3">
-          <span className="text-sm font-semibold text-gray-800">Image reference (auto-filled)</span>
-          <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+          <span className="text-sm font-semibold text-slate-800">Image reference (auto-filled)</span>
+          <div className="border border-slate-200 rounded-md overflow-hidden bg-white">
             {defaultImageUrl ? (
               <img
                 src={defaultImageUrl}
@@ -186,7 +186,7 @@ export function TextAssistant({ onSuccess, defaultImageUrl }) {
                 className="w-full h-40 object-cover"
               />
             ) : (
-              <div className="h-40 flex items-center justify-center text-sm text-gray-500">
+              <div className="h-40 flex items-center justify-center text-sm text-slate-500">
                 Upload and enhance a product photo first
               </div>
             )}
@@ -195,51 +195,51 @@ export function TextAssistant({ onSuccess, defaultImageUrl }) {
             value={imageUrl}
             onChange={(e) => setImageUrl(e.target.value)}
             placeholder="Override with a hosted image URL (optional)"
-            className="w-full border border-gray-300 bg-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-slate-200 bg-slate-100 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
           />
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-slate-500">
             Use a public URL if you want Gemini to reference a hosted product photo instead.
           </p>
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
           <p className="text-sm text-red-700">{error}</p>
         </div>
       )}
 
       {generatedDescription && (
-        <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-4">
-          <div className="flex items-center justify-between text-gray-600 text-sm">
-            <p className="font-medium text-gray-800">Listing ready</p>
-            <span className="text-xs">
+        <div className="bg-slate-50 border border-slate-200 rounded-md p-4 space-y-4">
+          <div className="flex items-center justify-between text-slate-500 text-sm">
+            <p className="font-medium text-slate-900">Listing ready</p>
+            <span className="text-xs text-slate-400">
               Saved {new Date().toLocaleTimeString()}
             </span>
           </div>
           {generationSource === "fallback" && (
-            <div className="bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-700">
+            <div className="bg-white border border-slate-200 rounded-md px-3 py-2 text-xs text-slate-600">
               Gemini hit a rate limit, so we provided a backup description. Feel free to retry in a moment for a fresh take.
             </div>
           )}
-          <div className="bg-gray-100 border border-gray-200 rounded-lg p-4 text-gray-800 leading-relaxed whitespace-pre-line">
+          <div className="bg-white border border-slate-200 rounded-md p-4 text-slate-800 leading-relaxed whitespace-pre-line">
             {generatedDescription}
           </div>
           {generationReason && generationSource === "fallback" && (
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-slate-500">
               Details: {generationReason}
             </p>
           )}
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <button
               onClick={handleCopyToClipboard}
-              className="w-full sm:w-auto flex-1 bg-gray-900 hover:bg-black text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm"
+              className="w-full sm:w-auto flex-1 bg-slate-900 hover:bg-slate-800 text-white font-medium py-2 px-4 rounded-md transition-colors text-sm"
             >
               Copy to Clipboard
             </button>
             <button
               onClick={handleDownloadAsText}
-              className="w-full sm:w-auto flex-1 bg-gray-900 hover:bg-black text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm"
+              className="w-full sm:w-auto flex-1 bg-slate-900 hover:bg-slate-800 text-white font-medium py-2 px-4 rounded-md transition-colors text-sm"
             >
               Download as Text
             </button>
@@ -251,11 +251,11 @@ export function TextAssistant({ onSuccess, defaultImageUrl }) {
         <button
           onClick={handleGenerateDescription}
           disabled={!productInfo.trim() || loading}
-          className="w-full sm:w-auto bg-gray-900 hover:bg-black disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+          className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-md transition-colors"
         >
           {loading ? "Generating..." : "Generate Listing"}
         </button>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-slate-500">
           Add as much detail as you like—the more specific, the better the copy.
         </p>
       </div>
