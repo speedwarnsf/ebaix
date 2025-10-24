@@ -25,6 +25,9 @@ export function TextAssistant({ onSuccess, defaultImageUrl }) {
     setGenerationReason("");
   }, [defaultImageUrl]);
 
+  const MAX_ATTEMPTS = 3;
+  const RETRY_DELAYS = [1500, 3500];
+
   const handleGenerateDescription = async () => {
     if (!productInfo.trim()) {
       setError("Please enter product information");
@@ -36,43 +39,67 @@ export function TextAssistant({ onSuccess, defaultImageUrl }) {
     setGenerationReason("");
 
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/write-listing`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({
-            imageUrl: (imageUrl && imageUrl.trim()) || defaultImageUrl || undefined,
-            userDescription: productInfo,
-            length: lengthOption,
-            tone: toneOption,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to generate description");
-      }
-
-      const result = await response.json();
-
-      if (!result.listingText) {
-        throw new Error("No listing text generated");
-      }
-
-      setGeneratedDescription(result.listingText);
-      setGenerationSource(result.source ?? (result.success === false ? "fallback" : "gemini"));
-      setGenerationReason(result.reason ?? "");
-      onSuccess?.();
+      await attemptGenerate();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate listing text");
     } finally {
       setLoading(false);
     }
+  };
+
+  const attemptGenerate = async (attempt = 0) => {
+    const response = await fetch(
+      `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/write-listing`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          imageUrl: (imageUrl && imageUrl.trim()) || defaultImageUrl || undefined,
+          userDescription: productInfo,
+          length: lengthOption,
+          tone: toneOption,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to generate description");
+    }
+
+    const result = await response.json();
+
+    if (!result.listingText) {
+      throw new Error("No listing text generated");
+    }
+
+    const source =
+      result.source ?? (result.success === false ? "fallback" : "gemini");
+
+    setGeneratedDescription(result.listingText);
+    setGenerationSource(source);
+    setGenerationReason(result.reason ?? "");
+
+    if (source !== "fallback") {
+      onSuccess?.();
+      return;
+    }
+
+    if (result.retryable && attempt < MAX_ATTEMPTS - 1) {
+      setGenerationReason("Gemini is catching its breath. Trying again...");
+      const delay = RETRY_DELAYS[attempt] ?? 3000;
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      await attemptGenerate(attempt + 1);
+      return;
+    }
+
+    setGenerationReason(
+      result.reason ??
+        "Gemini is momentarily at capacity. This backup copy is ready, and you can try again in a moment for a fresh take."
+    );
   };
 
   const handleCopyToClipboard = () => {

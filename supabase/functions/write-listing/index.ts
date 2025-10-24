@@ -135,7 +135,7 @@ Return only the finished listing copy—no headings, labels, or commentary.
         }
 
         if (response.status === 429 || response.status === 503) {
-          const backoff = Math.pow(2, attempt) * 300 + Math.random() * 200;
+          const backoff = Math.pow(2, attempt) * 1500 + Math.random() * 500;
           await sleep(backoff);
           continue;
         }
