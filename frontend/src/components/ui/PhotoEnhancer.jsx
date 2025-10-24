@@ -319,8 +319,10 @@ export function PhotoEnhancer({ userCredits, onCreditUse }) {
       {enhancedImage && (
         <TextAssistant
           userCredits={userCredits}
-          onSuccess={() => {
-            onCreditUse?.();
+          onSuccess={(chargeCredit) => {
+            if (chargeCredit) {
+              onCreditUse?.();
+            }
           }}
           defaultImageUrl={enhancedImage}
         />
