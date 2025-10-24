@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 export function TextAssistant({ userCredits, onSuccess, defaultImageUrl }) {
   const [productInfo, setProductInfo] = useState("");
   const [generatedDescription, setGeneratedDescription] = useState("");
+  const [generationSource, setGenerationSource] = useState(null);
+  const [generationReason, setGenerationReason] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [imageUrl, setImageUrl] = useState(defaultImageUrl ?? "");
@@ -18,6 +20,9 @@ export function TextAssistant({ userCredits, onSuccess, defaultImageUrl }) {
 
   useEffect(() => {
     setImageUrl(defaultImageUrl ?? "");
+    setGeneratedDescription("");
+    setGenerationSource(null);
+    setGenerationReason("");
   }, [defaultImageUrl]);
 
   const handleGenerateDescription = async () => {
@@ -33,6 +38,7 @@ export function TextAssistant({ userCredits, onSuccess, defaultImageUrl }) {
 
     setLoading(true);
     setError("");
+    setGenerationReason("");
 
     try {
       const response = await fetch(
@@ -64,7 +70,9 @@ export function TextAssistant({ userCredits, onSuccess, defaultImageUrl }) {
       }
 
       setGeneratedDescription(result.listingText);
-      onSuccess();
+      setGenerationSource(result.source ?? (result.success === false ? "fallback" : "gemini"));
+      setGenerationReason(result.reason ?? "");
+      onSuccess?.(result.success !== false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate listing text");
     } finally {
@@ -184,9 +192,19 @@ export function TextAssistant({ userCredits, onSuccess, defaultImageUrl }) {
               Saved {new Date().toLocaleTimeString()}
             </span>
           </div>
+          {generationSource === "fallback" && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2 text-xs text-yellow-800">
+              Gemini hit a rate limit, so we provided a backup description. Feel free to retry in a moment for a fresh take.
+            </div>
+          )}
           <div className="bg-green-50 border border-green-100 rounded-lg p-4 font-serif text-gray-800 leading-relaxed">
             {generatedDescription}
           </div>
+          {generationReason && generationSource === "fallback" && (
+            <p className="text-xs text-gray-500">
+              Details: {generationReason}
+            </p>
+          )}
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <button
               onClick={handleCopyToClipboard}

@@ -14,6 +14,8 @@ const toneMap: Record<string, string> = {
 const fallbackDescription = (userDescription: string) =>
   `Premium quality product ready for its next owner: ${userDescription}. Ships fast with care and comes from a smoke-free home. This is a smart buy for shoppers who appreciate value—grab it before it's gone.`;
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -62,39 +64,59 @@ Return only the finished listing copy—no headings, labels, or commentary.
 
     let descriptionData: any = null;
     let lastError: string | null = null;
+    let lastStatus: number | null = null;
 
     for (const model of models) {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [{ text: prompt }],
-              },
-            ],
-          }),
-        },
-      );
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [{ text: prompt }],
+                },
+              ],
+            }),
+          },
+        );
 
-      if (response.ok) {
-        descriptionData = await response.json();
-        break;
-      }
+        if (response.ok) {
+          descriptionData = await response.json();
+          break;
+        }
 
-      const errorText = await response.text();
-      console.error(`write-listing model ${model} error:`, errorText);
+        const errorText = await response.text();
+        console.error(
+          `write-listing model ${model} attempt ${attempt + 1} error:`,
+          errorText,
+        );
 
-      if (response.status !== 404) {
+        lastStatus = response.status;
         lastError = `Description generation failed: ${response.status}`;
+
+        if (response.status === 404) {
+          break;
+        }
+
+        if (response.status === 429 || response.status === 503) {
+          const backoff = Math.pow(2, attempt) * 300 + Math.random() * 200;
+          await sleep(backoff);
+          continue;
+        }
+
         break;
       }
-    }
 
-    if (!descriptionData) {
-      throw new Error(lastError ?? "Description generation failed: all Gemini models unavailable (404)");
+      if (descriptionData) {
+        break;
+      }
+
+      if (lastStatus && lastStatus !== 404 && lastStatus !== 429 && lastStatus !== 503) {
+        break;
+      }
     }
 
     let listingText = "";
@@ -117,11 +139,18 @@ Return only the finished listing copy—no headings, labels, or commentary.
       listingText = fallbackDescription(userDescription);
     }
 
+    const responsePayload = {
+      listingText,
+      success: Boolean(descriptionData),
+      source: descriptionData ? "gemini" : "fallback",
+      reason: descriptionData ? undefined : lastError ?? "Model unavailable",
+      retryable: !descriptionData && lastStatus
+        ? lastStatus === 429 || lastStatus === 503
+        : undefined,
+    };
+
     return new Response(
-      JSON.stringify({
-        listingText,
-        success: true,
-      }),
+      JSON.stringify(responsePayload),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       },
