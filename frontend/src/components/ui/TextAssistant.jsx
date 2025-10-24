@@ -79,9 +79,14 @@ export function TextAssistant({ onSuccess, defaultImageUrl }) {
     const source =
       result.source ?? (result.success === false ? "fallback" : "gemini");
 
+    const rawReason = result.reason || "";
+    const friendlyReason = rawReason.includes("404")
+      ? "Gemini's latest model is updating. We used a backup copy while it refreshes."
+      : rawReason;
+
     setGeneratedDescription(result.listingText);
     setGenerationSource(source);
-    setGenerationReason(result.reason ?? "");
+    setGenerationReason(friendlyReason ?? "");
 
     if (source !== "fallback") {
       onSuccess?.();
@@ -97,8 +102,8 @@ export function TextAssistant({ onSuccess, defaultImageUrl }) {
     }
 
     setGenerationReason(
-      result.reason ??
-        "Gemini is momentarily at capacity. This backup copy is ready, and you can try again in a moment for a fresh take."
+      friendlyReason ||
+        "Gemini is taking a breather. This backup copy is ready, and you can try again in a moment for a fresh take."
     );
   };
 

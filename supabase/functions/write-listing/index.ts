@@ -90,7 +90,7 @@ Return only the finished listing copy—no headings, labels, or commentary.
 `;
 
     const models = [
-      "gemini-2.0-flash-exp",
+      "gemini-1.5-pro-latest",
       "gemini-1.5-flash-latest",
       "gemini-1.5-flash",
     ];
