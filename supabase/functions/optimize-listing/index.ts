@@ -98,16 +98,25 @@ Deno.serve(async (req) => {
       }
 
       console.log('Generating optimized description for:', productDescription)
+      const textModels = [
+        'gemini-2.0-flash-exp',
+        'gemini-1.5-flash-latest',
+        'gemini-1.5-flash'
+      ]
 
-      const descriptionResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: `You are an expert eBay listing copywriter. Create a compelling, SEO-optimized product description based on this input:
+      let descriptionData: any = null
+      let lastError: string | null = null
+
+      for (const model of textModels) {
+        const descriptionResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{
+                parts: [{
+                  text: `You are an expert eBay listing copywriter. Create a compelling, SEO-optimized product description based on this input:
 
 "${productDescription}"
 
@@ -120,19 +129,30 @@ Write a professional eBay listing description that:
 6. Is 3-5 sentences long
 
 Make it punchy, professional, and conversion-focused. Do NOT use emojis.`
+                }]
               }]
-            }]
-          })
-        }
-      )
+            })
+          }
+        )
 
-      if (!descriptionResponse.ok) {
+        if (descriptionResponse.ok) {
+          descriptionData = await descriptionResponse.json()
+          break
+        }
+
         const errorText = await descriptionResponse.text()
-        console.error('Description generation failed:', errorText)
-        throw new Error(`Description generation failed: ${descriptionResponse.status}`)
+        console.error(`Description generation failed for model ${model}:`, errorText)
+
+        if (descriptionResponse.status !== 404) {
+          lastError = `Description generation failed: ${descriptionResponse.status}`
+          break
+        }
       }
 
-      const descriptionData = await descriptionResponse.json()
+      if (!descriptionData) {
+        throw new Error(lastError ?? 'Description generation failed: all Gemini models unavailable (404)')
+      }
+
       let optimizedDescription = ''
 
       if (descriptionData.candidates && descriptionData.candidates[0] &&
