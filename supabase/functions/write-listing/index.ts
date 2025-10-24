@@ -90,9 +90,12 @@ Return only the finished listing copy—no headings, labels, or commentary.
 `;
 
     const models = [
-      "gemini-1.5-pro-latest",
-      "gemini-1.5-flash-latest",
+      "gemini-pro",
+      "gemini-1.0-pro",
+      "gemini-1.0-pro-latest",
       "gemini-1.5-flash",
+      "gemini-1.5-flash-latest",
+      "gemini-1.5-pro-latest",
     ];
 
     let descriptionData: any = null;
