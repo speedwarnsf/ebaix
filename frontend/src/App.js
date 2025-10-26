@@ -14,17 +14,15 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="bg-white border-b border-slate-200">
-        <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-5 flex flex-col items-start">
-          <div className="relative">
+        <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-5 flex flex-col gap-3">
           <img
-            src="/ebai-logo.png"
-            alt="eBai"
-            className="h-28 sm:h-32 md:h-40 w-auto object-contain"
+            src="/nudiologo.png"
+            alt="nudio"
+            className="h-32 sm:h-36 md:h-44 w-auto object-contain"
           />
-            <span className="absolute top-[10px] left-[10px] text-sm tracking-[0.12em] text-black font-medium">
-              e-commerce background ai
-            </span>
-          </div>
+          <p className="text-base sm:text-lg text-slate-900 font-medium">
+            Welcome to your <span className="italic">nu</span> pocket sized lighting studio.
+          </p>
         </div>
       </header>
 

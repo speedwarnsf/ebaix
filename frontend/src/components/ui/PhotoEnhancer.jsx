@@ -1,5 +1,4 @@
 import React, { useState, useRef } from "react";
-import { TextAssistant } from "./TextAssistant";
 import {
   CREDIT_BUNDLES,
   SUBSCRIPTION,
@@ -105,7 +104,7 @@ export function PhotoEnhancer({ userCredits, onCreditUse, userEmail }) {
       };
 
       logo.onerror = () => resolve(imageBase64);
-      logo.src = "/ebai-logo.png";
+      logo.src = "/nudiologo.png";
     });
 
   const enhanceWithGemini = async (base64Image) => {
@@ -155,6 +154,7 @@ export function PhotoEnhancer({ userCredits, onCreditUse, userEmail }) {
     const link = document.createElement("a");
     link.href = enhancedImage;
     link.download = filename;
+    link.rel = "noopener";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -162,39 +162,65 @@ export function PhotoEnhancer({ userCredits, onCreditUse, userEmail }) {
 
   const handleShare = async () => {
     if (!enhancedImage || !navigator.share) {
-      downloadImage(`ebai-enhanced-${Date.now()}.png`);
+      downloadImage(`nudio-enhanced-${Date.now()}.png`);
       return;
     }
 
     try {
       const blob = dataUrlToBlob(enhancedImage);
       if (!blob) throw new Error("Unable to prepare file for sharing");
-      const file = new File([blob], `ebai-enhanced-${Date.now()}.png`, {
+      const file = new File([blob], `nudio-enhanced-${Date.now()}.png`, {
         type: blob.type,
       });
 
       if (navigator.canShare && !navigator.canShare({ files: [file] })) {
-        downloadImage(`ebai-enhanced-${Date.now()}.png`);
+        downloadImage(`nudio-enhanced-${Date.now()}.png`);
         return;
       }
 
       await navigator.share({
         files: [file],
-        title: "Enhanced product photo",
-        text: "Ready to post on your marketplace listing.",
+        title: "Nudio shoot",
+        text: "Ready to post your nudio shot.",
       });
     } catch (shareError) {
       console.warn("Share unavailable, falling back to download", shareError);
-      downloadImage(`ebai-enhanced-${Date.now()}.png`);
+      downloadImage(`nudio-enhanced-${Date.now()}.png`);
     }
   };
 
-  const handleSaveToCameraRoll = () => {
-    downloadImage(`ebai-camera-roll-${Date.now()}.png`);
+  const handleSaveToCameraRoll = async () => {
+    if (!enhancedImage) return;
+
+    try {
+      const blob = dataUrlToBlob(enhancedImage);
+      if (
+        blob &&
+        navigator.share &&
+        navigator.canShare?.({
+          files: [new File([blob], "nudio-camera-roll.png", { type: blob.type })],
+        })
+      ) {
+        const file = new File([blob], `nudio-camera-roll-${Date.now()}.png`, {
+          type: blob.type,
+        });
+
+        await navigator.share({
+          files: [file],
+          title: "Nudio shoot",
+          text: "Save this nudio shot to your camera roll.",
+        });
+        return;
+      }
+    } catch (shareError) {
+      console.warn("Camera roll share unavailable, falling back to download", shareError);
+    }
+
+    downloadImage(`nudio-camera-roll-${Date.now()}.png`);
   };
 
   const handleSaveToFiles = () => {
-    downloadImage(`ebai-files-${Date.now()}.png`);
+    downloadImage(`nudio-files-${Date.now()}.png`);
   };
 
   const handleEnhancePhoto = async () => {
@@ -299,7 +325,7 @@ export function PhotoEnhancer({ userCredits, onCreditUse, userEmail }) {
                 </svg>
                 <div className="space-y-2">
                   <p className="text-base font-semibold text-slate-900">
-                    Click to upload or drag a product photo
+                    Click here to start your <span className="italic">nudio</span> shoot.
                   </p>
                   <p className="text-sm text-slate-500">
                     High-resolution JPG or PNG up to 10MB
@@ -388,7 +414,7 @@ export function PhotoEnhancer({ userCredits, onCreditUse, userEmail }) {
             disabled={!preview || loading || userCredits < 1}
             className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-md transition-colors"
           >
-            {loading ? "Enhancing..." : "Enhance photo"}
+          {loading ? "nudioing" : "Process your nudio"}
           </button>
           {enhancedImage && (
             <button
@@ -400,8 +426,6 @@ export function PhotoEnhancer({ userCredits, onCreditUse, userEmail }) {
           )}
         </div>
       </section>
-
-      {enhancedImage && <TextAssistant defaultImageUrl={enhancedImage} />}
 
       <section className="space-y-6 border border-slate-200 rounded-md px-5 py-6 bg-white">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
