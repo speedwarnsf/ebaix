@@ -41,6 +41,10 @@ export function PhotoEnhancer({ userEmail, usageSummary, onUsageUpdate, usageErr
       : `${paidCredits} paid · ${freeRemainingDisplay}/${freeLimit} free this month`
     : "Checking credits...";
 
+  const hasCredits = isOwner || paidCredits > 0 || (freeRemainingRaw ?? 0) > 0;
+  const emailMissing = !userEmail;
+  const disableProcessing = emailMissing || !hasCredits;
+
   const handleImageSelect = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -440,7 +444,7 @@ export function PhotoEnhancer({ userEmail, usageSummary, onUsageUpdate, usageErr
         <div className="flex flex-col sm:flex-row gap-3">
           <button
             onClick={handleEnhancePhoto}
-            disabled={!preview || loading}
+            disabled={!preview || loading || disableProcessing}
             className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-md transition-colors"
           >
           {loading ? "nudioing" : "Process your nudio"}
@@ -454,6 +458,13 @@ export function PhotoEnhancer({ userEmail, usageSummary, onUsageUpdate, usageErr
             </button>
           )}
         </div>
+        {disableProcessing && (
+          <p className="text-sm text-slate-500">
+            {emailMissing
+              ? "Add your email above to start tracking nudio credits."
+              : "You've used the free allotment. Grab more credits to keep going."}
+          </p>
+        )}
       </section>
 
       <section className="space-y-6 border border-slate-200 rounded-md px-5 py-6 bg-white">
@@ -462,7 +473,7 @@ export function PhotoEnhancer({ userEmail, usageSummary, onUsageUpdate, usageErr
             <p className="text-lg font-semibold text-slate-900">Credits</p>
             <p className="text-sm text-slate-500">{usageSummaryText}</p>
           </div>
-          {!isOwner && freeRemainingRaw !== null && freeRemainingRaw <= 0 && paidCredits <= 0 && (
+          {!emailMissing && !isOwner && freeRemainingRaw !== null && freeRemainingRaw <= 0 && paidCredits <= 0 && (
             <p className="text-sm text-red-500">
               You've used all free nudio shoots for this month. Purchase more credits to keep creating.
             </p>
