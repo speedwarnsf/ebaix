@@ -1,14 +1,31 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import "./App.css";
 import { Toaster } from "sonner";
 import { PhotoEnhancer } from "./components/ui/PhotoEnhancer";
 
 function App() {
-  const userEmail = "speedwarnsf@gmail.com";
+  const [userEmail, setUserEmail] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return window.localStorage.getItem("nudio:userEmail") ?? "";
+  });
   const [usageSummary, setUsageSummary] = useState(null);
   const [usageError, setUsageError] = useState(null);
 
+  const sanitizedEmail = useMemo(() => userEmail.trim().toLowerCase(), [userEmail]);
+
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("nudio:userEmail", userEmail ?? "");
+    }
+  }, [userEmail]);
+
+  useEffect(() => {
+    if (!sanitizedEmail) {
+      setUsageSummary(null);
+      setUsageError("Enter your email to track credits");
+      return;
+    }
+
     const loadUsage = async () => {
       try {
         const response = await fetch(
@@ -19,7 +36,7 @@ function App() {
               "Content-Type": "application/json",
               Authorization: `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`,
             },
-            body: JSON.stringify({ userEmail }),
+            body: JSON.stringify({ userEmail: sanitizedEmail }),
           }
         );
 
@@ -38,7 +55,7 @@ function App() {
     };
 
     loadUsage();
-  }, [userEmail]);
+  }, [sanitizedEmail]);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -50,11 +67,28 @@ function App() {
             className="w-full h-auto object-cover"
           />
         </div>
+        <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-6">
+          <label className="block text-sm font-medium text-slate-700 mb-2">
+            What email should we use to track your nudio credits?
+          </label>
+          <input
+            type="email"
+            placeholder="you@example.com"
+            value={userEmail}
+            onChange={(event) => setUserEmail(event.target.value)}
+            className="w-full max-w-md border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+          />
+          {usageError && sanitizedEmail && (
+            <p className="mt-2 text-sm text-red-500">
+              {usageError}
+            </p>
+          )}
+        </div>
       </header>
 
-      <main className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+      <main className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         <PhotoEnhancer
-          userEmail={userEmail}
+          userEmail={sanitizedEmail}
           usageSummary={usageSummary}
           onUsageUpdate={setUsageSummary}
           usageError={usageError}
