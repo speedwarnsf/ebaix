@@ -13,16 +13,13 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200">
-        <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-5 flex flex-col gap-3">
+      <header className="bg-[#e1d0d0] border-b border-slate-200">
+        <div className="w-full max-w-5xl mx-auto px-0 sm:px-0 py-0 flex flex-col">
           <img
-            src="/nudiologo.png"
-            alt="nudio"
-            className="h-32 sm:h-36 md:h-44 w-auto object-contain"
+            src="/nudioheader.jpg"
+            alt="nudio header"
+            className="w-full h-auto object-cover"
           />
-          <p className="text-base sm:text-lg text-slate-900 font-medium">
-            Welcome to your <span className="italic">nu</span> pocket sized lighting studio.
-          </p>
         </div>
       </header>
 
