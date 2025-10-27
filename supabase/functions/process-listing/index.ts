@@ -1,4 +1,10 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import {
+  ensureProfile,
+  extractUserEmail,
+  canConsumeCredit,
+  consumeCredit,
+  getUsageSummary,
+} from '../_shared/usage.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,13 +17,28 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
     const body = await req.json()
-    const { mode, imageBase64, productDescription } = body
+    const { mode, imageBase64, productDescription, userEmail: bodyEmail } = body
+
+    const email = extractUserEmail({ userEmail: bodyEmail }, req)
+    if (!email) {
+      throw new Error('User email required')
+    }
+
+    const profile = await ensureProfile(email)
+    const allowance = canConsumeCredit(profile)
+    if (!allowance.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: allowance.message ?? 'Usage limit reached',
+          usage: (await getUsageSummary(email)).usage,
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 403,
+        }
+      )
+    }
 
     const geminiKey = Deno.env.get('GEMINI_API_KEY')
     if (!geminiKey) {
@@ -74,11 +95,14 @@ Deno.serve(async (req) => {
 
       // Return the base64 image for client-side pink background processing
       // The PhotoEnhancer component will add the pink background using canvas
+      const consumption = await consumeCredit(profile)
+
       return new Response(
         JSON.stringify({
           success: true,
-          image: imageBase64, // Return original for client to process
-          message: 'Image ready for enhancement'
+          image: imageBase64,
+          message: 'Image ready for enhancement',
+          usage: consumption.usage,
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -161,11 +185,14 @@ Make it punchy, professional, and conversion-focused. Do NOT use emojis.`
 
       console.log('Generated description:', optimizedDescription)
 
+      const consumption = await consumeCredit(profile)
+
       return new Response(
         JSON.stringify({
           success: true,
           description: optimizedDescription,
-          message: 'Description generated successfully'
+          message: 'Description generated successfully',
+          usage: consumption.usage,
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -6,7 +6,9 @@ import {
   redirectToCheckout,
 } from "../../stripeIntegration";
 
-export function PhotoEnhancer({ userCredits, onCreditUse, userEmail }) {
+const DEFAULT_FREE_LIMIT = 3;
+
+export function PhotoEnhancer({ userEmail, usageSummary, onUsageUpdate, usageError }) {
   const [selectedImage, setSelectedImage] = useState(null);
   const [preview, setPreview] = useState("");
   const [enhancedImage, setEnhancedImage] = useState("");
@@ -16,6 +18,28 @@ export function PhotoEnhancer({ userCredits, onCreditUse, userEmail }) {
   const [showPricing, setShowPricing] = useState(false);
   const [processingBundle, setProcessingBundle] = useState(null);
   const fileInputRef = useRef(null);
+
+  const isOwner = usageSummary?.unlimited ?? false;
+  const paidCredits = usageSummary?.creditsBalance ?? 0;
+  const freeLimit = usageSummary?.freeCreditsLimit ?? DEFAULT_FREE_LIMIT;
+  const freeRemainingRaw = usageSummary?.unlimited
+    ? Infinity
+    : usageSummary?.freeCreditsRemaining ?? null;
+
+  const freeRemainingDisplay =
+    freeRemainingRaw === null
+      ? null
+      : freeRemainingRaw === Infinity
+      ? "∞"
+      : freeRemainingRaw;
+
+  const usageSummaryText = usageError
+    ? usageError
+    : usageSummary
+    ? isOwner
+      ? "Unlimited nudio shoots (owner access)"
+      : `${paidCredits} paid · ${freeRemainingDisplay}/${freeLimit} free this month`
+    : "Checking credits...";
 
   const handleImageSelect = (event) => {
     const file = event.target.files?.[0];
@@ -119,21 +143,26 @@ export function PhotoEnhancer({ userCredits, onCreditUse, userEmail }) {
         body: JSON.stringify({
           imageBase64: base64Image,
           mode: "image",
+          userEmail,
         }),
       }
     );
 
+    const result = await response.json().catch(() => ({}));
+
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to enhance image");
+      const error = new Error(result?.error || "Failed to enhance image");
+      error.usage = result?.usage;
+      throw error;
     }
 
-    const result = await response.json();
     if (!result.success || !result.image) {
-      throw new Error("No enhanced image returned");
+      const error = new Error("No enhanced image returned");
+      error.usage = result?.usage;
+      throw error;
     }
 
-    return result.image;
+    return result;
   };
 
   const dataUrlToBlob = (dataUrl) => {
@@ -229,11 +258,6 @@ export function PhotoEnhancer({ userCredits, onCreditUse, userEmail }) {
       return;
     }
 
-    if (userCredits < 1) {
-      setError("You need at least one credit to enhance a photo.");
-      return;
-    }
-
     setLoading(true);
     setError("");
     setShowSaveOptions(false);
@@ -243,14 +267,19 @@ export function PhotoEnhancer({ userCredits, onCreditUse, userEmail }) {
       reader.onload = async (e) => {
         try {
           const base64Image = e.target?.result;
-          const geminiImage = await enhanceWithGemini(base64Image);
-          const borderedImage = await addWhiteBorder(geminiImage);
+          const result = await enhanceWithGemini(base64Image);
+          const borderedImage = await addWhiteBorder(result.image);
           const watermarkedImage = await addWatermark(borderedImage);
 
           setEnhancedImage(watermarkedImage);
           setShowSaveOptions(false);
-          onCreditUse?.();
+          if (result.usage) {
+            onUsageUpdate?.(result.usage);
+          }
         } catch (err) {
+          if (err?.usage) {
+            onUsageUpdate?.(err.usage);
+          }
           setError(err?.message || "Failed to enhance image");
         } finally {
           setLoading(false);
@@ -411,7 +440,7 @@ export function PhotoEnhancer({ userCredits, onCreditUse, userEmail }) {
         <div className="flex flex-col sm:flex-row gap-3">
           <button
             onClick={handleEnhancePhoto}
-            disabled={!preview || loading || userCredits < 1}
+            disabled={!preview || loading}
             className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-md transition-colors"
           >
           {loading ? "nudioing" : "Process your nudio"}
@@ -431,10 +460,13 @@ export function PhotoEnhancer({ userCredits, onCreditUse, userEmail }) {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="space-y-1.5">
             <p className="text-lg font-semibold text-slate-900">Credits</p>
-            <p className="text-sm text-slate-500">
-              {userCredits} remaining · each enhanced image uses 1 credit
-            </p>
+            <p className="text-sm text-slate-500">{usageSummaryText}</p>
           </div>
+          {!isOwner && freeRemainingRaw !== null && freeRemainingRaw <= 0 && paidCredits <= 0 && (
+            <p className="text-sm text-red-500">
+              You've used all free nudio shoots for this month. Purchase more credits to keep creating.
+            </p>
+          )}
           <button
             onClick={() => setShowPricing((prev) => !prev)}
             className="w-full md:w-auto bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium px-5 py-2.5 rounded-md transition-colors"
