@@ -267,12 +267,13 @@ textarea:focus {
 .badge-shimmer::before {
   content: "";
   position: absolute;
-  inset: -120%;
+  inset: -80%;
   background: linear-gradient(
     120deg,
-    rgba(236, 72, 153, 0.35),
-    rgba(79, 70, 229, 0.6),
-    rgba(236, 72, 153, 0.35)
+    rgba(236, 72, 153, 0.5),
+    rgba(79, 70, 229, 0.8),
+    rgba(59, 130, 246, 0.6),
+    rgba(236, 72, 153, 0.5)
   );
   animation: badgeGlow 2.8s linear infinite;
 }
@@ -286,12 +287,12 @@ textarea:focus {
 
 @keyframes badgeGlow {
   0% {
-    transform: translateX(-30%) rotate(0deg);
+    transform: translateX(-50%) rotate(0deg);
   }
   50% {
-    transform: translateX(30%) rotate(2deg);
+    transform: translateX(0%) rotate(2deg);
   }
   100% {
-    transform: translateX(120%) rotate(0deg);
+    transform: translateX(50%) rotate(0deg);
   }
 }

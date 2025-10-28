@@ -401,7 +401,7 @@ export function PhotoEnhancer({
                   <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
                     <div className="bg-white rounded-lg p-6 flex flex-col items-center space-y-3">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
-                      <p className="text-sm font-medium text-slate-900">Creating your nudio...</p>
+                      <p className="text-sm font-medium text-slate-900">nudioing...</p>
                     </div>
                   </div>
                 )}
@@ -544,7 +544,7 @@ export function PhotoEnhancer({
             onClick={() => setShowPricing((prev) => !prev)}
             className="w-full md:w-auto bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium px-5 py-2.5 rounded-md transition-colors"
           >
-            {showPricing ? "Hide bundles" : "Buy more nudios"}
+            {showPricing ? "Hide bundles" : "More nudios"}
           </button>
         </div>
 
