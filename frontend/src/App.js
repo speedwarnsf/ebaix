@@ -113,11 +113,8 @@ function App() {
 
         <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-2">
-            <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900">
-              Let’s make your next nudio shine.
-            </h1>
             <p className="text-sm text-slate-600 max-w-xl">
-              Drop in a product photo, tap the button, and we’ll deliver a studio-ready nudio in seconds.
+              Shoot or drop in your product photo, tap the button and we'll deliver a listing ready nudio in seconds.
             </p>
           </div>
 

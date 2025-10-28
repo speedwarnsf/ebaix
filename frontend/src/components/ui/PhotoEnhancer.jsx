@@ -385,11 +385,21 @@ export function PhotoEnhancer({
             onClick={() => fileInputRef.current?.click()}
           >
             {preview ? (
-              <img
-                src={preview}
-                alt="Selected product"
-                className="w-full max-h-[520px] object-contain rounded-lg"
-              />
+              <>
+                <img
+                  src={preview}
+                  alt="Selected product"
+                  className="w-full max-h-[520px] object-contain rounded-lg"
+                />
+                {loading && (
+                  <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
+                    <div className="bg-white rounded-lg p-6 flex flex-col items-center space-y-3">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+                      <p className="text-sm font-medium text-slate-900">Creating your nudio...</p>
+                    </div>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="space-y-4 px-6">
                 <svg
@@ -407,7 +417,7 @@ export function PhotoEnhancer({
                 </svg>
                 <div className="space-y-2">
                   <p className="text-base font-semibold text-slate-900">
-                    Click here to start your <span className="italic">nudio</span> shoot.
+                    Click here to start
                   </p>
                   <p className="text-sm text-slate-500">
                     JPG or PNG up to 10MB
@@ -521,7 +531,6 @@ export function PhotoEnhancer({
       <section className="space-y-6 border border-slate-200 rounded-md px-5 py-6 bg-white">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="space-y-1.5">
-            <p className="text-lg font-semibold text-slate-900">Nudio status</p>
             <p className="text-sm text-slate-500">{usageSummaryText}</p>
           </div>
 
