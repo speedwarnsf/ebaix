@@ -143,15 +143,15 @@ export function PhotoEnhancer({
           const logoWidth = logo.width * logoScale;
           const logoHeight = logo.height * logoScale;
 
-          const padding = img.width * 0.025; // Increased padding for better positioning
-          const x = img.width - logoWidth - padding - 60; // Moved further left (35 -> 60)
-          const y = img.height - logoHeight - padding - 50; // Moved further up (20 -> 50)
+          const padding = img.width * 0.015; // Back to original padding
+          const x = img.width - logoWidth - padding - 35; // Back to original left position
+          const y = img.height - logoHeight - padding - 20; // Back to original bottom position
 
           ctx.globalAlpha = 1.0;
           // Use high-quality scaling for the watermark
           ctx.drawImage(logo, x, y, logoWidth, logoHeight);
 
-          resolve(canvas.toDataURL("image/png"));
+          resolve(canvas.toDataURL("image/png", 1.0)); // Highest quality PNG
         };
         img.src = imageBase64;
       };
