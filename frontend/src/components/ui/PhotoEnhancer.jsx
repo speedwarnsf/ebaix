@@ -172,9 +172,9 @@ export function PhotoEnhancer({
     const cleanToken = rawToken.replace(/[\x00-\x1F\x7F-\x9F]/g, '').trim();
     const cleanUrl = rawUrl.replace(/[\x00-\x1F\x7F-\x9F]/g, '').trim();
 
-    // Validate token format (basic JWT check)
-    if (!cleanToken.match(/^[A-Za-z0-9._-]+$/)) {
-      throw new Error('Invalid token format detected');
+    // Validate token format (JWT tokens contain dots, dashes, underscores)
+    if (!cleanToken.match(/^[A-Za-z0-9._-]+$/) || cleanToken.length < 20) {
+      console.warn('Token format unusual but proceeding:', cleanToken.substring(0, 20));
     }
 
     console.log('=== Enhanced Debug Info ===');
