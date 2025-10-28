@@ -1,0 +1,88 @@
+import { loadStripe } from "@stripe/stripe-js";
+
+const STRIPE_PUBLIC_KEY = process.env.REACT_APP_STRIPE_PUBLIC_KEY;
+
+if (!STRIPE_PUBLIC_KEY) {
+  console.warn("Stripe checkout disabled: missing REACT_APP_STRIPE_PUBLIC_KEY");
+}
+
+export const stripe = STRIPE_PUBLIC_KEY ? loadStripe(STRIPE_PUBLIC_KEY) : null;
+
+export const CREDIT_BUNDLES = {
+  small: {
+    name: "10 Listings",
+    credits: 10,
+    price: 4.0,
+    priceInCents: 400,
+    stripeProductId: "prod_ebai_10",
+  },
+  medium: {
+    name: "50 Listings",
+    credits: 50,
+    price: 6.0,
+    priceInCents: 600,
+    stripeProductId: "prod_ebai_50",
+    badge: "BEST VALUE",
+  },
+  large: {
+    name: "100 Listings",
+    credits: 100,
+    price: 12.0,
+    priceInCents: 1200,
+    stripeProductId: "prod_ebai_100",
+    badge: "MOST POPULAR",
+  },
+};
+
+export const SUBSCRIPTION = {
+  name: "200 Listings/Month",
+  credits: 200,
+  price: 14.99,
+  priceInCents: 1499,
+  stripeProductId: "prod_ebai_subscription",
+  recurring: true,
+};
+
+export async function createCheckoutSession(request) {
+  const { bundleType, userId, email, authToken } = request;
+  const bundle =
+    bundleType === "subscription" ? SUBSCRIPTION : CREDIT_BUNDLES[bundleType];
+
+  const bearer = authToken ?? process.env.REACT_APP_SUPABASE_ANON_KEY;
+
+  const response = await fetch(
+    `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/checkout`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${bearer}`,
+        apikey: process.env.REACT_APP_SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({
+        bundleType,
+        userId,
+        email,
+        credits: bundle.credits,
+        priceInCents: bundle.priceInCents,
+        isRecurring: bundleType === "subscription",
+      }),
+    }
+  );
+
+  if (!response.ok) throw new Error("Failed to create checkout session");
+  const { sessionId, url } = await response.json();
+  return { sessionId, url };
+}
+
+export async function redirectToCheckout(checkoutData) {
+  if (!stripe) {
+    throw new Error("Stripe is not configured. Please add REACT_APP_STRIPE_PUBLIC_KEY.");
+  }
+
+  if (checkoutData.url) {
+    window.location.href = checkoutData.url;
+  } else {
+    throw new Error("No checkout URL provided");
+  }
+}

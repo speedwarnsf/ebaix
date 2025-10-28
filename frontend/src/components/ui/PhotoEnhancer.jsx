@@ -34,12 +34,11 @@ export function PhotoEnhancer({
   const authToken = accessToken || anonKey;
 
   // Debug logging
-  console.log('PhotoEnhancer Debug:', {
-    sessionRole,
-    accessToken: accessToken ? 'exists' : 'missing',
-    anonKey: anonKey ? 'exists' : 'missing',
-    authToken: authToken ? 'exists' : 'missing'
-  });
+  console.log('PhotoEnhancer Debug:');
+  console.log('sessionRole:', sessionRole);
+  console.log('accessToken:', accessToken ? 'EXISTS' : 'MISSING');
+  console.log('anonKey:', anonKey ? 'EXISTS' : 'MISSING');
+  console.log('authToken:', authToken ? 'EXISTS' : 'MISSING');
 
   const isUnlimited = usageSummary?.unlimited ?? false;
   const paidNudios = usageSummary?.creditsBalance ?? 0;
@@ -171,12 +170,11 @@ export function PhotoEnhancer({
       apikey: finalAnonKey.trim(),
     };
 
-    console.log('API Call Debug:', {
-      finalAuthToken: finalAuthToken ? 'exists' : 'missing',
-      finalAnonKey: finalAnonKey ? 'exists' : 'missing',
-      finalSupabaseUrl: finalSupabaseUrl ? 'exists' : 'missing',
-      authHeader: headers.Authorization
-    });
+    console.log('API Call Debug:');
+    console.log('finalAuthToken:', finalAuthToken);
+    console.log('finalAnonKey:', finalAnonKey);
+    console.log('finalSupabaseUrl:', finalSupabaseUrl);
+    console.log('authHeader:', headers.Authorization);
 
     const response = await fetch(
       `${finalSupabaseUrl}/functions/v1/optimize-listing`,
