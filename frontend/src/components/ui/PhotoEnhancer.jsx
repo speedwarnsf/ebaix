@@ -172,11 +172,12 @@ export function PhotoEnhancer({
     const cleanToken = rawToken.trim();
     const cleanUrl = rawUrl.trim();
 
-    console.log('=== Enhanced Debug Info ===');
+    console.log('=== Debug Info v3 - Token validation removed ===');
     console.log('Raw token source:', accessToken ? 'accessToken' : anonKey ? 'anonKey' : 'env');
     console.log('Token length:', cleanToken.length);
     console.log('Token starts with:', cleanToken.substring(0, 10));
     console.log('URL:', cleanUrl);
+    console.log('Cache buster:', Date.now());
 
     const headers = {
       "Content-Type": "application/json",
