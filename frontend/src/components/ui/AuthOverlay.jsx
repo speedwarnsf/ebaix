@@ -7,6 +7,7 @@ export function AuthOverlay() {
     showOverlay,
     startGuest,
     signInWithPassword,
+    resetPassword,
     userEmail,
     hasSession,
     dismissOverlay,
@@ -59,13 +60,35 @@ export function AuthOverlay() {
         password: password.trim(),
         remember,
       });
-      toast.success("You’re in! Your studio is warmed up.");
+      toast.success("You're in! Your studio is warmed up.");
     } catch (authError) {
       const message =
         authError?.message?.replace?.(
           "Invalid login credentials",
-          "That combo didn’t work—give it another try."
-        ) ?? "We couldn’t sign you in just yet.";
+          "That combo didn't work—give it another try."
+        ) ?? "We couldn't sign you in just yet.";
+      setError(message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleForgotPassword = async (event) => {
+    event.preventDefault();
+    if (!email.trim()) {
+      setError("Please enter your email address first.");
+      return;
+    }
+
+    setBusy(true);
+    setError("");
+
+    try {
+      await resetPassword(email.trim());
+      toast.success("Password reset email sent! Check your inbox.");
+      setStage("signin");
+    } catch (resetError) {
+      const message = resetError?.message ?? "We couldn't send the reset email.";
       setError(message);
     } finally {
       setBusy(false);
@@ -192,10 +215,60 @@ export function AuthOverlay() {
               </button>
               <button
                 type="button"
+                onClick={() => setStage("forgot")}
+                className="w-full text-slate-600 text-sm underline underline-offset-4"
+              >
+                Forgot password?
+              </button>
+              <button
+                type="button"
                 onClick={() => setStage("choices")}
                 className="w-full text-slate-500 text-sm underline underline-offset-4"
               >
                 Back to welcome
+              </button>
+            </div>
+          </form>
+        )}
+
+        {stage === "forgot" && (
+          <form className="space-y-5" onSubmit={handleForgotPassword}>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-semibold text-slate-900">
+                Reset your password
+              </h2>
+              <p className="text-sm text-slate-600">
+                Enter your email address and we'll send you a password reset link.
+              </p>
+            </div>
+
+            <label className="space-y-1 block">
+              <span className="text-sm font-medium text-slate-600">Email</span>
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+                required
+              />
+            </label>
+
+            {error && <p className="text-sm text-red-500">{error}</p>}
+
+            <div className="space-y-3">
+              <button
+                type="submit"
+                disabled={!email.trim() || busy}
+                className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition"
+              >
+                {busy ? "Sending reset email..." : "Send reset email"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setStage("signin")}
+                className="w-full text-slate-500 text-sm underline underline-offset-4"
+              >
+                Back to sign in
               </button>
             </div>
           </form>
