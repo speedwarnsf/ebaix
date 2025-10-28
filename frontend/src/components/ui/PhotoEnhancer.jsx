@@ -174,19 +174,20 @@ export function PhotoEnhancer({
       return value.trim();
     };
 
+    const cleanToken = validateHeader('token', hardcodedToken);
+    const cleanUrl = validateHeader('url', hardcodedUrl);
+
+    const headers = {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${cleanToken}`,
+      "apikey": cleanToken,
+    };
+
+    console.log('Clean headers:', headers);
+
+    let response;
     try {
-      const cleanToken = validateHeader('token', hardcodedToken);
-      const cleanUrl = validateHeader('url', hardcodedUrl);
-
-      const headers = {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${cleanToken}`,
-        "apikey": cleanToken,
-      };
-
-      console.log('Clean headers:', headers);
-
-      const response = await fetch(`${cleanUrl}/functions/v1/optimize-listing`, {
+      response = await fetch(`${cleanUrl}/functions/v1/optimize-listing`, {
         method: "POST",
         headers,
         body: JSON.stringify({
