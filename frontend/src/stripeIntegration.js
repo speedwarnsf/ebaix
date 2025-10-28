@@ -14,14 +14,14 @@ export const CREDIT_BUNDLES = {
     credits: 10,
     price: 4.0,
     priceInCents: 400,
-    stripeProductId: "prod_ebai_10",
+    stripeProductId: "prod_TJuE451l9Mq5Z4",
   },
   medium: {
     name: "50 Nudios",
     credits: 50,
     price: 6.0,
     priceInCents: 600,
-    stripeProductId: "prod_ebai_50",
+    stripeProductId: "prod_TJuHWWnXFGRqXj",
     badge: "BEST VALUE",
   },
   large: {
@@ -29,7 +29,7 @@ export const CREDIT_BUNDLES = {
     credits: 100,
     price: 12.0,
     priceInCents: 1200,
-    stripeProductId: "prod_ebai_100",
+    stripeProductId: "prod_TJuICmscUK8kQo",
     badge: "MOST POPULAR",
   },
 };
@@ -39,7 +39,7 @@ export const SUBSCRIPTION = {
   credits: 200,
   price: 14.99,
   priceInCents: 1499,
-  stripeProductId: "prod_ebai_subscription",
+  stripeProductId: "prod_TJuJBjQB8f4Lxv",
   recurring: true,
 };
 
