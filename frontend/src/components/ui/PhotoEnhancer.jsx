@@ -33,6 +33,14 @@ export function PhotoEnhancer({
   const isMember = sessionRole === "member";
   const authToken = accessToken || anonKey;
 
+  // Get current guest usage from localStorage
+  const getCurrentGuestUsage = () => {
+    if (isMember) return 0;
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    const storageKey = `nudio_guest_usage_${currentMonth}`;
+    return parseInt(localStorage.getItem(storageKey) || '0');
+  };
+
   // Debug logging (temporary for troubleshooting)
   console.log('PhotoEnhancer Debug:', {
     sessionRole,
@@ -45,10 +53,13 @@ export function PhotoEnhancer({
   const paidNudios = usageSummary?.creditsBalance ?? 0;
   const freeLimit = usageSummary?.freeCreditsLimit ?? GUEST_LIMIT;
 
+  const guestUsageCount = getCurrentGuestUsage();
   const freeRemainingRaw =
     isUnlimited === true
       ? Infinity
-      : usageSummary?.freeCreditsRemaining ?? (isMember ? 0 : GUEST_LIMIT);
+      : isMember
+        ? (usageSummary?.freeCreditsRemaining ?? 0)
+        : Math.max(0, GUEST_LIMIT - guestUsageCount);
 
   const freeRemainingDisplay =
     freeRemainingRaw === Infinity
@@ -307,8 +318,21 @@ export function PhotoEnhancer({
 
   const handleEnhancePhoto = async () => {
     if (!selectedImage || !preview) {
-      setError("Pop in a photo first and we’ll do the rest.");
+      setError("Pop in a photo first and we'll do the rest.");
       return;
+    }
+
+    // Check guest usage limit before processing
+    if (!isMember) {
+      const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
+      const storageKey = `nudio_guest_usage_${currentMonth}`;
+      const guestUsage = parseInt(localStorage.getItem(storageKey) || '0');
+
+      if (guestUsage >= GUEST_LIMIT) {
+        setError("You've enjoyed this month's guest nudios. Sign in to unlock more studio time.");
+        toast("Ready for more nudios? Sign in to keep the glow going!");
+        return;
+      }
     }
 
     setLoading(true);
@@ -328,7 +352,20 @@ export function PhotoEnhancer({
           setShowSaveOptions(false);
           toast.success("Fresh nudio ready! Save it or share it in a tap.");
 
-          if (result.usage) {
+          // Update guest usage count in localStorage
+          if (!isMember) {
+            const currentMonth = new Date().toISOString().slice(0, 7);
+            const storageKey = `nudio_guest_usage_${currentMonth}`;
+            const currentUsage = parseInt(localStorage.getItem(storageKey) || '0');
+            const newUsage = currentUsage + 1;
+            localStorage.setItem(storageKey, newUsage.toString());
+
+            // Update UI with new count
+            onUsageUpdate?.({
+              freeCreditsLimit: GUEST_LIMIT,
+              freeCreditsRemaining: Math.max(0, GUEST_LIMIT - newUsage)
+            });
+          } else if (result.usage) {
             onUsageUpdate?.(result.usage);
           }
         } catch (err) {
