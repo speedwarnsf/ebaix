@@ -185,6 +185,21 @@ export function PhotoEnhancer({
       "apikey": cleanToken,
     };
 
+    console.log('=== Header Validation ===');
+    console.log('Authorization header:', typeof headers.Authorization, headers.Authorization.length);
+    console.log('apikey header:', typeof headers.apikey, headers.apikey.length);
+    console.log('Content-Type:', headers["Content-Type"]);
+
+    // Validate each header value
+    Object.entries(headers).forEach(([key, value]) => {
+      if (typeof value !== 'string') {
+        console.error(`Header ${key} is not a string:`, typeof value, value);
+      }
+      if (value.includes('\n') || value.includes('\r')) {
+        console.error(`Header ${key} contains newlines:`, value);
+      }
+    });
+
     let response;
     try {
       response = await fetch(`${cleanUrl}/functions/v1/optimize-listing`, {
