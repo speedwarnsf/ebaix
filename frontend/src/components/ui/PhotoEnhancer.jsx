@@ -157,33 +157,37 @@ export function PhotoEnhancer({
 
   const enhanceWithGemini = async (base64Image) => {
     // Get tokens from props or environment
-    const finalAuthToken = accessToken || anonKey || process.env.REACT_APP_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsbG9maGx0bmN1c25ha2hlaGR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5NzcwOTUsImV4cCI6MjA3NjU1MzA5NX0.evf7AQnHcnp6YSccjVhp_qu8ctLOo14v9oGwnapqvaE";
-    const finalSupabaseUrl = supabaseUrl || process.env.REACT_APP_SUPABASE_URL || "https://cllofhltncusnakhehdw.supabase.co";
+    const rawToken = accessToken || anonKey || process.env.REACT_APP_SUPABASE_ANON_KEY;
+    const rawUrl = supabaseUrl || process.env.REACT_APP_SUPABASE_URL;
 
-    // Validate and clean header values
-    const validateHeader = (value) => {
-      if (typeof value !== 'string') {
-        throw new Error(`Header value is not a string: ${typeof value}`);
-      }
-      return value.trim();
-    };
+    // Strict token validation and cleaning
+    if (!rawToken || typeof rawToken !== 'string') {
+      throw new Error('No valid auth token available');
+    }
+    if (!rawUrl || typeof rawUrl !== 'string') {
+      throw new Error('No valid Supabase URL available');
+    }
 
-    const cleanToken = validateHeader(finalAuthToken);
-    const cleanUrl = validateHeader(finalSupabaseUrl);
+    // Clean tokens by removing all non-printable characters and trim
+    const cleanToken = rawToken.replace(/[\x00-\x1F\x7F-\x9F]/g, '').trim();
+    const cleanUrl = rawUrl.replace(/[\x00-\x1F\x7F-\x9F]/g, '').trim();
+
+    // Validate token format (basic JWT check)
+    if (!cleanToken.match(/^[A-Za-z0-9._-]+$/)) {
+      throw new Error('Invalid token format detected');
+    }
+
+    console.log('=== Enhanced Debug Info ===');
+    console.log('Raw token source:', accessToken ? 'accessToken' : anonKey ? 'anonKey' : 'env');
+    console.log('Token length:', cleanToken.length);
+    console.log('Token starts with:', cleanToken.substring(0, 10));
+    console.log('URL:', cleanUrl);
 
     const headers = {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${cleanToken}`,
       "apikey": cleanToken,
     };
-
-    console.log('=== Making API Call ===');
-    console.log('URL:', `${cleanUrl}/functions/v1/optimize-listing`);
-    console.log('Headers:', {
-      'Content-Type': headers['Content-Type'],
-      'Authorization': `Bearer ${cleanToken.substring(0, 20)}...`,
-      'apikey': `${cleanToken.substring(0, 20)}...`
-    });
 
     let response;
     try {
