@@ -118,6 +118,13 @@ export function SessionProvider({ children }) {
     return data.session;
   };
 
+  const resetPassword = async (email) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) throw error;
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setSession(null);
@@ -139,6 +146,7 @@ export function SessionProvider({ children }) {
       rememberMe,
       setRememberPreference,
       signInWithPassword,
+      resetPassword,
       signOut,
       startGuest,
       completeMember,
