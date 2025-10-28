@@ -1,5 +1,4 @@
 import React, { useState, useRef } from "react";
-import { toast } from "sonner";
 import {
   CREDIT_BUNDLES,
   SUBSCRIPTION,
@@ -7,19 +6,9 @@ import {
   redirectToCheckout,
 } from "../../stripeIntegration";
 
-const GUEST_LIMIT = 3;
+const DEFAULT_FREE_LIMIT = 3;
 
-export function PhotoEnhancer({
-  sessionRole,
-  userEmail,
-  userId,
-  usageSummary,
-  onUsageUpdate,
-  usageError,
-  accessToken,
-  anonKey,
-  supabaseUrl,
-}) {
+export function PhotoEnhancer({ userEmail, usageSummary, onUsageUpdate, usageError }) {
   const [selectedImage, setSelectedImage] = useState(null);
   const [preview, setPreview] = useState("");
   const [enhancedImage, setEnhancedImage] = useState("");
@@ -30,44 +19,43 @@ export function PhotoEnhancer({
   const [processingBundle, setProcessingBundle] = useState(null);
   const fileInputRef = useRef(null);
 
-  const isMember = sessionRole === "member";
-  const authToken = isMember && accessToken ? accessToken : anonKey;
-
-  const isUnlimited = usageSummary?.unlimited ?? false;
-  const paidNudios = usageSummary?.creditsBalance ?? 0;
-  const freeLimit = usageSummary?.freeCreditsLimit ?? GUEST_LIMIT;
-
-  const freeRemainingRaw =
-    isUnlimited === true
-      ? Infinity
-      : usageSummary?.freeCreditsRemaining ?? (isMember ? 0 : GUEST_LIMIT);
+  const isOwner = usageSummary?.unlimited ?? false;
+  const paidCredits = usageSummary?.creditsBalance ?? 0;
+  const freeLimit = usageSummary?.freeCreditsLimit ?? DEFAULT_FREE_LIMIT;
+  const freeRemainingRaw = usageSummary?.unlimited
+    ? Infinity
+    : usageSummary?.freeCreditsRemaining ?? null;
 
   const freeRemainingDisplay =
-    freeRemainingRaw === Infinity
+    freeRemainingRaw === null
+      ? null
+      : freeRemainingRaw === Infinity
       ? "∞"
-      : typeof freeRemainingRaw === "number"
-      ? freeRemainingRaw
-      : "?";
+      : freeRemainingRaw;
 
   const usageSummaryText = usageError
     ? usageError
-    : isMember
-    ? isUnlimited
-      ? "Member access • unlimited nudios every month"
-      : `Member access • ${paidNudios} bonus nudios ready to roll`
-    : `Guest mode • ${freeRemainingDisplay}/${freeLimit} nudios this month`;
+    : usageSummary
+    ? isOwner
+      ? "Unlimited nudio shoots (owner access)"
+      : `${paidCredits} paid · ${freeRemainingDisplay}/${freeLimit} free this month`
+    : "Checking credits...";
+
+  const hasCredits = isOwner || paidCredits > 0 || (freeRemainingRaw ?? 0) > 0;
+  const emailMissing = !userEmail;
+  const disableProcessing = emailMissing || !hasCredits;
 
   const handleImageSelect = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      setError("Please select an image file");
+      setError("Please select a valid image file");
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      setError("JPG or PNG up to 10MB");
+      setError("Image must be smaller than 10MB");
       return;
     }
 
@@ -149,38 +137,36 @@ export function PhotoEnhancer({
 
   const enhanceWithGemini = async (base64Image) => {
     const response = await fetch(
-      `${supabaseUrl}/functions/v1/optimize-listing`,
+      `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/optimize-listing`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-          apikey: anonKey,
+          Authorization: `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({
           imageBase64: base64Image,
           mode: "image",
-          userEmail: isMember ? userEmail : undefined,
+          userEmail,
         }),
       }
     );
 
-    const payload = await response.json().catch(() => ({}));
+    const result = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      const error = new Error(payload?.error || "Failed to enhance image");
-      error.usage = payload?.usage;
-      error.status = response.status;
+      const error = new Error(result?.error || "Failed to enhance image");
+      error.usage = result?.usage;
       throw error;
     }
 
-    if (!payload.success || !payload.image) {
+    if (!result.success || !result.image) {
       const error = new Error("No enhanced image returned");
-      error.usage = payload?.usage;
+      error.usage = result?.usage;
       throw error;
     }
 
-    return payload;
+    return result;
   };
 
   const dataUrlToBlob = (dataUrl) => {
@@ -272,7 +258,7 @@ export function PhotoEnhancer({
 
   const handleEnhancePhoto = async () => {
     if (!selectedImage || !preview) {
-      setError("Pop in a photo first and we’ll do the rest.");
+      setError("Please select an image first");
       return;
     }
 
@@ -291,8 +277,6 @@ export function PhotoEnhancer({
 
           setEnhancedImage(watermarkedImage);
           setShowSaveOptions(false);
-          toast.success("Fresh nudio ready! Save it or share it in a tap.");
-
           if (result.usage) {
             onUsageUpdate?.(result.usage);
           }
@@ -300,22 +284,14 @@ export function PhotoEnhancer({
           if (err?.usage) {
             onUsageUpdate?.(err.usage);
           }
-          if (err?.status === 402) {
-            setError(
-              "You’ve enjoyed this month’s guest nudios. Sign in to unlock more studio time."
-            );
-            toast("Ready for more nudios? Sign in to keep the glow going!");
-          } else {
-            setError(err?.message || "We couldn’t finish that nudio just yet.");
-            toast.error("That try didn’t stick—give it another go!");
-          }
+          setError(err?.message || "Failed to enhance image");
         } finally {
           setLoading(false);
         }
       };
       reader.readAsDataURL(selectedImage);
     } catch (err) {
-      setError(err?.message || "Something went sideways. Try again.");
+      setError(err?.message || "An unexpected error occurred");
       setLoading(false);
     }
   };
@@ -325,15 +301,14 @@ export function PhotoEnhancer({
     try {
       const checkoutData = await createCheckoutSession({
         bundleType,
-        userId,
-        email: userEmail || "guest@nudio.ai",
-        authToken,
+        userId: "temp-user-id",
+        email: userEmail || "user@example.com",
       });
 
       await redirectToCheckout(checkoutData);
     } catch (purchaseError) {
       console.error("Purchase failed:", purchaseError);
-      toast.error("Checkout couldn’t open—let’s try that again.");
+      alert("Checkout could not start. Please try again.");
     } finally {
       setProcessingBundle(null);
     }
@@ -386,7 +361,7 @@ export function PhotoEnhancer({
                     Click here to start your <span className="italic">nudio</span> shoot.
                   </p>
                   <p className="text-sm text-slate-500">
-                    JPG or PNG up to 10MB
+                    High-resolution JPG or PNG up to 10MB
                   </p>
                 </div>
               </div>
@@ -452,7 +427,6 @@ export function PhotoEnhancer({
                 Original photo
               </h3>
               <img
-                id="original-photo"
                 src={preview}
                 alt="Original upload"
                 className="w-full max-h-[320px] object-contain rounded-lg border border-slate-200 bg-white"
@@ -470,10 +444,10 @@ export function PhotoEnhancer({
         <div className="flex flex-col sm:flex-row gap-3">
           <button
             onClick={handleEnhancePhoto}
-            disabled={!preview || loading}
+            disabled={!preview || loading || disableProcessing}
             className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-md transition-colors"
           >
-            {loading ? "nudioing" : "Process your nudio"}
+          {loading ? "nudioing" : "Process your nudio"}
           </button>
           {enhancedImage && (
             <button
@@ -484,28 +458,31 @@ export function PhotoEnhancer({
             </button>
           )}
         </div>
-        {!loading &&
-          freeRemainingRaw !== Infinity &&
-          typeof freeRemainingRaw === "number" &&
-          freeRemainingRaw <= 0 && (
-            <p className="text-sm text-slate-500">
-              Ready for more? Sign in or grab a bundle to keep the magic going.
-            </p>
-          )}
+        {disableProcessing && (
+          <p className="text-sm text-slate-500">
+            {emailMissing
+              ? "Add your email above to start tracking nudio credits."
+              : "You've used the free allotment. Grab more credits to keep going."}
+          </p>
+        )}
       </section>
 
       <section className="space-y-6 border border-slate-200 rounded-md px-5 py-6 bg-white">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="space-y-1.5">
-            <p className="text-lg font-semibold text-slate-900">Nudio status</p>
+            <p className="text-lg font-semibold text-slate-900">Credits</p>
             <p className="text-sm text-slate-500">{usageSummaryText}</p>
           </div>
-
+          {!emailMissing && !isOwner && freeRemainingRaw !== null && freeRemainingRaw <= 0 && paidCredits <= 0 && (
+            <p className="text-sm text-red-500">
+              You've used all free nudio shoots for this month. Purchase more credits to keep creating.
+            </p>
+          )}
           <button
             onClick={() => setShowPricing((prev) => !prev)}
             className="w-full md:w-auto bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium px-5 py-2.5 rounded-md transition-colors"
           >
-            {showPricing ? "Hide bundles" : "Buy more nudios"}
+            {showPricing ? "Hide pricing" : "Buy more credits"}
           </button>
         </div>
 
@@ -516,7 +493,7 @@ export function PhotoEnhancer({
                 Choose the bundle that fits
               </h3>
               <p className="text-sm text-slate-500">
-                Clear, playful pricing. Your nudios never expire.
+                Clear, predictable pricing. Your credits never expire.
               </p>
             </div>
 
@@ -527,22 +504,25 @@ export function PhotoEnhancer({
                   className="relative flex flex-col gap-4 border border-slate-200 rounded-md bg-slate-50 px-5 py-5 hover:border-slate-400 transition-colors"
                 >
                   {bundle.badge && (
-                    <span className="badge-shimmer text-xs font-medium px-3 py-1 rounded-full shadow-sm">
-                      <span>{bundle.badge}</span>
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-medium text-slate-600 bg-white border border-slate-200 px-3 py-1 rounded-full shadow-sm">
+                      {bundle.badge}
                     </span>
                   )}
                   <div className="space-y-1">
                     <p className="text-base font-semibold text-slate-900">
                       {bundle.name}
                     </p>
-                    <p className="text-xs text-slate-500">One-time bundle</p>
+                    <p className="text-xs text-slate-500">
+                      One-time bundle
+                    </p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-3xl font-semibold text-slate-900">
                       ${bundle.price}
                     </p>
                     <p className="text-sm text-slate-500">
-                      {bundle.credits} nudios · ${(bundle.price / bundle.credits).toFixed(2)} each
+                      {bundle.credits} credits · $
+                      {(bundle.price / bundle.credits).toFixed(2)} per credit
                     </p>
                   </div>
                   <button
@@ -572,7 +552,7 @@ export function PhotoEnhancer({
               <ul className="text-sm text-slate-200 space-y-1.5">
                 <li className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-slate-200" />
-                  <span>200 nudios each month, ready to post</span>
+                  <span>200 listings per month included</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-slate-200" />
@@ -588,7 +568,9 @@ export function PhotoEnhancer({
                 disabled={processingBundle === "subscription"}
                 className="w-full bg-white text-slate-900 hover:bg-slate-100 disabled:bg-slate-300 text-sm font-semibold py-2.5 rounded-md transition-colors"
               >
-                {processingBundle === "subscription" ? "Processing..." : "Subscribe"}
+                {processingBundle === "subscription"
+                  ? "Processing..."
+                  : "Subscribe"}
               </button>
             </div>
           </div>
