@@ -1,330 +1,199 @@
-// PhotoEnhancer.jsx - Photo enhancement component
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
+import { toast } from "sonner";
+import { useSession } from "../../context/SessionContext";
 
-export function PhotoEnhancer({ userCredits, onSuccess }) {
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [preview, setPreview] = useState("");
-  const [enhancedImage, setEnhancedImage] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+const MAX_GUEST_NUDIOS = 3;
+
+export function PhotoEnhancer() {
+  const { sessionRole, accessToken, userId } = useSession();
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processedImageUrl, setProcessedImageUrl] = useState(null);
+  const [usageCount, setUsageCount] = useState(0);
   const fileInputRef = useRef(null);
 
-  const handleImageSelect = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      setError("Please select a valid image file");
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      setError("Image must be smaller than 10MB");
-      return;
-    }
-
-    setSelectedImage(file);
-    setError("");
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setPreview(e.target?.result);
-    };
-    reader.readAsDataURL(file);
+  const getCurrentGuestUsage = () => {
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    const storageKey = `nudio_guest_usage_${currentMonth}`;
+    return parseInt(localStorage.getItem(storageKey) || '0');
   };
 
-  // Gemini creates the professional pink studio background
-
-  const addWhiteBorder = async (imageBase64) => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        const borderSize = Math.max(40, Math.floor(img.width * 0.03)); // 3% of image width or 40px minimum
-        const canvas = document.createElement("canvas");
-        canvas.width = img.width + (borderSize * 2);
-        canvas.height = img.height + (borderSize * 2);
-        const ctx = canvas.getContext("2d");
-
-        if (!ctx) {
-          resolve(imageBase64);
-          return;
-        }
-
-        // Fill with white background
-        ctx.fillStyle = "#FFFFFF";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // Draw the image centered with border
-        ctx.drawImage(img, borderSize, borderSize);
-
-        resolve(canvas.toDataURL("image/png"));
-      };
-      img.src = imageBase64;
-    });
+  const incrementGuestUsage = () => {
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    const storageKey = `nudio_guest_usage_${currentMonth}`;
+    const currentUsage = getCurrentGuestUsage();
+    localStorage.setItem(storageKey, (currentUsage + 1).toString());
+    setUsageCount(currentUsage + 1);
   };
 
-  const addWatermark = async (imageBase64) => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      const logo = new Image();
+  useEffect(() => {
+    if (sessionRole === "guest") {
+      setUsageCount(getCurrentGuestUsage());
+    }
+  }, [sessionRole]);
 
-      logo.onload = () => {
-        img.onload = () => {
-          const canvas = document.createElement("canvas");
-          canvas.width = img.width;
-          canvas.height = img.height;
-          const ctx = canvas.getContext("2d");
-
-          if (!ctx) {
-            resolve(imageBase64);
-            return;
-          }
-
-          // Draw the main image
-          ctx.drawImage(img, 0, 0);
-
-          // Calculate logo size (30% larger than before)
-          const logoMaxWidth = img.width * 0.104; // 10.4% of image width (was 8%, now 30% larger)
-          const logoScale = logoMaxWidth / logo.width;
-          const logoWidth = logo.width * logoScale;
-          const logoHeight = logo.height * logoScale;
-
-          // Position in lower right corner with padding, adjusted per user request
-          const padding = img.width * 0.015; // 1.5% padding
-          const x = img.width - logoWidth - padding - 35; // Move left 35px
-          const y = img.height - logoHeight - padding - 20; // Move up 20px
-
-          // Draw logo at 100% opacity
-          ctx.globalAlpha = 1.0;
-          ctx.drawImage(logo, x, y, logoWidth, logoHeight);
-
-          // Use PNG for lossless quality (Gemini returns PNG)
-          resolve(canvas.toDataURL("image/png"));
-        };
-        img.src = imageBase64;
-      };
-
-      logo.onerror = () => {
-        // If logo fails to load, just return original image
-        resolve(imageBase64);
-      };
-
-      logo.src = "/ebai-logo.png";
-    });
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      setProcessedImageUrl(null);
+    }
   };
 
-  const handleEnhancePhoto = async () => {
-    if (!selectedImage || !preview) {
-      setError("Please select an image first");
+  const canProcessImage = () => {
+    if (sessionRole === "member") return true;
+    if (sessionRole === "guest") return usageCount < MAX_GUEST_NUDIOS;
+    return false;
+  };
+
+  const cleanAuthHeaders = (token) => {
+    if (!token) return null;
+    return token.replace(/[\r\n\t\s]/g, '').trim();
+  };
+
+  const processImage = useCallback(async () => {
+    if (!selectedFile) {
+      toast.error("Please select an image first");
       return;
     }
 
-    if (userCredits < 1) {
-      setError("Insufficient credits. Please purchase more credits.");
+    if (!canProcessImage()) {
+      toast.error(`Guest limit reached. You've used all ${MAX_GUEST_NUDIOS} complimentary nudios this month.`);
       return;
     }
 
-    setLoading(true);
-    setError("");
+    setIsProcessing(true);
 
     try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const base64Image = e.target?.result;
+      const formData = new FormData();
+      formData.append("image", selectedFile);
 
-          const response = await fetch(
-            `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/optimize-listing`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`,
-              },
-              body: JSON.stringify({
-                imageBase64: base64Image,
-                mode: "image",
-              }),
-            }
-          );
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || "Failed to enhance image");
-          }
-
-          const result = await response.json();
-
-          if (!result.success || !result.image) {
-            throw new Error("No enhanced image returned");
-          }
-
-          // Gemini created the professional pink background at full resolution
-          // Add white border first, then watermark
-          const borderedImage = await addWhiteBorder(result.image);
-          const watermarkedImage = await addWatermark(borderedImage);
-          setEnhancedImage(watermarkedImage);
-          onSuccess();
-        } catch (err) {
-          setError(err?.message || "Failed to enhance image");
-        } finally {
-          setLoading(false);
+      const headers = {};
+      
+      if (sessionRole === "member" && accessToken) {
+        const cleanToken = cleanAuthHeaders(accessToken);
+        if (cleanToken) {
+          headers.Authorization = `Bearer ${cleanToken}`;
         }
-      };
-      reader.readAsDataURL(selectedImage);
-    } catch (err) {
-      setError(err?.message || "An error occurred");
-      setLoading(false);
+      }
+
+      if (userId) {
+        headers["X-User-ID"] = userId;
+      }
+
+      const response = await fetch("https://api.ebaix.com/enhance", {
+        method: "POST",
+        body: formData,
+        headers,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const processedUrl = URL.createObjectURL(blob);
+      setProcessedImageUrl(processedUrl);
+
+      if (sessionRole === "guest") {
+        incrementGuestUsage();
+      }
+
+      toast.success("Image enhanced successfully!");
+    } catch (error) {
+      console.error("Enhancement error:", error);
+      toast.error(`Enhancement failed: ${error.message}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [selectedFile, sessionRole, accessToken, userId, usageCount]);
+
+  const handleDownload = () => {
+    if (processedImageUrl) {
+      const link = document.createElement("a");
+      link.href = processedImageUrl;
+      link.download = `enhanced_${selectedFile.name}`;
+      link.click();
     }
   };
 
-  const handleDownload = () => {
-    if (!enhancedImage) return;
-
-    const link = document.createElement("a");
-    link.href = enhancedImage;
-    link.download = `ebai-enhanced-${Date.now()}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  const remainingGuestNudios = sessionRole === "guest" ? Math.max(0, MAX_GUEST_NUDIOS - usageCount) : null;
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <h2 className="text-3xl font-bold text-gray-900 mb-2">Photo Enhancer</h2>
-      <p className="text-gray-600 mb-8">
-        Remove backgrounds and add professional pink studio backdrops to your product photos.
-      </p>
-
-      <div className="space-y-8">
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors cursor-pointer"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <svg
-            className="mx-auto h-12 w-12 text-gray-400 mb-4"
-            stroke="currentColor"
-            fill="none"
-            viewBox="0 0 48 48"
-          >
-            <path d="M28 8H12a4 4 0 00-4 4v20a4 4 0 004 4h24a4 4 0 004-4V20m-14-8v12m6-6l-6 6-6-6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          <p className="text-lg font-medium text-gray-900 mb-1">
-            Click to upload or drag and drop
-          </p>
-          <p className="text-sm text-gray-600">PNG, JPG, GIF up to 10MB</p>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleImageSelect}
-            className="hidden"
-          />
-        </div>
-
-        {preview && !enhancedImage && (
-          <div className="grid md:grid-cols-2 gap-8">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Original</h3>
-              <img
-                src={preview}
-                alt="Original"
-                className="w-full h-64 object-cover rounded-lg border border-gray-200"
-              />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Preview</h3>
-              <div className="w-full h-64 bg-gradient-to-br from-pink-100 to-pink-50 rounded-lg border border-gray-200 flex items-center justify-center">
-                <p className="text-gray-500 text-sm">Processing will show preview here</p>
-              </div>
-            </div>
+    <div className="max-w-2xl mx-auto p-6 space-y-6">
+      <div className="text-center space-y-2">
+        <h1 className="text-3xl font-bold text-slate-900">Nudio Photo Enhancer</h1>
+        <p className="text-slate-600">Upload and enhance your photos with AI</p>
+        
+        {sessionRole === "guest" && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p className="text-sm text-blue-700">
+              Guest mode: {remainingGuestNudios} complimentary nudios remaining this month
+            </p>
           </div>
         )}
-
-        {enhancedImage && (
-          <div>
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Enhanced Photo</h3>
-              <div className="bg-gray-100 rounded-lg p-4">
-                <img
-                  src={enhancedImage}
-                  alt="Enhanced"
-                  className="w-full max-w-2xl mx-auto rounded-lg border-2 border-gray-300 shadow-lg"
-                />
-                <p className="text-sm text-gray-600 text-center mt-4 md:hidden">
-                  📱 <strong>Tap and hold</strong> the image above, then select "Save Image" or "Add to Photos" to save to your camera roll
-                </p>
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-8 mb-8">
-              <div>
-                <h3 className="text-base font-semibold text-gray-700 mb-2">Original</h3>
-                <img src={preview} alt="Original" className="w-full h-48 object-cover rounded-lg border border-gray-200" />
-              </div>
-              <div>
-                <h3 className="text-base font-semibold text-gray-700 mb-2">Enhanced Preview</h3>
-                <div className="w-full h-48 rounded-lg border border-gray-200 overflow-hidden">
-                  <img
-                    src={enhancedImage}
-                    alt="Enhanced Preview"
-                    className="w-full h-full object-cover"
-                    style={{ transform: 'scale(1.1)' }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-800">{error}</p>
-          </div>
-        )}
-
-        <div className="flex gap-4">
-          {!enhancedImage ? (
-            <>
-              <button
-                onClick={handleEnhancePhoto}
-                disabled={!preview || loading || userCredits < 1}
-                className="flex-1 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium py-3 px-6 rounded-lg transition-colors"
-              >
-                {loading ? "Processing..." : "Enhance Photo"}
-              </button>
-              {userCredits < 1 && (
-                <p className="text-red-600 text-sm self-center">Insufficient credits</p>
-              )}
-            </>
-          ) : (
-            <>
-              <button
-                onClick={handleDownload}
-                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-lg transition-colors"
-              >
-                <span className="hidden md:inline">Download Enhanced Image</span>
-                <span className="md:hidden">Download (Desktop)</span>
-              </button>
-              <button
-                onClick={() => {
-                  setSelectedImage(null);
-                  setPreview("");
-                  setEnhancedImage("");
-                }}
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium py-3 px-6 rounded-lg transition-colors"
-              >
-                Process Another Photo
-              </button>
-            </>
-          )}
-        </div>
-
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-800">
-            Each enhancement costs 1 credit. You have <span className="font-semibold">{userCredits}</span> credits available.
-          </p>
-        </div>
       </div>
+
+      <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+        
+        {!previewUrl ? (
+          <div className="space-y-4">
+            <div className="text-slate-400">
+              <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2 rounded-lg transition"
+            >
+              Choose Image
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <img src={previewUrl} alt="Preview" className="max-w-full max-h-64 mx-auto rounded-lg" />
+            <div className="space-x-3">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-slate-100 hover:bg-slate-200 text-slate-900 px-4 py-2 rounded-lg transition"
+              >
+                Choose Different Image
+              </button>
+              <button
+                onClick={processImage}
+                disabled={isProcessing || !canProcessImage()}
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg transition"
+              >
+                {isProcessing ? "Enhancing..." : "Enhance Image"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {processedImageUrl && (
+        <div className="border border-slate-200 rounded-lg p-6 space-y-4">
+          <h3 className="text-lg font-semibold text-slate-900">Enhanced Result</h3>
+          <img src={processedImageUrl} alt="Enhanced" className="max-w-full mx-auto rounded-lg" />
+          <button
+            onClick={handleDownload}
+            className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg transition"
+          >
+            Download Enhanced Image
+          </button>
+        </div>
+      )}
     </div>
   );
 }
