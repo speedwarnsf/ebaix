@@ -1,12 +1,7 @@
 import { loadStripe } from "@stripe/stripe-js";
 
 const STRIPE_PUBLIC_KEY = process.env.REACT_APP_STRIPE_PUBLIC_KEY;
-
-if (!STRIPE_PUBLIC_KEY) {
-  console.warn("Stripe checkout disabled: missing REACT_APP_STRIPE_PUBLIC_KEY");
-}
-
-export const stripe = STRIPE_PUBLIC_KEY ? loadStripe(STRIPE_PUBLIC_KEY) : null;
+export const stripe = loadStripe(STRIPE_PUBLIC_KEY);
 
 export const CREDIT_BUNDLES = {
   small: {
@@ -44,11 +39,8 @@ export const SUBSCRIPTION = {
 };
 
 export async function createCheckoutSession(request) {
-  const { bundleType, userId, email, authToken } = request;
-  const bundle =
-    bundleType === "subscription" ? SUBSCRIPTION : CREDIT_BUNDLES[bundleType];
-
-  const bearer = authToken ?? process.env.REACT_APP_SUPABASE_ANON_KEY;
+  const { bundleType, userId, email } = request;
+  const bundle = bundleType === "subscription" ? SUBSCRIPTION : CREDIT_BUNDLES[bundleType];
 
   const response = await fetch(
     `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/checkout`,
@@ -56,8 +48,7 @@ export async function createCheckoutSession(request) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${bearer}`,
-        apikey: process.env.REACT_APP_SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify({
         bundleType,
@@ -76,10 +67,7 @@ export async function createCheckoutSession(request) {
 }
 
 export async function redirectToCheckout(checkoutData) {
-  if (!stripe) {
-    throw new Error("Stripe is not configured. Please add REACT_APP_STRIPE_PUBLIC_KEY.");
-  }
-
+  // Use direct URL redirect instead of deprecated redirectToCheckout
   if (checkoutData.url) {
     window.location.href = checkoutData.url;
   } else {

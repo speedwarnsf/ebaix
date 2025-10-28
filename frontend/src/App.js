@@ -1,97 +1,159 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "./App.css";
-import { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
 import { PhotoEnhancer } from "./components/ui/PhotoEnhancer";
+import { AuthOverlay } from "./components/ui/AuthOverlay";
+import { useSession } from "./context/SessionContext";
+
+const GUEST_BASELINE = {
+  freeCreditsLimit: 3,
+  freeCreditsRemaining: 3,
+};
+
+const buildHeaders = ({ accessToken, anonKey }) => ({
+  "Content-Type": "application/json",
+  Authorization: `Bearer ${accessToken ?? anonKey}`,
+  apikey: anonKey,
+});
 
 function App() {
-  const [userEmail, setUserEmail] = useState(() => {
-    if (typeof window === "undefined") return "";
-    return window.localStorage.getItem("nudio:userEmail") ?? "";
-  });
-  const [usageSummary, setUsageSummary] = useState(null);
+  const {
+    sessionRole,
+    userEmail,
+    accessToken,
+    userId,
+    openOverlay,
+    signOut,
+  } = useSession();
+
+  const anonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+  const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+
+  const [usageSummary, setUsageSummary] = useState(GUEST_BASELINE);
   const [usageError, setUsageError] = useState(null);
 
-  const sanitizedEmail = useMemo(() => userEmail.trim().toLowerCase(), [userEmail]);
-
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("nudio:userEmail", userEmail ?? "");
-    }
-  }, [userEmail]);
-
-  useEffect(() => {
-    if (!sanitizedEmail) {
-      setUsageSummary(null);
-      setUsageError("Enter your email to track credits");
+    if (sessionRole !== "member" || !userEmail || !accessToken) {
+      setUsageError(null);
+      if (sessionRole === "guest") {
+        setUsageSummary((prev) => ({
+          ...GUEST_BASELINE,
+          freeCreditsRemaining:
+            typeof prev?.freeCreditsRemaining === "number"
+              ? prev.freeCreditsRemaining
+              : GUEST_BASELINE.freeCreditsRemaining,
+        }));
+      }
       return;
     }
 
-    const loadUsage = async () => {
+    let mounted = true;
+
+    const fetchUsage = async () => {
       try {
         const response = await fetch(
-          `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/usage-summary`,
+          `${supabaseUrl}/functions/v1/usage-summary`,
           {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${process.env.REACT_APP_SUPABASE_ANON_KEY}`,
-            },
-            body: JSON.stringify({ userEmail: sanitizedEmail }),
+            headers: buildHeaders({ accessToken, anonKey }),
+            body: JSON.stringify({ userEmail }),
           }
         );
 
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || "Failed to load usage summary");
+          const payload = await response.json().catch(() => ({}));
+          throw new Error(payload.error || "Usage fetch failed");
         }
 
-        const data = await response.json();
-        setUsageSummary(data.usage ?? null);
-        setUsageError(null);
+        const payload = await response.json();
+        if (mounted) {
+          setUsageSummary(payload.usage ?? null);
+          setUsageError(null);
+        }
       } catch (error) {
-        console.error("Usage summary error:", error);
-        setUsageError(error.message);
+        if (!mounted) return;
+        setUsageError("We couldn’t load your studio stats just yet.");
+        toast.error("Usage data is warming up—your next nudio is still ready.");
       }
     };
 
-    loadUsage();
-  }, [sanitizedEmail]);
+    fetchUsage();
+
+    return () => {
+      mounted = false;
+    };
+  }, [accessToken, anonKey, sessionRole, supabaseUrl, userEmail]);
+
+  const statusChip = useMemo(() => {
+    if (sessionRole === "member") {
+      return `Signed in as ${userEmail}`;
+    }
+    if (sessionRole === "guest") {
+      const remaining =
+        typeof usageSummary?.freeCreditsRemaining === "number"
+          ? usageSummary.freeCreditsRemaining
+          : 3;
+      return `Guest mode • ${remaining}/3 nudios this month`;
+    }
+    return "Choose how you’d like to create nudios";
+  }, [sessionRole, usageSummary?.freeCreditsRemaining, userEmail]);
 
   return (
     <div className="min-h-screen bg-slate-50">
+      <AuthOverlay />
+
       <header className="bg-[#e1d0d0] border-b border-slate-200">
         <div className="w-full max-w-5xl mx-auto px-0 sm:px-0 py-0 flex flex-col">
           <img
             src="/nudioheader.jpg"
-            alt="nudio header"
+            alt="Nudio showcase"
             className="w-full h-auto object-cover"
           />
         </div>
-        <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-6">
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            What email should we use to track your nudio credits?
-          </label>
-          <input
-            type="email"
-            placeholder="you@example.com"
-            value={userEmail}
-            onChange={(event) => setUserEmail(event.target.value)}
-            className="w-full max-w-md border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
-          />
-          {usageError && sanitizedEmail && (
-            <p className="mt-2 text-sm text-red-500">
-              {usageError}
+
+        <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-2">
+            <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900">
+              Let’s make your next nudio shine.
+            </h1>
+            <p className="text-sm text-slate-600 max-w-xl">
+              Drop in a product photo, tap the button, and we’ll deliver a studio-ready nudio in seconds.
             </p>
-          )}
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="bg-white/70 border border-slate-200 rounded-full px-4 py-2 text-xs sm:text-sm text-slate-700 font-medium">
+              {statusChip}
+            </span>
+            <button
+              onClick={openOverlay}
+              className="text-xs sm:text-sm font-medium text-slate-900 underline underline-offset-4"
+            >
+              Switch mode
+            </button>
+            {sessionRole === "member" && (
+              <button
+                onClick={signOut}
+                className="text-xs sm:text-sm text-slate-500 underline underline-offset-4"
+              >
+                Sign out
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
       <main className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         <PhotoEnhancer
-          userEmail={sanitizedEmail}
+          sessionRole={sessionRole}
+          userEmail={userEmail}
+          userId={userId}
           usageSummary={usageSummary}
           onUsageUpdate={setUsageSummary}
           usageError={usageError}
+          accessToken={accessToken}
+          anonKey={anonKey}
+          supabaseUrl={supabaseUrl}
         />
       </main>
 
