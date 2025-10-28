@@ -132,18 +132,23 @@ export function PhotoEnhancer({
             return;
           }
 
+          // Enable high-quality rendering
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+
           ctx.drawImage(img, 0, 0);
 
-          const logoMaxWidth = img.width * 0.104;
+          const logoMaxWidth = img.width * 0.1352; // Increased by 30% (0.104 * 1.3)
           const logoScale = logoMaxWidth / logo.width;
           const logoWidth = logo.width * logoScale;
           const logoHeight = logo.height * logoScale;
 
-          const padding = img.width * 0.015;
-          const x = img.width - logoWidth - padding - 35;
-          const y = img.height - logoHeight - padding - 20;
+          const padding = img.width * 0.025; // Increased padding for better positioning
+          const x = img.width - logoWidth - padding - 60; // Moved further left (35 -> 60)
+          const y = img.height - logoHeight - padding - 50; // Moved further up (20 -> 50)
 
           ctx.globalAlpha = 1.0;
+          // Use high-quality scaling for the watermark
           ctx.drawImage(logo, x, y, logoWidth, logoHeight);
 
           resolve(canvas.toDataURL("image/png"));
