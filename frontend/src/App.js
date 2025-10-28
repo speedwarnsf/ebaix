@@ -102,7 +102,7 @@ function App() {
     <div className="min-h-screen bg-slate-50">
       <AuthOverlay />
 
-      <header className="bg-[#e1d0d0] border-b border-slate-200">
+      <header className="sm:bg-[#e1d0d0] border-b border-slate-200">
         <div className="w-full max-w-5xl mx-auto px-0 sm:px-0 py-0 flex flex-col">
           <img
             src="/nudioheader.jpg"
@@ -111,7 +111,7 @@ function App() {
           />
         </div>
 
-        <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 hidden sm:flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-2">
             <p className="text-sm text-slate-600 max-w-xl">
               Shoot or drop in your product photo, tap the button and we'll deliver a listing ready nudio in seconds.
