@@ -48,16 +48,23 @@ export async function createCheckoutSession(request) {
   const bundle =
     bundleType === "subscription" ? SUBSCRIPTION : CREDIT_BUNDLES[bundleType];
 
-  const bearer = authToken ?? process.env.REACT_APP_SUPABASE_ANON_KEY;
+  // Clean tokens to remove newlines/whitespace that cause header errors
+  const rawBearer = authToken ?? process.env.REACT_APP_SUPABASE_ANON_KEY;
+  const rawAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+  const rawUrl = process.env.REACT_APP_SUPABASE_URL;
+
+  const cleanBearer = rawBearer ? rawBearer.replace(/[\r\n\t\s]/g, '') : '';
+  const cleanAnonKey = rawAnonKey ? rawAnonKey.replace(/[\r\n\t\s]/g, '') : '';
+  const cleanUrl = rawUrl ? rawUrl.replace(/[\r\n\t]/g, '').trim() : '';
 
   const response = await fetch(
-    `${process.env.REACT_APP_SUPABASE_URL}/functions/v1/checkout`,
+    `${cleanUrl}/functions/v1/checkout`,
     {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${bearer}`,
-        apikey: process.env.REACT_APP_SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${cleanBearer}`,
+        apikey: cleanAnonKey,
       },
       body: JSON.stringify({
         bundleType,
