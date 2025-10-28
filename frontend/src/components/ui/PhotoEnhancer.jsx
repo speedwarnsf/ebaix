@@ -155,30 +155,38 @@ export function PhotoEnhancer({
     });
 
   const enhanceWithGemini = async (base64Image) => {
-    // Ensure we have valid tokens
-    const finalAuthToken = authToken || anonKey || process.env.REACT_APP_SUPABASE_ANON_KEY;
-    const finalAnonKey = anonKey || process.env.REACT_APP_SUPABASE_ANON_KEY;
-    const finalSupabaseUrl = supabaseUrl || process.env.REACT_APP_SUPABASE_URL;
+    // Use hardcoded values to test
+    const hardcodedToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsbG9maGx0bmN1c25ha2hlaGR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5NzcwOTUsImV4cCI6MjA3NjU1MzA5NX0.evf7AQnHcnp6YSccjVhp_qu8ctLOo14v9oGwnapqvaE";
+    const hardcodedUrl = "https://cllofhltncusnakhehdw.supabase.co";
 
-    if (!finalAuthToken || !finalAnonKey || !finalSupabaseUrl) {
-      throw new Error('Missing required environment variables');
-    }
-
-    const headers = {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${finalAuthToken.trim()}`,
-      apikey: finalAnonKey.trim(),
+    // Validate each header value
+    const validateHeader = (name, value) => {
+      console.log(`Validating ${name}:`, value);
+      if (typeof value !== 'string') {
+        throw new Error(`${name} is not a string: ${typeof value}`);
+      }
+      if (value.includes('\n') || value.includes('\r')) {
+        throw new Error(`${name} contains newline characters`);
+      }
+      if (value.includes('\0')) {
+        throw new Error(`${name} contains null characters`);
+      }
+      return value.trim();
     };
 
-    console.log('API Call Debug:');
-    console.log('finalAuthToken:', finalAuthToken);
-    console.log('finalAnonKey:', finalAnonKey);
-    console.log('finalSupabaseUrl:', finalSupabaseUrl);
-    console.log('authHeader:', headers.Authorization);
+    try {
+      const cleanToken = validateHeader('token', hardcodedToken);
+      const cleanUrl = validateHeader('url', hardcodedUrl);
 
-    const response = await fetch(
-      `${finalSupabaseUrl}/functions/v1/optimize-listing`,
-      {
+      const headers = {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${cleanToken}`,
+        "apikey": cleanToken,
+      };
+
+      console.log('Clean headers:', headers);
+
+      const response = await fetch(`${cleanUrl}/functions/v1/optimize-listing`, {
         method: "POST",
         headers,
         body: JSON.stringify({
@@ -186,8 +194,11 @@ export function PhotoEnhancer({
           mode: "image",
           userEmail: isMember ? userEmail : undefined,
         }),
-      }
-    );
+      });
+    } catch (error) {
+      console.error('Fetch error:', error);
+      throw error;
+    }
 
     const payload = await response.json().catch(() => ({}));
 
