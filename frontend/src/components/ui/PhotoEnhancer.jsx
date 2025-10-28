@@ -33,6 +33,14 @@ export function PhotoEnhancer({
   const isMember = sessionRole === "member";
   const authToken = accessToken || anonKey;
 
+  // Debug logging
+  console.log('PhotoEnhancer Debug:', {
+    sessionRole,
+    accessToken: accessToken ? 'exists' : 'missing',
+    anonKey: anonKey ? 'exists' : 'missing',
+    authToken: authToken ? 'exists' : 'missing'
+  });
+
   const isUnlimited = usageSummary?.unlimited ?? false;
   const paidNudios = usageSummary?.creditsBalance ?? 0;
   const freeLimit = usageSummary?.freeCreditsLimit ?? GUEST_LIMIT;
@@ -148,13 +156,19 @@ export function PhotoEnhancer({
     });
 
   const enhanceWithGemini = async (base64Image) => {
+    const finalAuthToken = authToken || anonKey;
+    console.log('API Call Debug:', {
+      finalAuthToken: finalAuthToken ? 'exists' : 'missing',
+      authHeader: `Bearer ${finalAuthToken}`
+    });
+
     const response = await fetch(
       `${supabaseUrl}/functions/v1/optimize-listing`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken || anonKey}`,
+          Authorization: `Bearer ${finalAuthToken}`,
           apikey: anonKey,
         },
         body: JSON.stringify({
