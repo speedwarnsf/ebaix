@@ -168,54 +168,15 @@ export function PhotoEnhancer({
       throw new Error('No valid Supabase URL available');
     }
 
-    console.log('=== Raw Token Debug ===');
-    console.log('Raw token length:', rawToken.length);
-    console.log('Raw token contains \\n:', rawToken.includes('\n'));
-    console.log('Raw token contains \\r:', rawToken.includes('\r'));
-    console.log('Raw token hex:', Array.from(rawToken.substring(0, 50)).map(c => c.charCodeAt(0).toString(16)).join(' '));
-
-    // Ultra-aggressive cleaning using multiple methods
-    let cleanToken = rawToken;
-    // Method 1: Replace specific chars
-    cleanToken = cleanToken.replace(/\r/g, '').replace(/\n/g, '').replace(/\t/g, '').replace(/ /g, '');
-    // Method 2: JSON stringify/parse to escape/unescape
-    try {
-      cleanToken = JSON.parse(JSON.stringify(cleanToken));
-    } catch (e) {
-      console.warn('JSON clean failed:', e);
-    }
-    // Method 3: Split and rejoin to remove any hidden chars
-    cleanToken = cleanToken.split('').filter(c => c.charCodeAt(0) > 31 && c.charCodeAt(0) < 127).join('');
-    cleanToken = cleanToken.trim();
-
-    const cleanUrl = rawUrl.replace(/\r/g, '').replace(/\n/g, '').replace(/\t/g, '').trim();
-
-    console.log('=== Cleaned Token Debug ===');
-    console.log('Clean token length:', cleanToken.length);
-    console.log('Clean token contains \\n:', cleanToken.includes('\n'));
-    console.log('Clean token contains \\r:', cleanToken.includes('\r'));
-    console.log('Token starts with:', cleanToken.substring(0, 10));
+    // Clean tokens by removing newlines and whitespace
+    const cleanToken = rawToken.replace(/[\r\n\t\s]/g, '');
+    const cleanUrl = rawUrl.replace(/[\r\n\t]/g, '').trim();
 
     const headers = {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${cleanToken}`,
       "apikey": cleanToken,
     };
-
-    console.log('=== Header Validation ===');
-    console.log('Authorization header:', typeof headers.Authorization, headers.Authorization.length);
-    console.log('apikey header:', typeof headers.apikey, headers.apikey.length);
-    console.log('Content-Type:', headers["Content-Type"]);
-
-    // Validate each header value
-    Object.entries(headers).forEach(([key, value]) => {
-      if (typeof value !== 'string') {
-        console.error(`Header ${key} is not a string:`, typeof value, value);
-      }
-      if (value.includes('\n') || value.includes('\r')) {
-        console.error(`Header ${key} contains newlines:`, value);
-      }
-    });
 
     let response;
     try {
@@ -225,7 +186,7 @@ export function PhotoEnhancer({
         body: JSON.stringify({
           imageBase64: base64Image,
           mode: "image",
-          userEmail: isMember ? userEmail : undefined,
+          userEmail: isMember ? userEmail : "guest@nudio.ai",
           guestMode: !isMember,
         }),
       });
