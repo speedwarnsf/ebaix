@@ -168,9 +168,18 @@ export function PhotoEnhancer({
       throw new Error('No valid Supabase URL available');
     }
 
-    // Clean tokens by removing ALL whitespace characters that could corrupt headers
-    const cleanToken = rawToken.replace(/\s/g, '').trim();
-    const cleanUrl = rawUrl.replace(/[\r\n\t]/g, '').trim();
+    // Aggressively clean tokens by removing specific problematic characters
+    const cleanToken = rawToken
+      .replace(/\r/g, '')
+      .replace(/\n/g, '')
+      .replace(/\t/g, '')
+      .replace(/ /g, '')
+      .trim();
+    const cleanUrl = rawUrl
+      .replace(/\r/g, '')
+      .replace(/\n/g, '')
+      .replace(/\t/g, '')
+      .trim();
 
     console.log('=== Debug Info v3 - Token validation removed ===');
     console.log('Raw token source:', accessToken ? 'accessToken' : anonKey ? 'anonKey' : 'env');
