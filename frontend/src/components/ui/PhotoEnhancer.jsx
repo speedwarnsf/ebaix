@@ -156,21 +156,33 @@ export function PhotoEnhancer({
     });
 
   const enhanceWithGemini = async (base64Image) => {
-    const finalAuthToken = authToken || anonKey;
+    // Ensure we have valid tokens
+    const finalAuthToken = authToken || anonKey || process.env.REACT_APP_SUPABASE_ANON_KEY;
+    const finalAnonKey = anonKey || process.env.REACT_APP_SUPABASE_ANON_KEY;
+    const finalSupabaseUrl = supabaseUrl || process.env.REACT_APP_SUPABASE_URL;
+
+    if (!finalAuthToken || !finalAnonKey || !finalSupabaseUrl) {
+      throw new Error('Missing required environment variables');
+    }
+
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${finalAuthToken.trim()}`,
+      apikey: finalAnonKey.trim(),
+    };
+
     console.log('API Call Debug:', {
       finalAuthToken: finalAuthToken ? 'exists' : 'missing',
-      authHeader: `Bearer ${finalAuthToken}`
+      finalAnonKey: finalAnonKey ? 'exists' : 'missing',
+      finalSupabaseUrl: finalSupabaseUrl ? 'exists' : 'missing',
+      authHeader: headers.Authorization
     });
 
     const response = await fetch(
-      `${supabaseUrl}/functions/v1/optimize-listing`,
+      `${finalSupabaseUrl}/functions/v1/optimize-listing`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${finalAuthToken}`,
-          apikey: anonKey,
-        },
+        headers,
         body: JSON.stringify({
           imageBase64: base64Image,
           mode: "image",
