@@ -156,9 +156,9 @@ export function PhotoEnhancer({
     });
 
   const enhanceWithGemini = async (base64Image) => {
-    // Get tokens from props or environment
-    const rawToken = accessToken || anonKey || process.env.REACT_APP_SUPABASE_ANON_KEY;
-    const rawUrl = supabaseUrl || process.env.REACT_APP_SUPABASE_URL;
+    // Get tokens from props or environment with known good fallbacks
+    const rawToken = accessToken || anonKey || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsbG9maGx0bmN1c25ha2hlaGR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5NzcwOTUsImV4cCI6MjA3NjU1MzA5NX0.evf7AQnHcnp6YSccjVhp_qu8ctLOo14v9oGwnapqvaE";
+    const rawUrl = supabaseUrl || "https://cllofhltncusnakhehdw.supabase.co";
 
     // Strict token validation and cleaning
     if (!rawToken || typeof rawToken !== 'string') {
