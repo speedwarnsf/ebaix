@@ -168,8 +168,8 @@ export function PhotoEnhancer({
       throw new Error('No valid Supabase URL available');
     }
 
-    // Clean tokens by removing newlines, carriage returns, and trim
-    const cleanToken = rawToken.replace(/[\r\n\t]/g, '').trim();
+    // Clean tokens by removing ALL whitespace characters that could corrupt headers
+    const cleanToken = rawToken.replace(/\s/g, '').trim();
     const cleanUrl = rawUrl.replace(/[\r\n\t]/g, '').trim();
 
     console.log('=== Debug Info v3 - Token validation removed ===');
