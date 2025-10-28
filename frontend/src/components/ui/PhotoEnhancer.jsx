@@ -33,12 +33,8 @@ export function PhotoEnhancer({
   const isMember = sessionRole === "member";
   const authToken = accessToken || anonKey;
 
-  // Debug logging
-  console.log('PhotoEnhancer Debug:');
-  console.log('sessionRole:', sessionRole);
-  console.log('accessToken:', accessToken ? 'EXISTS' : 'MISSING');
-  console.log('anonKey:', anonKey ? 'EXISTS' : 'MISSING');
-  console.log('authToken:', authToken ? 'EXISTS' : 'MISSING');
+  // Debug logging (remove in production)
+  // console.log('PhotoEnhancer Debug:', { sessionRole, accessToken: !!accessToken, anonKey: !!anonKey });
 
   const isUnlimited = usageSummary?.unlimited ?? false;
   const paidNudios = usageSummary?.creditsBalance ?? 0;
@@ -155,35 +151,26 @@ export function PhotoEnhancer({
     });
 
   const enhanceWithGemini = async (base64Image) => {
-    // Use hardcoded values to test
-    const hardcodedToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsbG9maGx0bmN1c25ha2hlaGR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5NzcwOTUsImV4cCI6MjA3NjU1MzA5NX0.evf7AQnHcnp6YSccjVhp_qu8ctLOo14v9oGwnapqvaE";
-    const hardcodedUrl = "https://cllofhltncusnakhehdw.supabase.co";
+    // Get tokens from props or environment
+    const finalAuthToken = accessToken || anonKey || process.env.REACT_APP_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsbG9maGx0bmN1c25ha2hlaGR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5NzcwOTUsImV4cCI6MjA3NjU1MzA5NX0.evf7AQnHcnp6YSccjVhp_qu8ctLOo14v9oGwnapqvaE";
+    const finalSupabaseUrl = supabaseUrl || process.env.REACT_APP_SUPABASE_URL || "https://cllofhltncusnakhehdw.supabase.co";
 
-    // Validate each header value
-    const validateHeader = (name, value) => {
-      console.log(`Validating ${name}:`, value);
+    // Validate and clean header values
+    const validateHeader = (value) => {
       if (typeof value !== 'string') {
-        throw new Error(`${name} is not a string: ${typeof value}`);
-      }
-      if (value.includes('\n') || value.includes('\r')) {
-        throw new Error(`${name} contains newline characters`);
-      }
-      if (value.includes('\0')) {
-        throw new Error(`${name} contains null characters`);
+        throw new Error(`Header value is not a string: ${typeof value}`);
       }
       return value.trim();
     };
 
-    const cleanToken = validateHeader('token', hardcodedToken);
-    const cleanUrl = validateHeader('url', hardcodedUrl);
+    const cleanToken = validateHeader(finalAuthToken);
+    const cleanUrl = validateHeader(finalSupabaseUrl);
 
     const headers = {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${cleanToken}`,
       "apikey": cleanToken,
     };
-
-    console.log('Clean headers:', headers);
 
     let response;
     try {
@@ -194,6 +181,7 @@ export function PhotoEnhancer({
           imageBase64: base64Image,
           mode: "image",
           userEmail: isMember ? userEmail : undefined,
+          guestMode: !isMember,
         }),
       });
     } catch (error) {
