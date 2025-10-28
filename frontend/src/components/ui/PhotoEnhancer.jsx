@@ -31,7 +31,7 @@ export function PhotoEnhancer({
   const fileInputRef = useRef(null);
 
   const isMember = sessionRole === "member";
-  const authToken = isMember && accessToken ? accessToken : anonKey;
+  const authToken = accessToken || anonKey;
 
   const isUnlimited = usageSummary?.unlimited ?? false;
   const paidNudios = usageSummary?.creditsBalance ?? 0;
@@ -154,7 +154,7 @@ export function PhotoEnhancer({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
+          Authorization: `Bearer ${authToken || anonKey}`,
           apikey: anonKey,
         },
         body: JSON.stringify({
