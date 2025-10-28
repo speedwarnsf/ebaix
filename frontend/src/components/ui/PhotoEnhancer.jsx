@@ -33,8 +33,13 @@ export function PhotoEnhancer({
   const isMember = sessionRole === "member";
   const authToken = accessToken || anonKey;
 
-  // Debug logging (remove in production)
-  // console.log('PhotoEnhancer Debug:', { sessionRole, accessToken: !!accessToken, anonKey: !!anonKey });
+  // Debug logging (temporary for troubleshooting)
+  console.log('PhotoEnhancer Debug:', {
+    sessionRole,
+    hasAccessToken: !!accessToken,
+    hasAnonKey: !!anonKey,
+    hasSupabaseUrl: !!supabaseUrl
+  });
 
   const isUnlimited = usageSummary?.unlimited ?? false;
   const paidNudios = usageSummary?.creditsBalance ?? 0;
@@ -171,6 +176,14 @@ export function PhotoEnhancer({
       "Authorization": `Bearer ${cleanToken}`,
       "apikey": cleanToken,
     };
+
+    console.log('=== Making API Call ===');
+    console.log('URL:', `${cleanUrl}/functions/v1/optimize-listing`);
+    console.log('Headers:', {
+      'Content-Type': headers['Content-Type'],
+      'Authorization': `Bearer ${cleanToken.substring(0, 20)}...`,
+      'apikey': `${cleanToken.substring(0, 20)}...`
+    });
 
     let response;
     try {
