@@ -168,25 +168,33 @@ export function PhotoEnhancer({
       throw new Error('No valid Supabase URL available');
     }
 
-    // Aggressively clean tokens by removing specific problematic characters
-    const cleanToken = rawToken
-      .replace(/\r/g, '')
-      .replace(/\n/g, '')
-      .replace(/\t/g, '')
-      .replace(/ /g, '')
-      .trim();
-    const cleanUrl = rawUrl
-      .replace(/\r/g, '')
-      .replace(/\n/g, '')
-      .replace(/\t/g, '')
-      .trim();
+    console.log('=== Raw Token Debug ===');
+    console.log('Raw token length:', rawToken.length);
+    console.log('Raw token contains \\n:', rawToken.includes('\n'));
+    console.log('Raw token contains \\r:', rawToken.includes('\r'));
+    console.log('Raw token hex:', Array.from(rawToken.substring(0, 50)).map(c => c.charCodeAt(0).toString(16)).join(' '));
 
-    console.log('=== Debug Info v3 - Token validation removed ===');
-    console.log('Raw token source:', accessToken ? 'accessToken' : anonKey ? 'anonKey' : 'env');
-    console.log('Token length:', cleanToken.length);
+    // Ultra-aggressive cleaning using multiple methods
+    let cleanToken = rawToken;
+    // Method 1: Replace specific chars
+    cleanToken = cleanToken.replace(/\r/g, '').replace(/\n/g, '').replace(/\t/g, '').replace(/ /g, '');
+    // Method 2: JSON stringify/parse to escape/unescape
+    try {
+      cleanToken = JSON.parse(JSON.stringify(cleanToken));
+    } catch (e) {
+      console.warn('JSON clean failed:', e);
+    }
+    // Method 3: Split and rejoin to remove any hidden chars
+    cleanToken = cleanToken.split('').filter(c => c.charCodeAt(0) > 31 && c.charCodeAt(0) < 127).join('');
+    cleanToken = cleanToken.trim();
+
+    const cleanUrl = rawUrl.replace(/\r/g, '').replace(/\n/g, '').replace(/\t/g, '').trim();
+
+    console.log('=== Cleaned Token Debug ===');
+    console.log('Clean token length:', cleanToken.length);
+    console.log('Clean token contains \\n:', cleanToken.includes('\n'));
+    console.log('Clean token contains \\r:', cleanToken.includes('\r'));
     console.log('Token starts with:', cleanToken.substring(0, 10));
-    console.log('URL:', cleanUrl);
-    console.log('Cache buster:', Date.now());
 
     const headers = {
       "Content-Type": "application/json",
