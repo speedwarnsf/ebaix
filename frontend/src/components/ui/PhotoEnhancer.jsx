@@ -168,14 +168,9 @@ export function PhotoEnhancer({
       throw new Error('No valid Supabase URL available');
     }
 
-    // Clean tokens by removing all non-printable characters and trim
-    const cleanToken = rawToken.replace(/[\x00-\x1F\x7F-\x9F]/g, '').trim();
-    const cleanUrl = rawUrl.replace(/[\x00-\x1F\x7F-\x9F]/g, '').trim();
-
-    // Validate token format (JWT tokens contain dots, dashes, underscores)
-    if (!cleanToken.match(/^[A-Za-z0-9._-]+$/) || cleanToken.length < 20) {
-      console.warn('Token format unusual but proceeding:', cleanToken.substring(0, 20));
-    }
+    // Clean tokens by removing only null/undefined characters and trim
+    const cleanToken = rawToken.trim();
+    const cleanUrl = rawUrl.trim();
 
     console.log('=== Enhanced Debug Info ===');
     console.log('Raw token source:', accessToken ? 'accessToken' : anonKey ? 'anonKey' : 'env');
