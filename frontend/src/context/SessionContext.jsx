@@ -108,10 +108,15 @@ export function SessionProvider({ children }) {
     dismissOverlay();
   };
 
+  const cleanAuthHeaders = (token) => {
+    if (!token) return null;
+    return token.replace(/[\r\n\t\s]/g, '').trim();
+  };
+
   const signInWithPassword = async ({ email, password, remember }) => {
     const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+      email: email.trim(),
+      password: password.trim(),
     });
     if (error) throw error;
     completeMember(data.session, remember);
@@ -119,8 +124,11 @@ export function SessionProvider({ children }) {
   };
 
   const resetPassword = async (email) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+    const cleanEmail = email.trim();
+    const redirectTo = `${window.location.origin}/reset-password`;
+    
+    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+      redirectTo,
     });
     if (error) throw error;
   };
@@ -136,11 +144,12 @@ export function SessionProvider({ children }) {
 
   const value = useMemo(() => {
     const sessionRole = session ? "member" : guestActive ? "guest" : "unknown";
+    const cleanToken = session?.access_token ? cleanAuthHeaders(session.access_token) : null;
 
     return {
       session,
       sessionRole,
-      accessToken: session?.access_token ?? null,
+      accessToken: cleanToken,
       userId: session?.user?.id ?? null,
       userEmail: session?.user?.email ?? "",
       rememberMe,
