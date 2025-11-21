@@ -10,7 +10,7 @@ body {
   font-family: 'Inter', sans-serif;
   line-height: 1.6;
   color: #1f2937;
-  background-color: #f4f6fb;
+  background-color: rgb(228, 203, 203);
 }
 
 .App {
@@ -196,6 +196,71 @@ body {
   }
 }
 
+.lens-shell {
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  overflow: hidden;
+}
+
+.lens-shell::before,
+.lens-shell::after {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  opacity: 0;
+  transform: scale(0.92);
+  pointer-events: none;
+}
+
+.lens-shell::after {
+  inset: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  filter: blur(1px);
+}
+
+.lens-shell:hover,
+.lens-shell:focus-visible {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 25px 60px rgba(11, 7, 18, 0.45);
+}
+
+.lens-shell:hover::before,
+.lens-shell:focus-visible::before,
+.lens-shell:hover::after,
+.lens-shell:focus-visible::after {
+  opacity: 1;
+  animation: lensFocusSweep 2.2s ease-in-out infinite;
+}
+
+@keyframes lensFocusSweep {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.1;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 0.35;
+  }
+  100% {
+    transform: scale(1.05);
+    opacity: 0;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
 /* Responsive design helpers */
 @media (max-width: 768px) {
   .container {
@@ -267,15 +332,16 @@ textarea:focus {
 .badge-shimmer::before {
   content: "";
   position: absolute;
-  inset: -80%;
+  inset: 0;
   background: linear-gradient(
     120deg,
-    rgba(236, 72, 153, 0.5),
-    rgba(79, 70, 229, 0.8),
-    rgba(59, 130, 246, 0.6),
-    rgba(236, 72, 153, 0.5)
+    rgba(236, 72, 153, 0.3),
+    rgba(79, 70, 229, 0.5),
+    rgba(59, 130, 246, 0.4),
+    rgba(236, 72, 153, 0.3)
   );
-  animation: badgeGlow 2.8s linear infinite;
+  background-size: 200% 100%;
+  animation: badgeGlow 6.75s linear infinite;
 }
 
 .badge-shimmer span {
@@ -287,12 +353,9 @@ textarea:focus {
 
 @keyframes badgeGlow {
   0% {
-    transform: translateX(-50%) rotate(0deg);
-  }
-  50% {
-    transform: translateX(0%) rotate(2deg);
+    background-position: 200% 0;
   }
   100% {
-    transform: translateX(50%) rotate(0deg);
+    background-position: -200% 0;
   }
 }

@@ -10,14 +10,15 @@ export const stripe = STRIPE_PUBLIC_KEY ? loadStripe(STRIPE_PUBLIC_KEY) : null;
 
 export const CREDIT_BUNDLES = {
   small: {
-    name: "10 Nudios",
+    name: "10 nudios",
     credits: 10,
     price: 4.0,
     priceInCents: 400,
     stripeProductId: "prod_TJuE451l9Mq5Z4",
+    badge: "TIGHT BUDGET",
   },
   medium: {
-    name: "50 Nudios",
+    name: "50 nudios",
     credits: 50,
     price: 6.0,
     priceInCents: 600,
@@ -25,7 +26,7 @@ export const CREDIT_BUNDLES = {
     badge: "BEST VALUE",
   },
   large: {
-    name: "100 Nudios",
+    name: "100 nudios",
     credits: 100,
     price: 12.0,
     priceInCents: 1200,
@@ -35,7 +36,7 @@ export const CREDIT_BUNDLES = {
 };
 
 export const SUBSCRIPTION = {
-  name: "200 Nudios/Month",
+  name: "200 nudios/month",
   credits: 200,
   price: 14.99,
   priceInCents: 1499,

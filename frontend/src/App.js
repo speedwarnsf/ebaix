@@ -1,22 +1,57 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { BrowserRouter as Router, useLocation, useNavigate } from "react-router-dom";
 import "./App.css";
 import { Toaster, toast } from "sonner";
 import { PhotoEnhancer } from "./components/ui/PhotoEnhancer";
 import { AuthOverlay } from "./components/ui/AuthOverlay";
+import { ResetPassword } from "./components/ui/ResetPassword";
+import PrivacyPolicy from "./components/ui/PrivacyPolicy";
+import TermsOfService from "./components/ui/TermsOfService";
 import { useSession } from "./context/SessionContext";
+import { LensLab } from "./components/LensLab";
 
 const GUEST_BASELINE = {
   freeCreditsLimit: 3,
   freeCreditsRemaining: 3,
 };
 
-const buildHeaders = ({ accessToken, anonKey }) => ({
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${accessToken ?? anonKey}`,
-  apikey: anonKey,
-});
+const computeGuestStorageKey = () => {
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  return `nudio_guest_usage_${currentMonth}`;
+};
 
-function App() {
+const readGuestRemainingFromStorage = () => {
+  if (typeof window === "undefined") {
+    return GUEST_BASELINE.freeCreditsRemaining;
+  }
+  const storageKey = computeGuestStorageKey();
+  const raw = window.localStorage.getItem(storageKey);
+  const used = raw ? parseInt(raw, 10) : 0;
+  if (Number.isNaN(used)) {
+    return GUEST_BASELINE.freeCreditsRemaining;
+  }
+  return Math.max(GUEST_BASELINE.freeCreditsLimit - used, 0);
+};
+
+const cleanAuthHeaders = (token) => {
+  if (!token) return null;
+  return token.replace(/[\r\n\t\s]/g, '').trim();
+};
+
+const buildHeaders = ({ accessToken, anonKey }) => {
+  const cleanAccessToken = accessToken ? cleanAuthHeaders(accessToken) : null;
+  const cleanAnonKey = anonKey ? cleanAuthHeaders(anonKey) : null;
+
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${cleanAccessToken ?? cleanAnonKey}`,
+    apikey: cleanAnonKey,
+  };
+};
+
+function AppContent() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const {
     sessionRole,
     userEmail,
@@ -25,24 +60,61 @@ function App() {
     openOverlay,
     signOut,
   } = useSession();
+  const isResetRoute = location.pathname === "/reset-password";
+  const isPrivacyRoute = location.pathname === "/privacy-policy";
+  const isTermsRoute = location.pathname === "/terms-of-service";
+  const isLensLabRoute = location.pathname === "/lens-lab";
+  const isMainAppRoute =
+    !isResetRoute && !isPrivacyRoute && !isTermsRoute && !isLensLabRoute;
+  const handleLensLabLaunch = useCallback(() => {
+    navigate("/lens-lab");
+  }, [navigate]);
 
   const anonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
   const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
 
   const [usageSummary, setUsageSummary] = useState(GUEST_BASELINE);
   const [usageError, setUsageError] = useState(null);
+  const rewardfulConversion = useRef({ sessionId: null, converted: false });
+  const handleUsageUpdate = useCallback(
+    (update) => {
+      if (process.env.NODE_ENV !== "production") {
+        console.debug("handleUsageUpdate", { update, sessionRole });
+      }
+      if (update && typeof update.freeCreditsRemaining === "number") {
+        setUsageSummary((prev) => ({
+          ...prev,
+          ...update,
+        }));
+        return;
+      }
+
+      if (sessionRole === "guest") {
+        const remaining = readGuestRemainingFromStorage();
+        setUsageSummary((prev) => ({
+          ...prev,
+          freeCreditsLimit: GUEST_BASELINE.freeCreditsLimit,
+          freeCreditsRemaining: remaining,
+        }));
+        return;
+      }
+
+      if (!update) {
+        setUsageSummary(GUEST_BASELINE);
+      }
+    },
+    [sessionRole]
+  );
 
   useEffect(() => {
+    if (!isMainAppRoute) {
+      return;
+    }
+
     if (sessionRole !== "member" || !userEmail || !accessToken) {
       setUsageError(null);
       if (sessionRole === "guest") {
-        setUsageSummary((prev) => ({
-          ...GUEST_BASELINE,
-          freeCreditsRemaining:
-            typeof prev?.freeCreditsRemaining === "number"
-              ? prev.freeCreditsRemaining
-              : GUEST_BASELINE.freeCreditsRemaining,
-        }));
+        handleUsageUpdate(null);
       }
       return;
     }
@@ -72,7 +144,14 @@ function App() {
         }
       } catch (error) {
         if (!mounted) return;
-        setUsageError("We couldn’t load your studio stats just yet.");
+        console.error("Usage fetch error:", error);
+        console.error("Error details:", {
+          message: error.message,
+          userEmail,
+          accessToken: !!accessToken,
+          supabaseUrl
+        });
+        setUsageError("We couldn't load your studio stats just yet.");
         toast.error("Usage data is warming up—your next nudio is still ready.");
       }
     };
@@ -82,31 +161,143 @@ function App() {
     return () => {
       mounted = false;
     };
-  }, [accessToken, anonKey, sessionRole, supabaseUrl, userEmail]);
+  }, [accessToken, anonKey, handleUsageUpdate, isMainAppRoute, sessionRole, supabaseUrl, userEmail]);
+
+  useEffect(() => {
+    if (!isMainAppRoute) {
+      return undefined;
+    }
+
+    if (sessionRole !== "guest" || typeof window === "undefined") {
+      return undefined;
+    }
+
+    const syncFromStorage = () => handleUsageUpdate(null);
+    syncFromStorage();
+
+    window.addEventListener("storage", syncFromStorage);
+    return () => {
+      window.removeEventListener("storage", syncFromStorage);
+    };
+  }, [handleUsageUpdate, isMainAppRoute, sessionRole]);
+
+  useEffect(() => {
+    if (!isMainAppRoute || typeof window === "undefined") {
+      return;
+    }
+
+    const params = new URLSearchParams(location.search);
+    const successFlag = params.get("success");
+    const sessionId = params.get("session_id");
+    const bundleTypeParam = params.get("bundle");
+
+    if (successFlag !== "true" || !sessionId) {
+      return;
+    }
+
+    const cleanUpParams = () => {
+      params.delete("success");
+      params.delete("session_id");
+      params.delete("bundle");
+      const nextSearch = params.toString();
+      navigate(
+        {
+          pathname: location.pathname,
+          search: nextSearch ? `?${nextSearch}` : "",
+          hash: location.hash,
+        },
+        { replace: true },
+      );
+    };
+
+    if (bundleTypeParam !== "subscription") {
+      cleanUpParams();
+      return;
+    }
+
+    // Avoid duplicate conversions for the same checkout session
+    if (
+      rewardfulConversion.current.sessionId === sessionId &&
+      rewardfulConversion.current.converted
+    ) {
+      return;
+    }
+
+    const sanitizedEmail = (userEmail ?? "").trim().toLowerCase();
+    if (!sanitizedEmail) {
+      // Remember the session id so we can retry once the email becomes available
+      rewardfulConversion.current.sessionId = sessionId;
+      return;
+    }
+
+    try {
+      window.rewardful?.("convert", { email: sanitizedEmail });
+      rewardfulConversion.current = { sessionId, converted: true };
+    } catch (rewardfulError) {
+      console.warn("Rewardful conversion failed:", rewardfulError);
+      rewardfulConversion.current.sessionId = sessionId;
+      return;
+    }
+
+    cleanUpParams();
+  }, [isMainAppRoute, location.hash, location.pathname, location.search, navigate, userEmail]);
 
   const statusChip = useMemo(() => {
     if (sessionRole === "member") {
       return `Signed in as ${userEmail}`;
     }
     if (sessionRole === "guest") {
+      let storageRemaining = null;
+      if (typeof window !== "undefined") {
+        try {
+          const storageKey = computeGuestStorageKey();
+          const raw = window.localStorage.getItem(storageKey);
+          const used = raw ? parseInt(raw, 10) : 0;
+          if (!Number.isNaN(used)) {
+            storageRemaining = Math.max(
+              0,
+              GUEST_BASELINE.freeCreditsLimit - used
+            );
+          }
+        } catch {
+          storageRemaining = null;
+        }
+      }
       const remaining =
-        typeof usageSummary?.freeCreditsRemaining === "number"
+        typeof storageRemaining === "number"
+          ? storageRemaining
+          : typeof usageSummary?.freeCreditsRemaining === "number"
           ? usageSummary.freeCreditsRemaining
-          : 3;
+          : GUEST_BASELINE.freeCreditsRemaining;
       return `Guest mode • ${remaining}/3 nudios this month`;
     }
     return "Choose how you’d like to create nudios";
   }, [sessionRole, usageSummary?.freeCreditsRemaining, userEmail]);
 
+  if (!isMainAppRoute) {
+    if (isResetRoute) {
+      return <ResetPassword />;
+    }
+    if (isPrivacyRoute) {
+      return <PrivacyPolicy />;
+    }
+    if (isTermsRoute) {
+      return <TermsOfService />;
+    }
+    if (isLensLabRoute) {
+      return <LensLab onBack={() => navigate("/")} />;
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen" style={{ backgroundColor: "rgb(228, 203, 203)" }}>
       <AuthOverlay />
 
-      <header className="sm:bg-[#e1d0d0] border-b border-slate-200">
-        <div className="w-full max-w-5xl mx-auto px-0 sm:px-0 py-0 flex flex-col">
+      <header style={{ backgroundColor: "rgb(228, 203, 203)" }}>
+        <div className="w-full max-w-5xl mx-auto px-0 sm:px-0 py-0 flex flex-col" style={{ backgroundColor: "rgb(228, 203, 203)" }}>
           <img
             src="/nudioheader.jpg"
-            alt="Nudio showcase"
+            alt="nudio showcase"
             className="w-full h-auto object-cover"
           />
         </div>
@@ -140,22 +331,39 @@ function App() {
         </div>
       </header>
 
-      <main className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+      <main className="relative -mt-20 z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         <PhotoEnhancer
           sessionRole={sessionRole}
           userEmail={userEmail}
           userId={userId}
           usageSummary={usageSummary}
-          onUsageUpdate={setUsageSummary}
+          onUsageUpdate={handleUsageUpdate}
           usageError={usageError}
           accessToken={accessToken}
           anonKey={anonKey}
           supabaseUrl={supabaseUrl}
+          onLensLabLaunch={handleLensLabLaunch}
         />
       </main>
+      <footer className="w-full max-w-5xl mx-auto px-4 sm:px-6 pb-10 text-xs text-slate-500 flex items-center gap-4">
+        <a className="underline underline-offset-4" href="/terms-of-service">
+          Terms of Service
+        </a>
+        <a className="underline underline-offset-4" href="/privacy-policy">
+          Privacy Policy
+        </a>
+      </footer>
 
-      <Toaster position="top-right" />
     </div>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <AppContent />
+      <Toaster position="top-right" />
+    </Router>
   );
 }
 
