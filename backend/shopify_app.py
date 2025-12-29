@@ -203,7 +203,7 @@ def _delete_shop_record(shop: str) -> None:
 
 
 async def _ensure_webhooks(shop: str, access_token: str) -> None:
-  webhook_topics = {
+    webhook_topics = {
         "app/uninstalled": "/shopify/webhooks/app_uninstalled",
         "customers/data_request": "/shopify/webhooks/customers_data_request",
         "customers/redact": "/shopify/webhooks/customers_redact",
