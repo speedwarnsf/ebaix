@@ -23,7 +23,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 
 SHOPIFY_API_KEY = os.environ.get("SHOPIFY_API_KEY")
 SHOPIFY_API_SECRET = os.environ.get("SHOPIFY_API_SECRET")
-SHOPIFY_SCOPES = os.environ.get("SHOPIFY_SCOPES", "read_products,write_products")
+SHOPIFY_SCOPES = os.environ.get("SHOPIFY_SCOPES", "read_products,write_products,write_webhooks")
 SHOPIFY_APP_URL = os.environ.get("SHOPIFY_APP_URL", "https://app.nudio.ai/shopify/app")
 SHOPIFY_OAUTH_CALLBACK = os.environ.get(
     "SHOPIFY_OAUTH_CALLBACK", "https://app.nudio.ai/shopify/oauth/callback"
@@ -203,20 +203,24 @@ def _delete_shop_record(shop: str) -> None:
 
 
 async def _ensure_webhooks(shop: str, access_token: str) -> None:
-    webhook_topics = {
+  webhook_topics = {
         "app/uninstalled": "/shopify/webhooks/app_uninstalled",
         "customers/data_request": "/shopify/webhooks/customers_data_request",
         "customers/redact": "/shopify/webhooks/customers_redact",
         "shop/redact": "/shopify/webhooks/shop_redact",
     }
 
-    existing = await _shopify_rest(
-        shop,
-        access_token,
-        "GET",
-        "/webhooks.json",
-        {"fields": "id,topic,address"},
-    )
+    try:
+        existing = await _shopify_rest(
+            shop,
+            access_token,
+            "GET",
+            "/webhooks.json",
+            {"fields": "id,topic,address"},
+        )
+    except httpx.HTTPStatusError as exc:
+        logging.warning("webhook_list_failed shop=%s status=%s", shop, exc.response.status_code)
+        return
     current = {
         webhook["topic"]: webhook
         for webhook in existing.get("webhooks", [])
@@ -238,7 +242,10 @@ async def _ensure_webhooks(shop: str, access_token: str) -> None:
                         "format": "json",
                     }
                 }
-                await _shopify_rest(shop, access_token, "PUT", f"/webhooks/{webhook_id}.json", payload)
+                try:
+                    await _shopify_rest(shop, access_token, "PUT", f"/webhooks/{webhook_id}.json", payload)
+                except httpx.HTTPStatusError as exc:
+                    logging.warning("webhook_update_failed shop=%s topic=%s status=%s", shop, topic, exc.response.status_code)
                 continue
         payload = {
             "webhook": {
@@ -247,7 +254,10 @@ async def _ensure_webhooks(shop: str, access_token: str) -> None:
                 "format": "json",
             }
         }
-        await _shopify_rest(shop, access_token, "POST", "/webhooks.json", payload)
+        try:
+            await _shopify_rest(shop, access_token, "POST", "/webhooks.json", payload)
+        except httpx.HTTPStatusError as exc:
+            logging.warning("webhook_create_failed shop=%s topic=%s status=%s", shop, topic, exc.response.status_code)
 
 
 def _get_shop_record(shop: str) -> dict:
