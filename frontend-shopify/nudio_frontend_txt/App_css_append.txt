@@ -1,0 +1,40 @@
+.badge-shimmer {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.badge-shimmer::before {
+  content: "";
+  position: absolute;
+  inset: -120%;
+  background: linear-gradient(
+    120deg,
+    rgba(236, 72, 153, 0.35),
+    rgba(79, 70, 229, 0.6),
+    rgba(236, 72, 153, 0.35)
+  );
+  animation: badgeGlow 2.8s linear infinite;
+}
+
+.badge-shimmer span {
+  position: relative;
+  z-index: 1;
+  color: #fff;
+  letter-spacing: 0.05em;
+}
+
+@keyframes badgeGlow {
+  0% {
+    transform: translateX(-30%) rotate(0deg);
+  }
+  50% {
+    transform: translateX(30%) rotate(2deg);
+  }
+  100% {
+    transform: translateX(120%) rotate(0deg);
+  }
+}
