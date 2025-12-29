@@ -4,5 +4,6 @@ python-multipart==0.0.17
 supabase==2.10.0
 google-generativeai==0.8.3
 pillow==11.0.0
-httpx==0.28.1
+httpx==0.27.0
 python-dotenv==1.0.1
+PyJWT==2.10.1
