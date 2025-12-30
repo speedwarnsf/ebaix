@@ -35,7 +35,7 @@ function App() {
       <header style={{ backgroundColor: "#050305" }}>
         <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 flex flex-col items-start gap-3">
           <img
-            src="/affiliate/assets/NudioOverClear.png"
+            src={`${process.env.PUBLIC_URL}/shopify/assets/NudioOverClear.png`}
             alt="nudio logotype"
             className="w-40 sm:w-56 h-auto"
             loading="lazy"

@@ -1163,7 +1163,7 @@ export function PhotoEnhancer({
               <div className="mt-3 grid grid-cols-2 gap-3">
                 <div className="rounded-2xl overflow-hidden border border-white/10">
                   <img
-                    src="/shopify/examples/plant-before.png"
+                    src={`${process.env.PUBLIC_URL}/shopify/examples/plant-before.png`}
                     alt="Before example"
                     className="w-full h-full object-cover"
                     loading="lazy"
@@ -1171,7 +1171,7 @@ export function PhotoEnhancer({
                 </div>
                 <div className="rounded-2xl overflow-hidden border border-white/10">
                   <img
-                    src="/shopify/examples/plant-after.png"
+                    src={`${process.env.PUBLIC_URL}/shopify/examples/plant-after.png`}
                     alt="After example"
                     className="w-full h-full object-cover"
                     loading="lazy"
