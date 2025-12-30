@@ -14,7 +14,7 @@ import heic2any from "heic2any";
 const CUSTOM_BACKDROP_ID = "custom";
 const CUSTOM_BACKDROP_KEY = "nudio:customBackdrop";
 const DEFAULT_CUSTOM_BACKDROP = "#ffffff";
-const PROCESS_PRICE = 0.05;
+const PROCESS_PRICE = 0.08;
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
 export function PhotoEnhancer({
@@ -70,6 +70,7 @@ export function PhotoEnhancer({
   const [sharePreparing, setSharePreparing] = useState(false);
   const fileInputRef = useRef(null);
   const backdropMenuRef = useRef(null);
+  const sourceMenuRef = useRef(null);
   const watermarkDisabled = true;
 
   const usageEmail = useMemo(() => {
@@ -125,6 +126,30 @@ export function PhotoEnhancer({
       document.removeEventListener("keydown", handleKey);
     };
   }, [backdropMenuOpen]);
+
+  useEffect(() => {
+    if (!sourcePickerOpen) return;
+
+    const handlePointer = (event) => {
+      if (sourceMenuRef.current && !sourceMenuRef.current.contains(event.target)) {
+        setSourcePickerOpen(false);
+      }
+    };
+
+    const handleKey = (event) => {
+      if (event.key === "Escape") {
+        setSourcePickerOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointer);
+    document.addEventListener("keydown", handleKey);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointer);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [sourcePickerOpen]);
   useEffect(() => {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(CUSTOM_BACKDROP_KEY, customBackdrop);
@@ -1248,6 +1273,41 @@ export function PhotoEnhancer({
                 <span className="sr-only">Drop a product photo or press to upload</span>
               </div>
             </div>
+
+            {sourcePickerOpen && (
+              <div
+                ref={sourceMenuRef}
+                className="absolute right-6 top-6 z-30 w-56 rounded-2xl border border-white/10 bg-[#120a14]/95 p-3 text-white shadow-[0_18px_40px_rgba(0,0,0,0.55)] backdrop-blur"
+              >
+                <p className="text-[10px] uppercase tracking-[0.4em] text-white/50">
+                  choose source
+                </p>
+                <div className="mt-3 space-y-2">
+                  <button
+                    type="button"
+                    onClick={handleUploadOption}
+                    className="w-full rounded-full border border-white/15 px-3 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white/80 transition hover:bg-white/10"
+                  >
+                    Upload
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleOpenShopifyPicker}
+                    className="w-full rounded-full border border-white/15 px-3 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white/80 transition hover:bg-white/10"
+                  >
+                    Choose from Shopify
+                  </button>
+                </div>
+                {sourceLoading && (
+                  <p className="mt-3 text-[10px] uppercase tracking-[0.3em] text-white/60">
+                    loading…
+                  </p>
+                )}
+                {sourceError && (
+                  <p className="mt-2 text-xs text-rose-200">{sourceError}</p>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="w-full flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto text-white sm:justify-end sm:items-center">
@@ -1346,68 +1406,28 @@ export function PhotoEnhancer({
             </button>
           </div>
 
-          {sourcePickerOpen && (
-            <div className="w-full max-w-2xl mx-auto rounded-3xl border border-white/10 bg-[#120a14] px-4 py-4 text-white space-y-4">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-[10px] uppercase tracking-[0.4em] text-white/60">
-                    choose source
-                  </p>
-                  <p className="text-sm text-white/80">
-                    Upload a photo or pick one from your Shopify product media.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSourcePickerOpen(false)}
-                  className="text-xs uppercase tracking-[0.3em] text-white/60 hover:text-white"
-                >
-                  close
-                </button>
+          {!!sourceImages.length && (
+            <div className="w-full max-w-2xl mx-auto rounded-3xl border border-white/10 bg-[#120a14] px-4 py-4 text-white space-y-3">
+              <p className="text-[10px] uppercase tracking-[0.4em] text-white/60">
+                pick a shopify image
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {sourceImages.map((image) => (
+                  <button
+                    key={image.id}
+                    type="button"
+                    onClick={() => handleShopifyImageSelect(image)}
+                    className="rounded-2xl overflow-hidden border border-white/10 bg-black/30 hover:border-white/30 transition"
+                  >
+                    <img
+                      src={image.src}
+                      alt={image.alt || "Shopify product"}
+                      className="w-full h-28 object-cover"
+                      loading="lazy"
+                    />
+                  </button>
+                ))}
               </div>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <button
-                  type="button"
-                  onClick={handleUploadOption}
-                  className="flex-1 rounded-full border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white/80 transition hover:bg-white/10"
-                >
-                  Upload
-                </button>
-                <button
-                  type="button"
-                  onClick={handleOpenShopifyPicker}
-                  className="flex-1 rounded-full border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white/80 transition hover:bg-white/10"
-                >
-                  Choose from Shopify
-                </button>
-              </div>
-              {sourceLoading && (
-                <p className="text-xs text-white/60 uppercase tracking-[0.3em]">
-                  loading…
-                </p>
-              )}
-              {sourceError && (
-                <p className="text-xs text-rose-200">{sourceError}</p>
-              )}
-              {!!sourceImages.length && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {sourceImages.map((image) => (
-                    <button
-                      key={image.id}
-                      type="button"
-                      onClick={() => handleShopifyImageSelect(image)}
-                      className="rounded-2xl overflow-hidden border border-white/10 bg-black/30 hover:border-white/30 transition"
-                    >
-                      <img
-                        src={image.src}
-                        alt={image.alt || "Shopify product"}
-                        className="w-full h-28 object-cover"
-                        loading="lazy"
-                      />
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
           )}
 
@@ -1419,7 +1439,7 @@ export function PhotoEnhancer({
                     billing
                   </p>
                   <p className="text-sm text-white/80">
-                    Each processed image costs $0.05, billed through Shopify.
+                    Each processed image costs 8 cents, billed through Shopify.
                   </p>
                   <p className="text-xs text-white/50">
                     Charges apply only when processing completes.
@@ -1444,7 +1464,7 @@ export function PhotoEnhancer({
                         : "bg-white text-slate-900 hover:bg-white/90"
                     }`}
                   >
-                    {billingLoading ? "loading..." : "Enable $0.05/image billing"}
+                    {billingLoading ? "loading..." : "Enable 8 cents/image billing"}
                   </button>
                 )}
               </div>
@@ -1590,7 +1610,7 @@ export function PhotoEnhancer({
             )}
             {usageCharged && (
               <p className="text-xs text-emerald-200">
-                Usage charge recorded: ${PROCESS_PRICE.toFixed(2)}.
+                Usage charge recorded: 8 cents.
               </p>
             )}
           </div>

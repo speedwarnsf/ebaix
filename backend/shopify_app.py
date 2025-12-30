@@ -366,7 +366,7 @@ def _verify_session_token(token: str) -> dict:
 
 class UsageChargeRequest(BaseModel):
     description: str = "Nudio image processing"
-    price: float = 0.05
+    price: float = 0.08
 
 
 class ImageUploadRequest(BaseModel):
@@ -565,7 +565,7 @@ async def shopify_billing_ensure(request: Request, shop: str | None = None, host
     variables = {
         "name": "Nudio (Product Studio)",
         "returnUrl": return_url,
-        "terms": "$0.05 per image, billed through Shopify.",
+        "terms": "8 cents per image, billed through Shopify.",
         "test": SHOPIFY_TEST_BILLING,
     }
     created = await _shopify_graphql(auth_shop, access_token, mutation, variables)
