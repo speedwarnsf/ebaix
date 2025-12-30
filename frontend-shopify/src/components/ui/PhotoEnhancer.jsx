@@ -161,10 +161,12 @@ export function PhotoEnhancer({
       });
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
-        const message =
-          payload?.detail ||
-          payload?.error ||
-          "Shopify request failed.";
+        let message = payload?.detail || payload?.error;
+        if (!message) {
+          message = "Shopify request failed.";
+        } else if (typeof message === "object") {
+          message = JSON.stringify(message);
+        }
         throw new Error(message);
       }
       return response.json();
