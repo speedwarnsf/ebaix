@@ -15,6 +15,21 @@ function App() {
       ? { apiKey: shopifyApiKey, host: shopifyHost, forceRedirect: true }
       : null;
 
+  if (!appBridgeConfig) {
+    return (
+      <div className="min-h-screen bg-[#050305] text-white flex items-center justify-center px-6 text-center">
+        <div className="space-y-3">
+          <p className="text-xs uppercase tracking-[0.4em] text-white/50">
+            loading
+          </p>
+          <p className="text-sm text-white/70">
+            Open Nudio from Shopify Admin so we can load your store context.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const content = (
     <div className="min-h-screen bg-[#050305] text-white">
       <header style={{ backgroundColor: "#050305" }}>
@@ -37,10 +52,6 @@ function App() {
       <Toaster position="top-right" />
     </div>
   );
-
-  if (!appBridgeConfig) {
-    return content;
-  }
 
   return <AppBridgeProvider config={appBridgeConfig}>{content}</AppBridgeProvider>;
 }
