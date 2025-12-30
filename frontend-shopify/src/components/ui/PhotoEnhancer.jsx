@@ -678,28 +678,9 @@ export function PhotoEnhancer({
     });
 
   const enhanceWithGemini = async (base64Image, selectedVariant) => {
-    const rawToken = anonKey;
-    const rawUrl = supabaseUrl;
-
-    if (!rawToken || typeof rawToken !== "string") {
-      throw new Error("Missing Supabase anon key.");
-    }
-    if (!rawUrl || typeof rawUrl !== "string") {
-      throw new Error("Missing Supabase URL.");
-    }
-
-    const cleanToken = rawToken.replace(/[\r\n\t\s]/g, "");
-    const cleanUrl = rawUrl.replace(/[\r\n\t]/g, "").trim();
-
-    const headers = {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${cleanToken}`,
-      apikey: cleanToken,
-    };
-
-    let response;
+    let payload = {};
     try {
-      const payload = {
+      payload = {
         imageBase64: base64Image,
         mode: "image",
         userEmail: usageEmail,
@@ -710,51 +691,14 @@ export function PhotoEnhancer({
         payload.backdropHex = customBackdrop;
       }
 
-      response = await fetch(`${cleanUrl}/functions/v1/optimize-listing`, {
+      return await shopifyFetch("/shopify/optimize-listing", {
         method: "POST",
-        headers,
         body: JSON.stringify(payload),
       });
     } catch (error) {
-      console.error('Fetch error:', error);
+      console.error("Fetch error:", error);
       throw error;
     }
-
-    let rawBody = null;
-    let payload = {};
-
-    try {
-      rawBody = await response.text();
-      payload = rawBody ? JSON.parse(rawBody) : {};
-    } catch (parseErr) {
-      if (rawBody && !payload) {
-        payload = { error: rawBody };
-      }
-    }
-
-    if (!response.ok) {
-      const message =
-        typeof payload?.error === "string" && payload.error.trim()
-          ? payload.error.trim()
-          : typeof payload === "string"
-          ? payload
-          : "Failed to enhance image";
-      const error = new Error(message);
-      error.usage = payload?.usage;
-      error.status = response.status;
-      if (typeof payload?.remaining === "number") {
-        error.remaining = payload.remaining;
-      }
-      throw error;
-    }
-
-    if (!payload.success || !payload.image) {
-      const error = new Error("No enhanced image returned");
-      error.usage = payload?.usage;
-      throw error;
-    }
-
-    return payload;
   };
 
   const dataUrlToBlob = (dataUrl) => {

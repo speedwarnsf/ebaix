@@ -43,6 +43,8 @@ if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
+SUPABASE_FUNCTION_BASE = f"{SUPABASE_URL}/functions/v1"
+
 app = FastAPI(title="Nudio Shopify App")
 app.add_middleware(
     CORSMiddleware,
@@ -374,6 +376,15 @@ class ImageUploadRequest(BaseModel):
     filename: str | None = None
 
 
+class ShopifyOptimizeRequest(BaseModel):
+    imageBase64: str
+    mode: str = "image"
+    userEmail: str | None = None
+    variant: str | None = None
+    backdropId: str | None = None
+    backdropHex: str | None = None
+
+
 def _frontend_index_path() -> Path:
     return Path(SHOPIFY_FRONTEND_BUILD_DIR) / "index.html"
 
@@ -698,6 +709,35 @@ async def shopify_product_image_upload(
                 logging.warning("product_image_reorder_failed shop=%s product_id=%s image_id=%s", auth_shop, product_id, image_id)
     logging.info("product_upload shop=%s product_id=%s", auth_shop, product_id)
     return response
+
+
+@app.post("/shopify/optimize-listing")
+async def shopify_optimize_listing(request: Request, payload: ShopifyOptimizeRequest):
+    auth_shop = getattr(request.state, "shop", None)
+    if not auth_shop:
+        raise HTTPException(status_code=401, detail="Missing shop context.")
+    if not SUPABASE_FUNCTION_BASE or not SUPABASE_SERVICE_KEY:
+        raise HTTPException(status_code=500, detail="Missing Supabase configuration.")
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+        "apikey": SUPABASE_SERVICE_KEY,
+    }
+    body = payload.dict(exclude_none=True)
+    async with httpx.AsyncClient(timeout=60) as client:
+        response = await client.post(
+            f"{SUPABASE_FUNCTION_BASE}/optimize-listing",
+            headers=headers,
+            json=body,
+        )
+    if response.status_code >= 400:
+        try:
+            detail = response.json()
+        except Exception:
+            detail = response.text
+        raise HTTPException(status_code=response.status_code, detail=detail)
+    return response.json()
 
 
 @app.get("/shopify/products")
