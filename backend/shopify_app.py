@@ -376,6 +376,17 @@ class ImageUploadRequest(BaseModel):
 def _frontend_index_path() -> Path:
     return Path(SHOPIFY_FRONTEND_BUILD_DIR) / "index.html"
 
+def _resolve_build_asset(path_fragment: str) -> Path | None:
+    if not path_fragment:
+        return None
+    build_root = Path(SHOPIFY_FRONTEND_BUILD_DIR).resolve()
+    candidate = (build_root / path_fragment).resolve()
+    try:
+        candidate.relative_to(build_root)
+    except ValueError:
+        return None
+    return candidate
+
 
 @app.get("/shopify/app")
 async def shopify_app_root():
@@ -390,6 +401,9 @@ async def shopify_app_catchall(full_path: str):
     index_path = _frontend_index_path()
     if not index_path.exists():
         raise HTTPException(status_code=500, detail="Shopify frontend build missing.")
+    asset_path = _resolve_build_asset(full_path)
+    if asset_path and asset_path.is_file():
+        return FileResponse(asset_path)
     return FileResponse(index_path)
 
 
