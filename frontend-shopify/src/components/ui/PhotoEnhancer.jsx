@@ -47,6 +47,10 @@ export function PhotoEnhancer({
   const [backdropId, setBackdropId] = useState(BACKDROP_OPTIONS[0].id);
   const [backdropMenuOpen, setBackdropMenuOpen] = useState(false);
   const [shareShowcase, setShareShowcase] = useState(null);
+  const [sourcePickerOpen, setSourcePickerOpen] = useState(false);
+  const [sourceImages, setSourceImages] = useState([]);
+  const [sourceLoading, setSourceLoading] = useState(false);
+  const [sourceError, setSourceError] = useState("");
   const [customBackdrop, setCustomBackdrop] = useState(() => {
     if (typeof window === "undefined") return DEFAULT_CUSTOM_BACKDROP;
     const stored = window.localStorage.getItem(CUSTOM_BACKDROP_KEY);
@@ -218,8 +222,97 @@ export function PhotoEnhancer({
   };
 
   const handleLensClickUpload = () => {
+    setSourcePickerOpen(true);
+  };
+
+  const handleUploadOption = () => {
+    setSourcePickerOpen(false);
+    setSourceImages([]);
+    setSourceError("");
     fileInputRef.current?.click();
   };
+
+  const promptProductSelection = useCallback(() => {
+    return new Promise((resolve) => {
+      if (!app) {
+        resolve(null);
+        return;
+      }
+      const picker = ResourcePicker.create(app, {
+        resourceType: ResourcePicker.ResourceType.Product,
+        options: { selectMultiple: false },
+      });
+      picker.subscribe(ResourcePicker.Action.SELECT, ({ selection }) => {
+        const product = selection?.[0];
+        picker.dispatch(ResourcePicker.Action.CLOSE);
+        if (!product) {
+          resolve(null);
+          return;
+        }
+        const restId = String(product.id).split("/").pop();
+        resolve({ id: restId, title: product.title });
+      });
+      picker.subscribe(ResourcePicker.Action.CANCEL, () => {
+        picker.dispatch(ResourcePicker.Action.CLOSE);
+        resolve(null);
+      });
+      picker.dispatch(ResourcePicker.Action.OPEN);
+    });
+  }, [app]);
+
+  const handleOpenShopifyPicker = useCallback(async () => {
+    setSourceError("");
+    setSourceLoading(true);
+    try {
+      let product = selectedProduct;
+      if (!product) {
+        product = await promptProductSelection();
+        if (!product) {
+          setSourcePickerOpen(false);
+          return;
+        }
+        setSelectedProduct(product);
+      }
+      const payload = await shopifyFetch(`/shopify/products/${product.id}/images`);
+      const images = (payload?.images || []).slice().sort((a, b) => (a.position || 0) - (b.position || 0));
+      setSourceImages(images);
+    } catch (err) {
+      setSourceError(err?.message || "Could not load product images.");
+    } finally {
+      setSourceLoading(false);
+    }
+  }, [promptProductSelection, selectedProduct, shopifyFetch]);
+
+  const dataUrlToFile = async (dataUrl, filename) => {
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+    return new File([blob], filename, { type: blob.type || "image/jpeg" });
+  };
+
+  const handleShopifyImageSelect = useCallback(
+    async (image) => {
+      setSourceError("");
+      setSourceLoading(true);
+      try {
+        const payload = await shopifyFetch(
+          `/shopify/images/fetch?src=${encodeURIComponent(image.src)}`
+        );
+        const dataUrl = payload?.data_url;
+        if (!dataUrl) {
+          throw new Error("Image fetch failed.");
+        }
+        const file = await dataUrlToFile(dataUrl, "shopify-image.jpg");
+        setSourcePickerOpen(false);
+        setSourceImages([]);
+        await handleIncomingFile(file);
+      } catch (err) {
+        setSourceError(err?.message || "Could not import that image.");
+      } finally {
+        setSourceLoading(false);
+      }
+    },
+    [handleIncomingFile, shopifyFetch]
+  );
 
   const handleLensKeyDown = (event) => {
     if (event.key === "Enter" || event.key === " ") {
@@ -945,7 +1038,7 @@ export function PhotoEnhancer({
     setPublishError("");
     setPublishLoading(true);
     try {
-      await shopifyFetch(`/shopify/products/${selectedProduct.id}/images`, {
+      await shopifyFetch(`/shopify/products/${selectedProduct.id}/images?make_primary=1`, {
         method: "POST",
         body: JSON.stringify({
           image_base64: enhancedImage,
@@ -1157,29 +1250,164 @@ export function PhotoEnhancer({
             </div>
           </div>
 
-          {!showLensPreview && !loading && (
-            <div className="w-full max-w-2xl mx-auto rounded-3xl border border-white/10 bg-[#120a14] px-4 py-4">
-              <p className="text-[10px] uppercase tracking-[0.4em] text-white/60">
-                before / after
-              </p>
-              <div className="mt-3 grid grid-cols-2 gap-3">
-                <div className="rounded-2xl overflow-hidden border border-white/10">
-                  <img
-                    src={`${process.env.PUBLIC_URL}/shopify/examples/plant-before.png`}
-                    alt="Before example"
-                    className="w-full h-full object-cover"
-                    loading="lazy"
+          <div className="w-full flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto text-white sm:justify-end sm:items-center">
+            <div className="relative w-full sm:w-64" ref={backdropMenuRef}>
+              <button
+                type="button"
+                onClick={() => setBackdropMenuOpen((prev) => !prev)}
+                className="w-full rounded-full border border-white/20 bg-[#140b16] px-4 py-3 flex items-center justify-between text-sm"
+              >
+                <span className="flex items-center gap-2 text-white">
+                  <span
+                    className="inline-block h-3.5 w-3.5 rounded-full border border-white/30"
+                    style={{ backgroundColor: currentBackdrop.hex }}
                   />
+                  {currentBackdrop.label}
+                </span>
+                <svg className={`h-3 w-3 text-white transition ${backdropMenuOpen ? "rotate-180" : ""}`} viewBox="0 0 10 6">
+                  <path d="M9 1.5L5 5.5L1 1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </button>
+              {backdropMenuOpen && (
+                <div className="absolute left-0 right-0 z-20 mt-2 max-h-56 overflow-y-auto rounded-2xl border border-white/10 bg-[#0b070d] shadow-[0_20px_40px_rgba(5,4,8,0.7)]">
+                  {backdropOptions.map((option) => {
+                    if (option.id === CUSTOM_BACKDROP_ID) {
+                      const isActive = backdropId === option.id;
+                      return (
+                        <div
+                          key={option.id}
+                          className={`w-full px-4 py-2 flex items-center gap-2 ${
+                            isActive ? "bg-slate-900 text-white" : "text-slate-200 hover:bg-white/5"
+                          }`}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setBackdropId(option.id);
+                              setBackdropMenuOpen(false);
+                            }}
+                            className="flex-1 flex items-center gap-2 text-left"
+                          >
+                            <span
+                              className="inline-block h-3 w-3 rounded-full border border-white/30"
+                              style={{ backgroundColor: option.hex }}
+                            />
+                            {option.label}
+                          </button>
+                          <input
+                            type="color"
+                            aria-label="Choose a custom backdrop color"
+                            value={customBackdrop}
+                            onChange={handleCustomBackdropChange}
+                            className="h-6 w-6 rounded-full border border-white/20 bg-transparent"
+                          />
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => {
+                          setBackdropId(option.id);
+                          setBackdropMenuOpen(false);
+                        }}
+                        className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 ${
+                          backdropId === option.id ? "bg-slate-900 text-white" : "text-slate-200 hover:bg-white/5"
+                        }`}
+                      >
+                        <span
+                          className="inline-block h-3 w-3 rounded-full border border-white/30"
+                          style={{ backgroundColor: option.hex }}
+                        />
+                        {option.label}
+                      </button>
+                    );
+                  })}
                 </div>
-                <div className="rounded-2xl overflow-hidden border border-white/10">
-                  <img
-                    src={`${process.env.PUBLIC_URL}/shopify/examples/plant-after.png`}
-                    alt="After example"
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={handleEnhancePhoto}
+              disabled={!preview || loading || !billingReady}
+              className={`rounded-full px-5 py-3 text-sm font-semibold uppercase tracking-[0.4em] transition ${
+                !preview || loading || !billingReady
+                  ? "bg-slate-200 text-slate-500 cursor-not-allowed"
+                  : "bg-gradient-to-r from-emerald-400 to-lime-300 text-slate-900 shadow-[0_12px_30px_rgba(16,185,129,0.35)] hover:shadow-[0_15px_35px_rgba(190,242,100,0.45)]"
+              }`}
+            >
+              {loading
+                ? "nudioing..."
+                : billingReady
+                ? "process"
+                : "enable billing"}
+            </button>
+          </div>
+
+          {sourcePickerOpen && (
+            <div className="w-full max-w-2xl mx-auto rounded-3xl border border-white/10 bg-[#120a14] px-4 py-4 text-white space-y-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.4em] text-white/60">
+                    choose source
+                  </p>
+                  <p className="text-sm text-white/80">
+                    Upload a photo or pick one from your Shopify product media.
+                  </p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setSourcePickerOpen(false)}
+                  className="text-xs uppercase tracking-[0.3em] text-white/60 hover:text-white"
+                >
+                  close
+                </button>
               </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  type="button"
+                  onClick={handleUploadOption}
+                  className="flex-1 rounded-full border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white/80 transition hover:bg-white/10"
+                >
+                  Upload
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpenShopifyPicker}
+                  className="flex-1 rounded-full border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white/80 transition hover:bg-white/10"
+                >
+                  Choose from Shopify
+                </button>
+              </div>
+              {sourceLoading && (
+                <p className="text-xs text-white/60 uppercase tracking-[0.3em]">
+                  loading…
+                </p>
+              )}
+              {sourceError && (
+                <p className="text-xs text-rose-200">{sourceError}</p>
+              )}
+              {!!sourceImages.length && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {sourceImages.map((image) => (
+                    <button
+                      key={image.id}
+                      type="button"
+                      onClick={() => handleShopifyImageSelect(image)}
+                      className="rounded-2xl overflow-hidden border border-white/10 bg-black/30 hover:border-white/30 transition"
+                    >
+                      <img
+                        src={image.src}
+                        alt={image.alt || "Shopify product"}
+                        className="w-full h-28 object-cover"
+                        loading="lazy"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -1280,106 +1508,36 @@ export function PhotoEnhancer({
             )}
           </div>
 
-          <div className="w-full flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto text-white">
-            <div className="relative flex-1" ref={backdropMenuRef}>
-              <button
-                type="button"
-                onClick={() => setBackdropMenuOpen((prev) => !prev)}
-                className="w-full rounded-full border border-white/20 bg-[#140b16] px-4 py-3 flex items-center justify-between text-sm"
-              >
-                <span className="flex items-center gap-2 text-white">
-                  <span
-                    className="inline-block h-3.5 w-3.5 rounded-full border border-white/30"
-                    style={{ backgroundColor: currentBackdrop.hex }}
-                  />
-                  {currentBackdrop.label}
-                </span>
-                <svg className={`h-3 w-3 text-white transition ${backdropMenuOpen ? "rotate-180" : ""}`} viewBox="0 0 10 6">
-                  <path d="M9 1.5L5 5.5L1 1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-              </button>
-              {backdropMenuOpen && (
-                <div className="absolute left-0 right-0 z-20 mt-2 max-h-56 overflow-y-auto rounded-2xl border border-white/10 bg-[#0b070d] shadow-[0_20px_40px_rgba(5,4,8,0.7)]">
-                  {backdropOptions.map((option) => {
-                    if (option.id === CUSTOM_BACKDROP_ID) {
-                      const isActive = backdropId === option.id;
-                      return (
-                        <div
-                          key={option.id}
-                          className={`w-full px-4 py-2 flex items-center gap-2 ${
-                            isActive ? "bg-slate-900 text-white" : "text-slate-200 hover:bg-white/5"
-                          }`}
-                        >
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setBackdropId(option.id);
-                              setBackdropMenuOpen(false);
-                            }}
-                            className="flex-1 flex items-center gap-2 text-left"
-                          >
-                            <span
-                              className="inline-block h-3 w-3 rounded-full border border-white/30"
-                              style={{ backgroundColor: option.hex }}
-                            />
-                            {option.label}
-                          </button>
-                          <input
-                            type="color"
-                            aria-label="Choose a custom backdrop color"
-                            value={customBackdrop}
-                            onChange={handleCustomBackdropChange}
-                            className="h-6 w-6 rounded-full border border-white/20 bg-transparent"
-                          />
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <button
-                        key={option.id}
-                        type="button"
-                        onClick={() => {
-                          setBackdropId(option.id);
-                          setBackdropMenuOpen(false);
-                        }}
-                        className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 ${
-                          backdropId === option.id ? "bg-slate-900 text-white" : "text-slate-200 hover:bg-white/5"
-                        }`}
-                      >
-                        <span
-                          className="inline-block h-3 w-3 rounded-full border border-white/30"
-                          style={{ backgroundColor: option.hex }}
-                        />
-                        {option.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={handleEnhancePhoto}
-              disabled={!preview || loading || !billingReady}
-              className={`rounded-full px-5 py-3 text-sm font-semibold uppercase tracking-[0.4em] transition ${
-                !preview || loading || !billingReady
-                  ? "bg-slate-200 text-slate-500 cursor-not-allowed"
-                  : "bg-gradient-to-r from-emerald-400 to-lime-300 text-slate-900 shadow-[0_12px_30px_rgba(16,185,129,0.35)] hover:shadow-[0_15px_35px_rgba(190,242,100,0.45)]"
-              }`}
-            >
-              {loading
-                ? "nudioing..."
-                : billingReady
-                ? "process"
-                : "enable billing"}
-            </button>
-          </div>
-
           {sharePreparing && (
             <p className="text-[10px] uppercase tracking-[0.4em] text-white/70 text-center">
               crafting share clip…
             </p>
+          )}
+
+          {!showLensPreview && !loading && (
+            <div className="w-full max-w-2xl mx-auto rounded-3xl border border-white/10 bg-[#120a14] px-4 py-4">
+              <p className="text-[10px] uppercase tracking-[0.4em] text-white/60">
+                before / after
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <div className="rounded-2xl overflow-hidden border border-white/10">
+                  <img
+                    src={`${process.env.PUBLIC_URL}/shopify/examples/plant-before.png`}
+                    alt="Before example"
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="rounded-2xl overflow-hidden border border-white/10">
+                  <img
+                    src={`${process.env.PUBLIC_URL}/shopify/examples/plant-after.png`}
+                    alt="After example"
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </section>

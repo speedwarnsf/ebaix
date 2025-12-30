@@ -655,6 +655,7 @@ async def shopify_product_image_upload(
     request: Request,
     payload: ImageUploadRequest,
     shop: str | None = None,
+    make_primary: bool = False,
 ):
     auth_shop = getattr(request.state, "shop", None) or shop
     if not auth_shop:
@@ -682,6 +683,19 @@ async def shopify_product_image_upload(
         f"/products/{product_id}/images.json",
         payload,
     )
+    if make_primary:
+        image_id = (response or {}).get("image", {}).get("id")
+        if image_id:
+            try:
+                await _shopify_rest_with_retry(
+                    auth_shop,
+                    access_token,
+                    "PUT",
+                    f"/products/{product_id}/images/{image_id}.json",
+                    {"image": {"id": image_id, "position": 1}},
+                )
+            except Exception:
+                logging.warning("product_image_reorder_failed shop=%s product_id=%s image_id=%s", auth_shop, product_id, image_id)
     logging.info("product_upload shop=%s product_id=%s", auth_shop, product_id)
     return response
 
@@ -702,6 +716,49 @@ async def shopify_products(request: Request, shop: str | None = None, limit: int
         payload,
     )
     return response
+
+
+@app.get("/shopify/products/{product_id}/images")
+async def shopify_product_images(request: Request, product_id: str, shop: str | None = None):
+    auth_shop = getattr(request.state, "shop", None) or shop
+    if not auth_shop:
+        raise HTTPException(status_code=401, detail="Missing shop context.")
+    record = _get_shop_record(auth_shop)
+    access_token = record["access_token"]
+    payload = {"fields": "id,src,position,alt"}
+    response = await _shopify_rest(
+        auth_shop,
+        access_token,
+        "GET",
+        f"/products/{product_id}/images.json",
+        payload,
+    )
+    return response
+
+
+@app.get("/shopify/images/fetch")
+async def shopify_fetch_image(request: Request, src: str, shop: str | None = None):
+    auth_shop = getattr(request.state, "shop", None) or shop
+    if not auth_shop:
+        raise HTTPException(status_code=401, detail="Missing shop context.")
+    if not src:
+        raise HTTPException(status_code=400, detail="Missing image source.")
+    allowed_hosts = ("cdn.shopify.com", ".myshopify.com")
+    if not any(host in src for host in allowed_hosts):
+        raise HTTPException(status_code=400, detail="Unsupported image source.")
+
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.get(src)
+        response.raise_for_status()
+        content_type = response.headers.get("Content-Type", "image/jpeg")
+        content = response.content
+
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Image exceeds 10MB limit.")
+
+    encoded = base64.b64encode(content).decode("utf-8")
+    data_url = f"data:{content_type};base64,{encoded}"
+    return {"data_url": data_url}
 
 
 @app.get("/shopify/health")
