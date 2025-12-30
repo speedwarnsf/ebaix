@@ -283,37 +283,6 @@ export function PhotoEnhancer({
     }
   }, [promptProductSelection, selectedProduct, shopifyFetch]);
 
-  const dataUrlToFile = async (dataUrl, filename) => {
-    const response = await fetch(dataUrl);
-    const blob = await response.blob();
-    return new File([blob], filename, { type: blob.type || "image/jpeg" });
-  };
-
-  const handleShopifyImageSelect = useCallback(
-    async (image) => {
-      setSourceError("");
-      setSourceLoading(true);
-      try {
-        const payload = await shopifyFetch(
-          `/shopify/images/fetch?src=${encodeURIComponent(image.src)}`
-        );
-        const dataUrl = payload?.data_url;
-        if (!dataUrl) {
-          throw new Error("Image fetch failed.");
-        }
-        const file = await dataUrlToFile(dataUrl, "shopify-image.jpg");
-        setSourcePickerOpen(false);
-        setSourceImages([]);
-        await handleIncomingFile(file);
-      } catch (err) {
-        setSourceError(err?.message || "Could not import that image.");
-      } finally {
-        setSourceLoading(false);
-      }
-    },
-    [handleIncomingFile, shopifyFetch]
-  );
-
   const handleLensKeyDown = (event) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
@@ -962,6 +931,37 @@ export function PhotoEnhancer({
       reader.readAsDataURL(preparedFile);
     },
     [optimizeImageFile, saveOriginalCaptureIfNeeded]
+  );
+
+  const dataUrlToFile = async (dataUrl, filename) => {
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+    return new File([blob], filename, { type: blob.type || "image/jpeg" });
+  };
+
+  const handleShopifyImageSelect = useCallback(
+    async (image) => {
+      setSourceError("");
+      setSourceLoading(true);
+      try {
+        const payload = await shopifyFetch(
+          `/shopify/images/fetch?src=${encodeURIComponent(image.src)}`
+        );
+        const dataUrl = payload?.data_url;
+        if (!dataUrl) {
+          throw new Error("Image fetch failed.");
+        }
+        const file = await dataUrlToFile(dataUrl, "shopify-image.jpg");
+        setSourcePickerOpen(false);
+        setSourceImages([]);
+        await handleIncomingFile(file);
+      } catch (err) {
+        setSourceError(err?.message || "Could not import that image.");
+      } finally {
+        setSourceLoading(false);
+      }
+    },
+    [handleIncomingFile, shopifyFetch]
   );
 
   const handleEnableBilling = useCallback(async () => {
