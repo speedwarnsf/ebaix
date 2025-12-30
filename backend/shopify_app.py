@@ -28,6 +28,7 @@ SHOPIFY_APP_URL = os.environ.get("SHOPIFY_APP_URL", "https://app.nudio.ai/shopif
 SHOPIFY_OAUTH_CALLBACK = os.environ.get(
     "SHOPIFY_OAUTH_CALLBACK", "https://app.nudio.ai/shopify/oauth/callback"
 )
+SHOPIFY_TEST_BILLING = os.environ.get("SHOPIFY_TEST_BILLING", "false").lower() in ("1", "true", "yes")
 SHOPIFY_SHOPS_TABLE = os.environ.get("SHOPIFY_SHOPS_TABLE", "shopify_shops")
 SHOPIFY_FRONTEND_BUILD_DIR = os.environ.get(
     "SHOPIFY_FRONTEND_BUILD_DIR",
@@ -533,7 +534,7 @@ async def shopify_billing_ensure(request: Request, shop: str | None = None, host
             return {"active": True, "subscription": subscription}
 
     mutation = """
-      mutation CreateSubscription($name: String!, $returnUrl: URL!, $terms: String!) {
+      mutation CreateSubscription($name: String!, $returnUrl: URL!, $terms: String!, $test: Boolean!) {
         appSubscriptionCreate(
           name: $name
           returnUrl: $returnUrl
@@ -547,7 +548,7 @@ async def shopify_billing_ensure(request: Request, shop: str | None = None, host
               }
             }
           ]
-          test: false
+          test: $test
         ) {
           confirmationUrl
           userErrors {
@@ -565,6 +566,7 @@ async def shopify_billing_ensure(request: Request, shop: str | None = None, host
         "name": "Nudio (Product Studio)",
         "returnUrl": return_url,
         "terms": "$0.05 per image, billed through Shopify.",
+        "test": SHOPIFY_TEST_BILLING,
     }
     created = await _shopify_graphql(auth_shop, access_token, mutation, variables)
     payload = created.get("data", {}).get("appSubscriptionCreate", {})
