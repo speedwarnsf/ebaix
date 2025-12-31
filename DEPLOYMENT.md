@@ -21,7 +21,7 @@ Go to Supabase Dashboard → Project Settings → Edge Functions → Secrets and
 
 ```bash
 # Gemini AI
-GEMINI_API_KEY=AIzaSyCqc4v-3iqtaJ02JF_gDdo0Kw5V2bVJ_lE
+GEMINI_API_KEY=your-google-api-key
 
 # Stripe (Get from frontend/.env.local)
 STRIPE_SECRET_KEY=<YOUR_STRIPE_SECRET_KEY>

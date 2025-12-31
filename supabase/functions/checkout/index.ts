@@ -28,13 +28,19 @@ Deno.serve(async (req) => {
 
     // Define product names
     const productNames = {
-      small: '10 eBai Listings',
-      medium: '50 eBai Listings',
-      large: '100 eBai Listings',
-      subscription: '200 eBai Listings per Month + No Watermark'
+      small: '10 nudio credits',
+      medium: '50 nudio credits',
+      large: '100 nudio credits',
+      subscription: '200 nudios per month (no watermark)'
     }
 
-    const productName = productNames[bundleType] || `${credits} eBai Credits`
+    const productName = productNames[bundleType] || `${credits} nudio credits`
+    const origin = req.headers.get('origin') ?? 'https://nudio.ai'
+    const successParams = new URLSearchParams({
+      success: 'true',
+      bundle: bundleType ?? 'unknown',
+      session_id: '{CHECKOUT_SESSION_ID}',
+    }).toString()
 
     // Create checkout session parameters
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
@@ -60,8 +66,8 @@ Deno.serve(async (req) => {
         },
       ],
       mode: isRecurring ? 'subscription' : 'payment',
-      success_url: `${req.headers.get('origin')}/?success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.get('origin')}/?canceled=true`,
+      success_url: `${origin}/?${successParams}`,
+      cancel_url: `${origin}/?canceled=true`,
       customer_email: email,
       metadata: {
         userId,

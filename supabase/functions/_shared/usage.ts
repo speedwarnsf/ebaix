@@ -164,36 +164,99 @@ export async function ensureProfile(email: string): Promise<UsageProfile> {
   return data;
 }
 
-export function canConsumeCredit(profile: UsageProfile): { allowed: boolean; message?: string } {
+interface CreditOptions {
+  creditCost?: number;
+  requirePaidCredits?: boolean;
+}
+
+function normalizeCost(options?: CreditOptions) {
+  const requested = options?.creditCost ?? 1;
+  if (!Number.isFinite(requested)) return 1;
+  return Math.max(1, Math.floor(requested));
+}
+
+export function canConsumeCredit(
+  profile: UsageProfile,
+  options?: CreditOptions,
+): { allowed: boolean; message?: string } {
+  const creditCost = normalizeCost(options);
+  const requirePaid = options?.requirePaidCredits === true;
   if (profile.role === 'owner') {
     return { allowed: true };
   }
 
-  if (profile.credits_balance > 0) {
+  const paidBalance = profile.credits_balance;
+  const freeRemaining = Math.max(FREE_CREDITS_PER_MONTH - profile.free_credits_used, 0);
+
+  if (requirePaid) {
+    if (paidBalance >= creditCost) {
+      return { allowed: true };
+    }
+    return {
+      allowed: false,
+      message: `Labs requires ${creditCost} paid nudios.`,
+    };
+  }
+
+  if (paidBalance >= creditCost) {
     return { allowed: true };
   }
 
-  if (profile.free_credits_used >= FREE_CREDITS_PER_MONTH) {
+  if (freeRemaining >= creditCost) {
+    return { allowed: true };
+  }
+
+  if (freeRemaining <= 0) {
     return {
       allowed: false,
       message: `Free tier limit reached (${FREE_CREDITS_PER_MONTH} nudio shoots this month).`,
     };
   }
 
+  const totalAvailable = paidBalance + freeRemaining;
+  if (totalAvailable < creditCost) {
+    return {
+      allowed: false,
+      message: 'Not enough credits remaining for this request.',
+    };
+  }
+
   return { allowed: true };
 }
 
-export async function consumeCredit(profile: UsageProfile): Promise<{ profile: UsageProfile; usage: UsageSummary }> {
+export async function consumeCredit(
+  profile: UsageProfile,
+  options?: CreditOptions,
+): Promise<{ profile: UsageProfile; usage: UsageSummary }> {
   if (profile.role === 'owner') {
     return { profile, usage: usageFromProfile(profile) };
   }
 
+  const creditCost = normalizeCost(options);
+  const requirePaid = options?.requirePaidCredits === true;
   const updates: Partial<UsageProfile> = { updated_at: new Date().toISOString() };
 
-  if (profile.credits_balance > 0) {
-    updates.credits_balance = profile.credits_balance - 1;
+  let paidToUse = 0;
+  let freeToUse = 0;
+
+  if (requirePaid) {
+    paidToUse = creditCost;
   } else {
-    updates.free_credits_used = profile.free_credits_used + 1;
+    paidToUse = Math.min(profile.credits_balance, creditCost);
+    freeToUse = creditCost - paidToUse;
+  }
+
+  const remainingFreeCapacity = Math.max(FREE_CREDITS_PER_MONTH - profile.free_credits_used, 0);
+  if (freeToUse > remainingFreeCapacity) {
+    freeToUse = remainingFreeCapacity;
+  }
+
+  if (paidToUse > 0) {
+    updates.credits_balance = profile.credits_balance - paidToUse;
+  }
+
+  if (freeToUse > 0) {
+    updates.free_credits_used = profile.free_credits_used + freeToUse;
   }
 
   const { data: updated, error } = await supabaseAdmin
@@ -214,4 +277,3 @@ export async function getUsageSummary(email: string): Promise<{ profile: UsagePr
   const profile = await ensureProfile(email);
   return { profile, usage: usageFromProfile(profile) };
 }
-

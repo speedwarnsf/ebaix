@@ -9,6 +9,7 @@ import PrivacyPolicy from "./components/ui/PrivacyPolicy";
 import TermsOfService from "./components/ui/TermsOfService";
 import { useSession } from "./context/SessionContext";
 import { LensLab } from "./components/LensLab";
+import { AffiliateIntro } from "./components/ui/AffiliateIntro";
 
 const GUEST_BASELINE = {
   freeCreditsLimit: 3,
@@ -66,6 +67,7 @@ function AppContent() {
   const isLensLabRoute = location.pathname === "/lens-lab";
   const isMainAppRoute =
     !isResetRoute && !isPrivacyRoute && !isTermsRoute && !isLensLabRoute;
+  const isSignedIn = sessionRole === "member" || sessionRole === "guest";
   const handleLensLabLaunch = useCallback(() => {
     navigate("/lens-lab");
   }, [navigate]);
@@ -105,6 +107,25 @@ function AppContent() {
     },
     [sessionRole]
   );
+
+  useEffect(() => {
+    if (sessionRole === "member") {
+      return;
+    }
+    const params = new URLSearchParams(location.search);
+    if (params.get("start") === "nudio") {
+      openOverlay();
+      params.delete("start");
+      navigate(
+        {
+          pathname: location.pathname,
+          search: params.toString() ? `?${params.toString()}` : "",
+          hash: location.hash,
+        },
+        { replace: true }
+      );
+    }
+  }, [location.hash, location.pathname, location.search, navigate, openOverlay, sessionRole]);
 
   useEffect(() => {
     if (!isMainAppRoute) {
@@ -285,75 +306,98 @@ function AppContent() {
       return <TermsOfService />;
     }
     if (isLensLabRoute) {
-      return <LensLab onBack={() => navigate("/")} />;
+      return (
+        <>
+          <LensLab
+            onBack={() => navigate("/")}
+            sessionRole={sessionRole}
+            usageSummary={usageSummary}
+            accessToken={accessToken}
+            anonKey={anonKey}
+            supabaseUrl={supabaseUrl}
+            onUsageUpdate={handleUsageUpdate}
+            userEmail={userEmail}
+          />
+          <AuthOverlay />
+        </>
+      );
     }
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "rgb(228, 203, 203)" }}>
+    <div className="min-h-screen bg-[#050305] text-white">
       <AuthOverlay />
+      {isSignedIn ? (
+        <>
+          <header style={{ backgroundColor: "#050305" }}>
+            <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 flex flex-col items-start">
+              <img
+                src="/affiliate/assets/NudioOverClear.png"
+                alt="nudio logotype"
+                className="w-40 sm:w-56 h-auto"
+                loading="lazy"
+              />
+            </div>
 
-      <header style={{ backgroundColor: "rgb(228, 203, 203)" }}>
-        <div className="w-full max-w-5xl mx-auto px-0 sm:px-0 py-0 flex flex-col" style={{ backgroundColor: "rgb(228, 203, 203)" }}>
-          <img
-            src="/nudioheader.jpg"
-            alt="nudio showcase"
-            className="w-full h-auto object-cover"
-          />
-        </div>
+            <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 hidden sm:flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-2">
+                <p className="text-sm text-white/70 max-w-xl">
+                  Shoot or drop in your product photo, tap the button and we'll deliver a listing ready nudio in seconds.
+                </p>
+              </div>
 
-        <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 hidden sm:flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-2">
-            <p className="text-sm text-slate-600 max-w-xl">
-              Shoot or drop in your product photo, tap the button and we'll deliver a listing ready nudio in seconds.
-            </p>
-          </div>
+              <div className="flex items-center gap-3">
+                <span className="bg-white/10 border border-white/20 rounded-full px-4 py-2 text-xs sm:text-sm text-white font-medium">
+                  {statusChip}
+                </span>
+                <button
+                  onClick={openOverlay}
+                  className="text-xs sm:text-sm font-medium text-white underline underline-offset-4"
+                >
+                  Sign in / Join
+                </button>
+                {sessionRole === "member" && (
+                  <button
+                    onClick={signOut}
+                    className="text-xs sm:text-sm text-white/60 underline underline-offset-4"
+                  >
+                    Sign out
+                  </button>
+                )}
+              </div>
+            </div>
+          </header>
 
-          <div className="flex items-center gap-3">
-            <span className="bg-white/70 border border-slate-200 rounded-full px-4 py-2 text-xs sm:text-sm text-slate-700 font-medium">
-              {statusChip}
-            </span>
-            <button
-              onClick={openOverlay}
-              className="text-xs sm:text-sm font-medium text-slate-900 underline underline-offset-4"
-            >
-              Switch mode
-            </button>
-            {sessionRole === "member" && (
-              <button
-                onClick={signOut}
-                className="text-xs sm:text-sm text-slate-500 underline underline-offset-4"
-              >
-                Sign out
-              </button>
-            )}
-          </div>
-        </div>
-      </header>
-
-      <main className="relative -mt-20 z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
-        <PhotoEnhancer
-          sessionRole={sessionRole}
-          userEmail={userEmail}
-          userId={userId}
-          usageSummary={usageSummary}
-          onUsageUpdate={handleUsageUpdate}
-          usageError={usageError}
-          accessToken={accessToken}
-          anonKey={anonKey}
-          supabaseUrl={supabaseUrl}
-          onLensLabLaunch={handleLensLabLaunch}
+          <main className="relative -mt-8 sm:-mt-12 z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+            <PhotoEnhancer
+              sessionRole={sessionRole}
+              userEmail={userEmail}
+              userId={userId}
+              usageSummary={usageSummary}
+              onUsageUpdate={handleUsageUpdate}
+              usageError={usageError}
+              accessToken={accessToken}
+              anonKey={anonKey}
+              supabaseUrl={supabaseUrl}
+              onLensLabLaunch={handleLensLabLaunch}
+            />
+          </main>
+          <footer className="w-full max-w-5xl mx-auto px-4 sm:px-6 pb-10 text-xs text-slate-500 flex items-center gap-4">
+            <a className="underline underline-offset-4" href="/terms-of-service">
+              Terms of Service
+            </a>
+            <a className="underline underline-offset-4" href="/privacy-policy">
+              Privacy Policy
+            </a>
+          </footer>
+        </>
+      ) : (
+        <AffiliateIntro
+          onLaunch={openOverlay}
+          onLabs={handleLensLabLaunch}
+          isMember={sessionRole === "member"}
         />
-      </main>
-      <footer className="w-full max-w-5xl mx-auto px-4 sm:px-6 pb-10 text-xs text-slate-500 flex items-center gap-4">
-        <a className="underline underline-offset-4" href="/terms-of-service">
-          Terms of Service
-        </a>
-        <a className="underline underline-offset-4" href="/privacy-policy">
-          Privacy Policy
-        </a>
-      </footer>
-
+      )}
     </div>
   );
 }

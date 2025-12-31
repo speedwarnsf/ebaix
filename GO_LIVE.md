@@ -60,7 +60,7 @@ Go to: **Supabase Dashboard → Project Settings → Edge Functions → Secrets*
 Add these secrets:
 
 ```bash
-GEMINI_API_KEY=AIzaSyCqc4v-3iqtaJ02JF_gDdo0Kw5V2bVJ_lE
+GEMINI_API_KEY=your-google-api-key
 STRIPE_SECRET_KEY=sk_live_51Rt0uYKjTATVIGPi...
 ```
 

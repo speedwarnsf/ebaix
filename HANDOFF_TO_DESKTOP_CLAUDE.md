@@ -67,7 +67,7 @@ REACT_APP_STRIPE_PUBLIC_KEY=pk_live_51Rt0uYKjTATVIGPi...
 
 Required secrets:
 ```bash
-GEMINI_API_KEY=AIzaSyCqc4v-3iqtaJ02JF_gDdo0Kw5V2bVJ_lE
+GEMINI_API_KEY=<your-google-api-key>
 STRIPE_SECRET_KEY=sk_live_51Rt0uYKjTATVIGPi...
 ```
 
@@ -107,7 +107,7 @@ cat frontend/.env.local
 
 **Gemini API Key (For AI processing):**
 ```
-AIzaSyCqc4v-3iqtaJ02JF_gDdo0Kw5V2bVJ_lE
+<your-google-api-key>
 ```
 
 ---
@@ -152,12 +152,12 @@ supabase functions deploy create-checkout-session
 
 **Via Dashboard:**
 1. Supabase Dashboard → Project Settings → Edge Functions → Secrets
-2. Add secret: `GEMINI_API_KEY` = `AIzaSyCqc4v-3iqtaJ02JF_gDdo0Kw5V2bVJ_lE`
+2. Add secret: `GEMINI_API_KEY` = `<your-google-api-key>`
 3. Add secret: `STRIPE_SECRET_KEY` = (copy from frontend/.env.local)
 
 **Via CLI (if available):**
 ```bash
-supabase secrets set GEMINI_API_KEY=AIzaSyCqc4v-3iqtaJ02JF_gDdo0Kw5V2bVJ_lE
+supabase secrets set GEMINI_API_KEY=<your-google-api-key>
 supabase secrets set STRIPE_SECRET_KEY=[from .env.local]
 ```
 

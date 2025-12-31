@@ -11,6 +11,7 @@ const SessionContext = createContext(null);
 
 const REMEMBER_KEY = "nudio:remember";
 const LAST_MODE_KEY = "nudio:lastMode";
+const AUTH_PROMPT_KEY = "nudio:authPrompted";
 
 const readFlag = (key) => {
   if (typeof window === "undefined") return false;
@@ -37,9 +38,10 @@ const writeValue = (key, value) => {
 export function SessionProvider({ children }) {
   const [session, setSession] = useState(null);
   const [guestActive, setGuestActive] = useState(false);
-  const [overlayOpen, setOverlayOpen] = useState(true);
+  const [overlayOpen, setOverlayOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [rememberMe, setRememberMe] = useState(() => readFlag(REMEMBER_KEY));
+  const [authPrompted, setAuthPrompted] = useState(() => readFlag(AUTH_PROMPT_KEY));
 
   useEffect(() => {
     let mounted = true;
@@ -55,9 +57,13 @@ export function SessionProvider({ children }) {
 
       if (activeSession) {
         setGuestActive(false);
-        if (rememberMe || lastMode === "member") setOverlayOpen(false);
+        if (rememberMe || lastMode === "member") {
+          setOverlayOpen(false);
+        }
       } else if (lastMode === "guest") {
         setGuestActive(true);
+        setOverlayOpen(false);
+      } else {
         setOverlayOpen(false);
       }
 
@@ -77,7 +83,9 @@ export function SessionProvider({ children }) {
         writeValue(LAST_MODE_KEY, "member");
         setOverlayOpen(false);
       } else {
-        setOverlayOpen(true);
+        setOverlayOpen(false);
+        setAuthPrompted(false);
+        writeFlag(AUTH_PROMPT_KEY, false);
       }
     });
 
@@ -87,11 +95,19 @@ export function SessionProvider({ children }) {
     };
   }, [rememberMe]);
 
+  const markPrompted = () => {
+    if (!authPrompted) {
+      setAuthPrompted(true);
+      writeFlag(AUTH_PROMPT_KEY, true);
+    }
+  };
+
   const dismissOverlay = () => setOverlayOpen(false);
 
   const startGuest = () => {
     setGuestActive(true);
     writeValue(LAST_MODE_KEY, "guest");
+    markPrompted();
     dismissOverlay();
   };
 
@@ -105,6 +121,7 @@ export function SessionProvider({ children }) {
     setGuestActive(false);
     writeValue(LAST_MODE_KEY, "member");
     setRememberPreference(remember);
+    markPrompted();
     dismissOverlay();
   };
 
@@ -126,7 +143,7 @@ export function SessionProvider({ children }) {
   const resetPassword = async (email) => {
     const cleanEmail = email.trim();
     const redirectTo = `${window.location.origin}/reset-password`;
-    
+
     const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
       redirectTo,
     });
@@ -137,9 +154,11 @@ export function SessionProvider({ children }) {
     await supabase.auth.signOut();
     setSession(null);
     setGuestActive(false);
-    setOverlayOpen(true);
+    setOverlayOpen(false);
     writeValue(LAST_MODE_KEY, null);
     writeFlag(REMEMBER_KEY, false);
+    setAuthPrompted(false);
+    writeFlag(AUTH_PROMPT_KEY, false);
   };
 
   const value = useMemo(() => {
@@ -161,7 +180,10 @@ export function SessionProvider({ children }) {
       completeMember,
       dismissOverlay,
       showOverlay: overlayOpen && !loading,
-      openOverlay: () => setOverlayOpen(true),
+      openOverlay: () => {
+        setOverlayOpen(true);
+        markPrompted();
+      },
       isLoading: loading,
       hasSession: Boolean(session),
     };

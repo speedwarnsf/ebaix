@@ -12,8 +12,8 @@ import {
 // Owner emails with unlimited access (for testing)
 const OWNER_EMAILS = [
   'speedwarnsf@gmail.com',
-  'admin@ebai.me',
-  'test@ebai.me'
+  'admin@nudio.ai',
+  'test@nudio.ai'
 ];
 
 export function Dashboard({ userCredits, onCreditsUpdate, userEmail }) {
