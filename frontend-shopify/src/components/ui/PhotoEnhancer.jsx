@@ -158,15 +158,14 @@ export function PhotoEnhancer({
   const buildBackendUrl = useCallback(
     (path) => {
       const base = backendBaseUrl.replace(/\/$/, "");
-      const next = `${base}${path}`;
-      const params = new URLSearchParams();
+      const url = new URL(path, base);
       if (shop) {
-        params.set("shop", shop);
+        url.searchParams.set("shop", shop);
       }
       if (host) {
-        params.set("host", host);
+        url.searchParams.set("host", host);
       }
-      return params.toString() ? `${next}?${params.toString()}` : next;
+      return url.toString();
     },
     [backendBaseUrl, host, shop]
   );
@@ -822,8 +821,7 @@ export function PhotoEnhancer({
           toast("Share artwork ready below.");
         }
       } catch (shareError) {
-        console.error("share-story-error", shareError);
-        toast.error("Couldn’t open sharing—saved the clip instead.");
+        console.warn("share-story-fallback", shareError);
       } finally {
         setSharePreparing(false);
       }
@@ -1472,6 +1470,50 @@ export function PhotoEnhancer({
             )}
           </div>
 
+          {enhancedImage && (
+            <div className="w-full max-w-2xl mx-auto space-y-4 text-center">
+              <img src={enhancedImage} alt="Enhanced product" className="block w-full h-auto object-contain rounded-2xl" />
+              <button
+                onClick={resetWorkspace}
+                className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-900 transition hover:bg-slate-50"
+              >
+                Start another nudio
+              </button>
+              <div className="space-y-3">
+                {selectedProduct ? (
+                  <button
+                    type="button"
+                    onClick={handlePublishToShopify}
+                    disabled={publishLoading}
+                    className={`inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold uppercase tracking-[0.3em] transition ${
+                      publishLoading
+                        ? "bg-white/10 text-white/40"
+                        : "bg-gradient-to-r from-[#f472b6] to-[#c084fc] text-white shadow-[0_10px_30px_rgba(244,114,182,0.35)] hover:shadow-[0_12px_35px_rgba(192,132,252,0.4)]"
+                    }`}
+                  >
+                    {publishLoading ? "publishing..." : "Publish to Shopify"}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleSelectProduct}
+                    className="inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.3em] text-white/80 transition hover:bg-white/10"
+                  >
+                    Select product to publish
+                  </button>
+                )}
+                {publishError && (
+                  <p className="text-xs text-rose-200">{publishError}</p>
+                )}
+                {usageCharged && (
+                  <p className="text-xs text-emerald-200">
+                    Usage charge recorded: 8 cents.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
           {sharePreparing && (
             <p className="text-[10px] uppercase tracking-[0.4em] text-white/70 text-center">
               crafting share clip…
@@ -1514,50 +1556,6 @@ export function PhotoEnhancer({
               Processing failed — no charge applied.
             </p>
           )}
-        </div>
-      )}
-
-      {enhancedImage && (
-        <div className="space-y-4 text-center">
-          <img src={enhancedImage} alt="Enhanced product" className="block w-full h-auto object-contain rounded-2xl" />
-          <button
-            onClick={resetWorkspace}
-            className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-900 transition hover:bg-slate-50"
-          >
-            Start another nudio
-          </button>
-          <div className="space-y-3">
-            {selectedProduct ? (
-              <button
-                type="button"
-                onClick={handlePublishToShopify}
-                disabled={publishLoading}
-                className={`inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold uppercase tracking-[0.3em] transition ${
-                  publishLoading
-                    ? "bg-white/10 text-white/40"
-                    : "bg-gradient-to-r from-[#f472b6] to-[#c084fc] text-white shadow-[0_10px_30px_rgba(244,114,182,0.35)] hover:shadow-[0_12px_35px_rgba(192,132,252,0.4)]"
-                }`}
-              >
-                {publishLoading ? "publishing..." : "Publish to Shopify"}
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleSelectProduct}
-                className="inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.3em] text-white/80 transition hover:bg-white/10"
-              >
-                Select product to publish
-              </button>
-            )}
-            {publishError && (
-              <p className="text-xs text-rose-200">{publishError}</p>
-            )}
-            {usageCharged && (
-              <p className="text-xs text-emerald-200">
-                Usage charge recorded: 8 cents.
-              </p>
-            )}
-          </div>
         </div>
       )}
 
