@@ -1252,7 +1252,7 @@ export function PhotoEnhancer({
                 style={{
                   left: `${sourceMenuPosition.x}px`,
                   top: `${sourceMenuPosition.y}px`,
-                  transform: "translate(-50%, -110%)",
+                  transform: "translate(8px, 8px)",
                 }}
               >
                 <p className="text-[10px] uppercase tracking-[0.4em] text-white/50">
