@@ -10,6 +10,7 @@ module.exports = {
   webpack: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
+      'web-vitals': path.resolve(__dirname, 'src/lib/webVitalsShim.js'),
     },
     configure: (webpackConfig) => {
       
