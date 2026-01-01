@@ -13,6 +13,7 @@ import heic2any from "heic2any";
 
 const CUSTOM_BACKDROP_ID = "custom";
 const CUSTOM_BACKDROP_KEY = "nudio:customBackdrop";
+const FRAME_TOGGLE_KEY = "nudio:frameEnabled";
 const DEFAULT_CUSTOM_BACKDROP = "#ffffff";
 const PROCESS_PRICE = 0.08;
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
@@ -51,6 +52,7 @@ export function PhotoEnhancer({
   const [sourceImages, setSourceImages] = useState([]);
   const [sourceLoading, setSourceLoading] = useState(false);
   const [sourceError, setSourceError] = useState("");
+  const [sourceMenuPosition, setSourceMenuPosition] = useState({ x: 0, y: 0 });
   const [customBackdrop, setCustomBackdrop] = useState(() => {
     if (typeof window === "undefined") return DEFAULT_CUSTOM_BACKDROP;
     const stored = window.localStorage.getItem(CUSTOM_BACKDROP_KEY);
@@ -58,6 +60,12 @@ export function PhotoEnhancer({
       return stored;
     }
     return DEFAULT_CUSTOM_BACKDROP;
+  });
+  const [frameEnabled, setFrameEnabled] = useState(() => {
+    if (typeof window === "undefined") return true;
+    const stored = window.localStorage.getItem(FRAME_TOGGLE_KEY);
+    if (stored === "false") return false;
+    return true;
   });
 
   useEffect(() => {
@@ -71,6 +79,7 @@ export function PhotoEnhancer({
   const fileInputRef = useRef(null);
   const backdropMenuRef = useRef(null);
   const sourceMenuRef = useRef(null);
+  const lensWrapperRef = useRef(null);
   const watermarkDisabled = true;
 
   const usageEmail = useMemo(() => {
@@ -245,8 +254,18 @@ export function PhotoEnhancer({
     event.dataTransfer.dropEffect = "copy";
   };
 
-  const handleLensClickUpload = () => {
+  const openSourceMenu = (event) => {
+    const rect = lensWrapperRef.current?.getBoundingClientRect();
+    if (rect) {
+      const x = event?.clientX ? event.clientX - rect.left : rect.width / 2;
+      const y = event?.clientY ? event.clientY - rect.top : rect.height / 2;
+      setSourceMenuPosition({ x, y });
+    }
     setSourcePickerOpen(true);
+  };
+
+  const handleLensClickUpload = (event) => {
+    openSourceMenu(event);
   };
 
   const handleUploadOption = () => {
@@ -310,7 +329,7 @@ export function PhotoEnhancer({
   const handleLensKeyDown = (event) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      handleLensClickUpload();
+      openSourceMenu();
     }
   };
 
@@ -405,6 +424,16 @@ export function PhotoEnhancer({
     setBackdropId(CUSTOM_BACKDROP_ID);
     setBackdropMenuOpen(false);
   }, []);
+
+  const handleFrameToggle = () => {
+    setFrameEnabled((prev) => {
+      const next = !prev;
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(FRAME_TOGGLE_KEY, String(next));
+      }
+      return next;
+    });
+  };
 
   const updateShareShowcase = useCallback((payload) => {
     setShareShowcase((previous) => {
@@ -1062,8 +1091,8 @@ export function PhotoEnhancer({
         try {
           const base64Image = e.target?.result;
           const result = await enhanceWithGemini(base64Image, runVariant);
-          const borderedImage = await addWhiteBorder(result.image);
-          const finalImage = watermarkDisabled ? borderedImage : await addWatermark(borderedImage);
+          const baseImage = frameEnabled ? await addWhiteBorder(result.image) : result.image;
+          const finalImage = watermarkDisabled ? baseImage : await addWatermark(baseImage);
 
           setEnhancedImage(finalImage);
           toast.success("Fresh nudio ready! Save it or share it in a tap.");
@@ -1126,7 +1155,7 @@ export function PhotoEnhancer({
 
         <div className="flex flex-col items-center gap-8">
           <div className="w-full flex justify-center" style={{ maxWidth: "min(420px, calc(100vw - 48px))" }}>
-            <div className="relative w-full" style={{ paddingBottom: "100%" }}>
+            <div ref={lensWrapperRef} className="relative w-full" style={{ paddingBottom: "100%" }}>
               <div
                 className="absolute inset-0 rounded-full bg-[#121014] shadow-[0_30px_60px_rgba(7,5,9,0.55)] flex items-center justify-center cursor-pointer group"
                 onClick={handleLensClickUpload}
@@ -1219,7 +1248,12 @@ export function PhotoEnhancer({
             {sourcePickerOpen && (
               <div
                 ref={sourceMenuRef}
-                className="absolute right-6 top-6 z-30 w-56 rounded-2xl border border-white/10 bg-[#120a14]/95 p-3 text-white shadow-[0_18px_40px_rgba(0,0,0,0.55)] backdrop-blur"
+                className="absolute z-30 w-56 rounded-2xl border border-white/10 bg-[#120a14]/95 p-3 text-white shadow-[0_18px_40px_rgba(0,0,0,0.55)] backdrop-blur"
+                style={{
+                  left: `${sourceMenuPosition.x}px`,
+                  top: `${sourceMenuPosition.y}px`,
+                  transform: "translate(-50%, -110%)",
+                }}
               >
                 <p className="text-[10px] uppercase tracking-[0.4em] text-white/50">
                   choose source
@@ -1332,6 +1366,23 @@ export function PhotoEnhancer({
             </div>
             <button
               type="button"
+              onClick={handleFrameToggle}
+              className={`flex items-center gap-2 rounded-full border px-4 py-3 text-xs font-semibold uppercase tracking-[0.3em] transition ${
+                frameEnabled
+                  ? "border-emerald-400/50 bg-emerald-400/10 text-emerald-200"
+                  : "border-white/20 bg-white/5 text-white/60"
+              }`}
+              aria-pressed={!frameEnabled}
+            >
+              <span
+                className={`h-2.5 w-2.5 rounded-full ${
+                  frameEnabled ? "bg-emerald-300" : "bg-slate-400"
+                }`}
+              />
+              {frameEnabled ? "frame" : "no frame"}
+            </button>
+            <button
+              type="button"
               onClick={handleEnhancePhoto}
               disabled={!preview || loading || !billingReady}
               className={`rounded-full px-5 py-3 text-sm font-semibold uppercase tracking-[0.4em] transition ${
@@ -1381,10 +1432,10 @@ export function PhotoEnhancer({
                     billing
                   </p>
                   <p className="text-sm text-white/80">
-                    Each processed image costs 8 cents, billed through Shopify.
+                    8 cents per nudio, billed through Shopify.
                   </p>
                   <p className="text-xs text-white/50">
-                    Charges apply only when processing completes.
+                    Charges only apply when processing completes.
                   </p>
                 </div>
                 {billingReady ? (
@@ -1437,7 +1488,7 @@ export function PhotoEnhancer({
               </div>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-[#120a14] px-4 py-4 text-sm text-white/80 space-y-2">
+            <div className="rounded-2xl border border-white/10 bg-[#120a14] px-4 py-4 text-xs text-white/50 space-y-2">
               <p className="text-[10px] uppercase tracking-[0.4em] text-white/60">status</p>
               <p>
                 Billing: {billingReady ? "active" : billingChecked ? "needs setup" : "checking"}
@@ -1614,6 +1665,14 @@ export function PhotoEnhancer({
           </a>
         </div>
         <div className="flex items-center gap-4">
+          <a
+            className="underline underline-offset-4"
+            href="https://nudio.ai"
+            target="_blank"
+            rel="noreferrer"
+          >
+            nudio.ai
+          </a>
           <button
             type="button"
             className="underline underline-offset-4"
