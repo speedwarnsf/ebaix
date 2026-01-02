@@ -37,7 +37,8 @@ function App() {
           <img
             src={`${process.env.PUBLIC_URL}/shopify/assets/NudioOverClear.png`}
             alt="nudio logotype"
-            className="w-40 sm:w-56 h-auto"
+            className="w-48 sm:w-64 h-auto"
+            style={{ transform: "translateX(-8px)" }}
             loading="lazy"
           />
           <p className="text-sm text-white/70 max-w-2xl">
