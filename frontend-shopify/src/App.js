@@ -38,10 +38,10 @@ function App() {
             src={`${process.env.PUBLIC_URL}/shopify/assets/NudioOverClear.png`}
             alt="nudio logotype"
             className="w-48 sm:w-64 h-auto"
-            style={{ transform: "translate(-17px, -76px)" }}
+            style={{ transform: "translate(-17px, -24px)" }}
             loading="lazy"
           />
-          <p className="text-sm text-white/70 max-w-2xl" style={{ transform: "translateY(-152px)" }}>
+          <p className="text-sm text-white/70 max-w-2xl" style={{ transform: "translateY(-48px)" }}>
             Strip distractions from your product photos.
             <br />
             Relight them in a professional studio environment.
@@ -51,7 +51,7 @@ function App() {
 
       <main
         className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10"
-        style={{ marginTop: "-152px" }}
+        style={{ marginTop: "-48px" }}
       >
         <PhotoEnhancer anonKey={anonKey} supabaseUrl={supabaseUrl} />
       </main>
