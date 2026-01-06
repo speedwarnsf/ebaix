@@ -1,0 +1,92 @@
+export const BACKDROP_OPTIONS = [
+  {
+    id: "pink",
+    label: "nudio Pink",
+    description: "signature nudio pink seamless",
+    hex: "#f6cadc",
+  },
+  {
+    id: "black",
+    label: "Midnight",
+    description: "deep black seamless",
+    hex: "#030304",
+  },
+  {
+    id: "thunder-grey",
+    label: "Charcoal",
+    description: "medium grey seamless",
+    hex: "#2f2f31",
+  },
+  {
+    id: "fashion-grey",
+    label: "City Fog",
+    description: "light grey seamless",
+    hex: "#b7bcc4",
+  },
+  {
+    id: "chesnut",
+    label: "Brown",
+    description: "rich studio brown",
+    hex: "#6b3f2e",
+  },
+  {
+    id: "deep-yellow",
+    label: "Amber Yellow",
+    description: "glowing amber seamless",
+    hex: "#f5a623",
+  },
+  {
+    id: "canary",
+    label: "Lt Yellow",
+    description: "soft pale yellow seamless",
+    hex: "#fff4af",
+  },
+  {
+    id: "bone",
+    label: "Bone",
+    description: "cream/off-white seamless",
+    hex: "#e8dcc9",
+  },
+  {
+    id: "purple",
+    label: "Deep Purple",
+    description: "gallery purple seamless",
+    hex: "#4b1f60",
+  },
+  {
+    id: "blue-mist",
+    label: "Powder Blue",
+    description: "airy powder blue seamless",
+    hex: "#7cade3",
+  },
+  {
+    id: "ultramarine",
+    label: "Ocean",
+    description: "deep blue seamless",
+    hex: "#0b2d6f",
+  },
+  {
+    id: "primary-red",
+    label: "Vivid Red",
+    description: "bold primary red seamless",
+    hex: "#ce1126",
+  },
+  {
+    id: "crimson",
+    label: "Crimson",
+    description: "deep crimson seamless",
+    hex: "#8c1b2f",
+  },
+  {
+    id: "mint-green",
+    label: "Pale Green",
+    description: "fresh pale green seamless",
+    hex: "#bee7b8",
+  },
+  {
+    id: "evergreen",
+    label: "Forest",
+    description: "deep green seamless",
+    hex: "#204326",
+  },
+];
