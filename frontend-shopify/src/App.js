@@ -33,7 +33,7 @@ function App() {
   const content = (
     <div className="min-h-screen bg-[#050305] text-white">
       <header className="relative z-20" style={{ backgroundColor: "#050305" }}>
-        <div className="w-full flex justify-center pb-4" style={{ paddingTop: "122px" }}>
+        <div className="w-full flex justify-center pb-4" style={{ paddingTop: "142px" }}>
           <div
             className="w-full flex flex-col items-start gap-2"
             style={{ maxWidth: "min(420px, calc(100vw - 48px))", marginLeft: "-12px" }}
