@@ -33,15 +33,14 @@ function App() {
   const content = (
     <div className="min-h-screen bg-[#050305] text-white">
       <header style={{ backgroundColor: "#050305" }}>
-        <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 flex flex-col items-start gap-3">
+        <div className="w-full max-w-[420px] mx-auto px-4 sm:px-6 pt-10 pb-4 flex flex-col items-start gap-2">
           <img
             src={`${process.env.PUBLIC_URL}/shopify/assets/NudioOverClear.png`}
             alt="nudio logotype"
             className="w-48 sm:w-64 h-auto"
-            style={{ transform: "translate(-17px, -24px)" }}
             loading="lazy"
           />
-          <p className="text-sm text-white/70 max-w-2xl" style={{ transform: "translateY(-48px)" }}>
+          <p className="text-sm text-white/70">
             Strip distractions from your product photos.
             <br />
             Relight them in a professional studio environment.
@@ -49,10 +48,7 @@ function App() {
         </div>
       </header>
 
-      <main
-        className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10"
-        style={{ marginTop: "-48px" }}
-      >
+      <main className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         <PhotoEnhancer anonKey={anonKey} supabaseUrl={supabaseUrl} />
       </main>
       <Toaster position="top-right" />
