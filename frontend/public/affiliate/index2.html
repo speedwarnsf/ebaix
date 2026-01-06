@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow,noarchive" />
+    <title>nudio Affiliate — Invitation Only</title>
+    <style>
+      :root {
+        --bg: #0f1115;
+        --panel: #10141b;
+        --ink: #f3f5f9;
+        --muted: #a8b0bf;
+        --line: #232937;
+        --gold: #e8c874;
+        --radius: 16px;
+        --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji",
+          "Segoe UI Symbol";
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--font);
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrap {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 28px;
+      }
+      .pill {
+        display: inline-block;
+        padding: 8px 12px;
+        background: #18202d;
+        color: #b9c2d0;
+        border-radius: 999px;
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      h1 {
+        font-size: clamp(32px, 3.4vw, 48px);
+        line-height: 1.08;
+        letter-spacing: -0.02em;
+        margin: 14px 0 10px;
+      }
+      h2 {
+        font-size: clamp(22px, 2.4vw, 32px);
+        line-height: 1.16;
+        letter-spacing: -0.01em;
+        margin: 12px 0 8px;
+      }
+      .lede {
+        color: var(--muted);
+        font-size: clamp(16px, 1.6vw, 19px);
+      }
+      .panel {
+        background: linear-gradient(180deg, #0f141b 0%, #0b0e13 100%);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 18px;
+        box-shadow: var(--shadow);
+      }
+      .keyline {
+        border-top: 1px solid var(--line);
+        margin: 16px 0;
+      }
+      a.cta {
+        display: inline-block;
+        padding: 14px 22px;
+        background: var(--gold);
+        color: #0b0e13;
+        font-weight: 800;
+        text-decoration: none;
+        border-radius: 999px;
+      }
+      a.cta.secondary {
+        background: transparent;
+        border: 1px solid var(--gold);
+        color: var(--gold);
+      }
+      .cta-stack {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        margin-top: 16px;
+      }
+      .gold-text {
+        color: var(--gold);
+      }
+      .white-text {
+        color: #ffffff;
+      }
+      footer {
+        color: #8f99aa;
+        font-size: 13px;
+        padding: 32px 0 12px;
+      }
+      .carousel {
+        position: relative;
+        overflow: hidden;
+        border-radius: 22px;
+        background: #0e1218;
+        border: 1px solid var(--line);
+      }
+      .carousel-track {
+        display: flex;
+        transition: transform 0.5s ease;
+      }
+      .slide {
+        min-width: 100%;
+        padding: 16px;
+      }
+      .slide img {
+        width: min(100%, 640px);
+        height: auto;
+        border-radius: 12px;
+        display: block;
+        margin: 0 auto;
+      }
+      .carousel {
+        cursor: pointer;
+        position: relative;
+      }
+      .carousel-nav {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 10px;
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        pointer-events: none;
+      }
+      .carousel-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: rgba(132, 144, 168, 0.6);
+        transition: transform 0.2s ease, background 0.2s ease;
+      }
+      .carousel-dot.active {
+        background: var(--gold);
+        transform: scale(1.1);
+      }
+      .ba-grid {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
+      .ba-card {
+        position: relative;
+        background: rgba(16, 20, 27, 0.92);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 18px 18px 48px;
+        box-shadow: var(--shadow);
+        cursor: pointer;
+        overflow: hidden;
+        transition: transform 0.18s ease;
+      }
+      .ba-card:active {
+        transform: scale(0.99);
+      }
+      .ba-card .image-frame {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 3 / 4;
+        max-width: 420px;
+        margin: 0 auto;
+        border-radius: 14px;
+        overflow: hidden;
+        background: #07090d;
+      }
+      .ba-card img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        transition: opacity 0.35s ease;
+      }
+      .ba-card .after-image {
+        z-index: 1;
+      }
+      .ba-card .before-image {
+        z-index: 2;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .ba-card .image-frame .badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background: rgba(24, 32, 45, 0.85);
+        color: #b9c2d0;
+        font-size: 12px;
+        letter-spacing: 0.06em;
+        padding: 6px 10px;
+        border-radius: 999px;
+        text-transform: uppercase;
+        z-index: 3;
+        transition: background 0.25s ease, color 0.25s ease;
+      }
+      .ba-card .image-frame .badge.flipped,
+      .ba-card.show-before .image-frame .badge {
+        background: rgba(232, 200, 116, 0.18);
+        color: var(--gold);
+      }
+      .ba-card .label-banner {
+        margin-top: 22px;
+        text-align: center;
+        color: #c0c7d6;
+        font-size: 13px;
+        letter-spacing: 0.01em;
+        min-height: 2.6em;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .ba-card .label-banner strong {
+        color: var(--gold);
+      }
+      .ba-card.show-before .before-image {
+        opacity: 1;
+      }
+      .ba-card.show-before .after-image {
+        opacity: 0;
+      }
+      .cost-breakdown {
+        display: grid;
+        gap: 8px;
+        margin-top: 14px;
+      }
+      .cost-breakdown .step {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding: 12px 14px;
+        background: rgba(232, 200, 116, 0.08);
+        border: 1px solid rgba(232, 200, 116, 0.18);
+        border-radius: 12px;
+        font-size: 14px;
+      }
+      .cost-breakdown .step span {
+        color: #d7ddea;
+      }
+      .cost-breakdown .step strong {
+        color: var(--gold);
+        font-size: 16px;
+        letter-spacing: 0.01em;
+      }
+      .earnings-table-wrapper {
+        margin-top: 18px;
+      }
+      .earnings-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        background: rgba(15, 20, 27, 0.65);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      .earnings-table th,
+      .earnings-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--line);
+      }
+      .earnings-table thead th {
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-size: 12px;
+        color: var(--muted);
+        background: rgba(13, 17, 23, 0.9);
+      }
+      .earnings-table tbody td:first-child {
+        color: #d7ddea;
+      }
+      .earnings-table tbody td:last-child {
+        font-weight: 600;
+        color: var(--gold);
+      }
+      .earnings-table tbody tr:last-child td {
+        border-bottom: none;
+      }
+      .gate {
+        display: none;
+        text-align: center;
+        padding: 64px 24px;
+      }
+      .hidden {
+        display: none;
+      }
+      @media (max-width: 520px) {
+        .cost-breakdown .step {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 4px;
+        }
+      }
+      @media (max-width: 860px) {
+        .wrap {
+          padding: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="gate">
+      <div class="wrap">
+        <div class="panel" style="text-align: center">
+          <div class="pill">Invitation only</div>
+          <h1>Join the nudio Movement</h1>
+          <p class="lede">
+            Use your unique link or add <code>?key=NUDIO2025</code> to the URL.
+          </p>
+          <div class="keyline"></div>
+          <p class="lede" style="font-size: 15px">
+            Need access?
+            <a href="mailto:partners@nudio.ai" style="color: var(--gold)"
+              >partners@nudio.ai</a
+            >
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="content hidden">
+      <div class="wrap">
+        <div class="pill">nudio affiliate invitation</div>
+        <h1><span class="white-text">It is time to </span><span class="gold-text">re-light the web</span></h1>
+        <p class="lede">
+          nudio is bringing clarity and artistry to the images that define how we sell, share, and show the world our work.
+          <strong>Partner with us and help spread the light.</strong>
+        </p>
+        <p>
+          nudio is an easy to use AI-powered mobile product photography studio built with integrity guardrails.
+          While other tools seek to persuade through retouching or illusion, we focus on preserving what’s real — the honest
+          details, textures, and character that give objects their story.
+        </p>
+        <p>
+          Our mission isn’t to let AI decide what’s true, but to use it responsibly — helping creators show their work with
+          clarity, not distortion. nudio is fast, simple, and strives to be both beautiful and honest.
+        </p>
+
+        <div class="cta-stack">
+          <a
+            class="cta"
+            href="https://nudio-ai.getrewardful.com/signup?_gl=1*a0rm1x*_gcl_au*MTM4NDE5MDczNS4xNzYxODg5Njg0LjkyNjk5OTcyOC4xNzYyMjAyMjE1LjE3NjIyMDIyNDI.*_ga*MTkzNzM2NjM3Mi4xNzYxODg5Njg0*_ga_YJYFH7ZS27*czE3NjIyMDg2NjQkbzckZzEkdDE3NjIyMDk1MDYkajYwJGwwJGgxMTE1MTA4NTI1"
+          >
+            Get your invite link
+          </a>
+          <a class="cta secondary" href="mailto:partners@nudio.ai">
+            Talk to the partner team
+          </a>
+        </div>
+
+      <div class="panel" style="margin-top: 16px">
+          <h2>See the <span style="color: var(--gold)">nudio Effect</span></h2>
+          <div
+            class="carousel"
+            aria-roledescription="carousel"
+            aria-label="After looks"
+          >
+            <div class="carousel-track">
+              <div class="slide">
+                <img
+                  src="./assets/IMG_2591.PNG"
+                  alt="Can after on pink seamless"
+                  loading="lazy"
+                />
+              </div>
+              <div class="slide">
+                <img
+                  src="./assets/IMG_2605.PNG"
+                  alt="Can after on red seamless"
+                  loading="lazy"
+                />
+              </div>
+              <div class="slide">
+                <img
+                  src="./assets/IMG_2606.PNG"
+                  alt="Can after on bone seamless"
+                  loading="lazy"
+                />
+              </div>
+              <div class="slide">
+                <img
+                  src="./assets/can-before.jpg"
+                  alt="Original can photo before nudio"
+                  loading="lazy"
+                />
+              </div>
+            </div>
+            <div class="carousel-nav" aria-hidden="true">
+              <div class="carousel-dot active" data-i="0"></div>
+              <div class="carousel-dot" data-i="1"></div>
+              <div class="carousel-dot" data-i="2"></div>
+              <div class="carousel-dot" data-i="3"></div>
+            </div>
+          </div>
+          <p class="lede" style="margin-top: 16px">
+            Studio-quality product shots from a sloppy drinking phone pic. This beverage can showcases three of our 15 custom backdrops—proof that professional lighting studios now fit in your pocket.
+          </p>
+        </div>
+
+        <div class="panel" style="margin-top: 16px">
+          <h2>Art of the <span class="gold-text">Impossible</span></h2>
+          <div
+            class="carousel"
+            aria-roledescription="carousel"
+            aria-label="Chrome sculpture transformations"
+          >
+            <div class="carousel-track">
+              <div class="slide">
+                <img
+                  src="./assets/sculpture_pink.jpg"
+                  alt="Chrome sculpture on pink backdrop"
+                  loading="lazy"
+                />
+              </div>
+              <div class="slide">
+                <img
+                  src="./assets/sculpture_red.jpg"
+                  alt="Chrome sculpture on red backdrop"
+                  loading="lazy"
+                />
+              </div>
+              <div class="slide">
+                <img
+                  src="./assets/sculpture_charcoal.jpg"
+                  alt="Chrome sculpture on charcoal backdrop"
+                  loading="lazy"
+                />
+              </div>
+              <div class="slide">
+                <img
+                  src="./assets/sculpture_before.jpg"
+                  alt="Chrome sculpture original outdoor photo"
+                  loading="lazy"
+                />
+              </div>
+            </div>
+            <div class="carousel-nav" aria-hidden="true">
+              <div class="carousel-dot active" data-i="0"></div>
+              <div class="carousel-dot" data-i="1"></div>
+              <div class="carousel-dot" data-i="2"></div>
+              <div class="carousel-dot" data-i="3"></div>
+            </div>
+          </div>
+          <p class="lede" style="margin-top: 16px">
+            Chrome tests everything — light, reflection, patience. nudio brought order to the chaos, turning an outdoor sculpture into a gallery-grade image.
+          </p>
+        </div>
+
+        <div class="panel" style="margin-top: 16px">
+          <h2>After <span style="color: var(--gold)">&amp;</span> Before</h2>
+          <div class="ba-grid" id="nudio-transformations"></div>
+          <h2>The Honest <span style="color: var(--gold)">Potato</span></h2>
+          <p>
+            —blemishes, sprouts, and all—while nudio smooths the lighting and color to give it marketplace-ready polish.
+          </p>
+          <p>
+            Patina-rich historical items like the cannon keep every mark too, but nudio glows up with gallery-grade lighting instead of funky phone flash.
+          </p>
+        </div>
+
+        <div class="panel" style="margin-top: 16px">
+          <h2>
+            The Movement:<br /><span style="color: var(--gold)">Keep it real. Make it
+              nudio.</span>
+          </h2>
+          <p>
+            With nudio, product photography becomes <strong>nudioing</strong>.
+            It is the moment ordinary turns beautifully honest — your fast lane
+            from phone shot to polished, studio-lit <strong>nudio</strong>.
+          </p>
+        </div>
+
+        <div class="panel" style="margin-top: 16px">
+          <h2>Earn like it's gold — <span class="gold-text">the 80/20 deal</span></h2>
+          <p>
+            nudio pays recurring commissions on every subscriber you refer. Here's the
+            $14.99 monthly plan, step by step.
+          </p>
+          <div class="cost-breakdown">
+            <div class="step">
+              <span>Gross subscription</span>
+              <strong>$14.99</strong>
+            </div>
+            <div class="step">
+              <span>Operational + AI costs</span>
+              <strong>$8.53</strong>
+            </div>
+            <div class="step">
+              <span>Margin remaining</span>
+              <strong>$6.46</strong>
+            </div>
+            <div class="step">
+              <span>Your 80% share</span>
+              <strong>$5.17</strong>
+            </div>
+          </div>
+          <p class="lede" style="font-size: 12px; margin-top: 10px; color: var(--muted)">
+            nudio reinvests the remaining $1.29 so you take home four times our cut.
+          </p>
+          <div class="earnings-table-wrapper">
+            <table class="earnings-table">
+              <thead>
+                <tr>
+                  <th align="left">Active subs</th>
+                  <th align="right">Monthly payout*</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>25 creators</td>
+                  <td align="right">$129</td>
+                </tr>
+                <tr>
+                  <td>100 creators</td>
+                  <td align="right">$517</td>
+                </tr>
+                <tr>
+                  <td>500 creators</td>
+                  <td align="right">$2,585</td>
+                </tr>
+                <tr>
+                  <td>1,000 creators</td>
+                  <td align="right">$5,170</td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="lede" style="font-size: 12px; margin-top: 8px; color: var(--muted)">
+              *Payouts accrue on net subscription revenue after processing fees.
+            </p>
+          </div>
+        </div>
+
+        </div>
+
+        <div class="panel" style="margin-top: 16px">
+          <img src="./assets/founder.jpg" alt="nudio founder portrait" style="width: min(100%, 640px); border-radius: 18px; display: block; margin: 16px auto;" loading="lazy" />
+        </div>
+
+        <div class="panel" style="margin-top: 16px">
+          <h2>Innovation <span class="gold-text">roadmap</span></h2>
+          <p>
+            Our Labs section explores more experimental features that don’t yet meet our standards of accuracy but offer a
+            glimpse into what’s next — playful, creative tools that push the boundaries of image-making while staying true to
+            our values. As these tools evolve, we’ll roll them out responsibly — ensuring that progress and purpose move hand
+            in hand.
+          </p>
+        </div>
+
+        <footer>
+          Partner Team · nudio.ai —
+          <a href="mailto:partners@nudio.ai" style="color: var(--gold)">
+            partners@nudio.ai</a
+          ><br />
+          Please note: brand bidding on "nudio" is not permitted.
+        </footer>
+      </div>
+    </div>
+
+    <script>
+      const requiredKey = "NUDIO2025";
+      function queryParam(name) {
+        return new URLSearchParams(window.location.search).get(name);
+      }
+      function gate() {
+        const ok = queryParam("key") === requiredKey;
+        const gateEl = document.querySelector(".gate");
+        const contentEl = document.querySelector(".content");
+        if (!gateEl || !contentEl) return;
+        gateEl.style.display = ok ? "none" : "block";
+        contentEl.style.display = ok ? "block" : "none";
+      }
+      document.addEventListener("DOMContentLoaded", gate);
+
+      (function () {
+        const carousels = document.querySelectorAll(".carousel");
+        if (!carousels.length) return;
+
+        carousels.forEach((carousel) => {
+          const track = carousel.querySelector(".carousel-track");
+          if (!track) return;
+          const slides = Array.from(track.children);
+          const dots = Array.from(carousel.querySelectorAll(".carousel-dot"));
+          let index = 0;
+          let swipeLock = false;
+          let swipeResetId;
+          let startX = null;
+          const SWIPE_THRESHOLD = 45;
+
+          function update() {
+            track.style.transform = "translateX(" + -index * 100 + "%)";
+            dots.forEach((dot, idx) => {
+              dot.classList.toggle("active", idx === index);
+            });
+          }
+
+          function go(n) {
+            if (!slides.length) return;
+            index = (n + slides.length) % slides.length;
+            update();
+          }
+
+          function handleSwipeEnd(lock = false) {
+            swipeLock = lock;
+            clearTimeout(swipeResetId);
+            if (lock) {
+              swipeResetId = setTimeout(() => {
+                swipeLock = false;
+              }, 220);
+            }
+          }
+
+          function onTouchStart(event) {
+            if (!event.touches || !event.touches.length) return;
+            startX = event.touches[0].clientX;
+          }
+
+          function onTouchMove(event) {
+            if (startX === null || !event.touches || !event.touches.length) return;
+            const dx = event.touches[0].clientX - startX;
+            if (Math.abs(dx) > SWIPE_THRESHOLD) {
+              go(index + (dx < 0 ? 1 : -1));
+              startX = null;
+              handleSwipeEnd(true);
+            }
+          }
+
+          function onTouchEnd() {
+            startX = null;
+            handleSwipeEnd(false);
+          }
+
+          carousel.addEventListener("touchstart", onTouchStart, { passive: true });
+          carousel.addEventListener("touchmove", onTouchMove, { passive: true });
+          carousel.addEventListener("touchend", onTouchEnd);
+          carousel.addEventListener("touchcancel", onTouchEnd);
+
+          carousel.addEventListener("click", (event) => {
+            if (swipeLock) return;
+            const rect = carousel.getBoundingClientRect();
+            const clickX = event.clientX - rect.left;
+            if (clickX < rect.width / 2) {
+              go(index - 1);
+            } else {
+              go(index + 1);
+            }
+          });
+
+          carousel.addEventListener("keydown", (event) => {
+            if (event.key === "ArrowLeft") {
+              event.preventDefault();
+              go(index - 1);
+            }
+            if (event.key === "ArrowRight") {
+              event.preventDefault();
+              go(index + 1);
+            }
+          });
+
+          carousel.setAttribute("tabindex", "0");
+          update();
+        });
+      })();
+
+      const transformations = [
+        {
+          title: "Stoneware plate",
+          tagline: "studio polish",
+          before: "./assets/plate-before.jpg",
+          after: "./assets/plate-after.jpg",
+          altBefore: "Plate before nudio",
+          altAfter: "Plate after nudio",
+        },
+        {
+          title: "Book cover",
+          tagline: "color fidelity",
+          before: "./assets/book-before.jpg",
+          after: "./assets/book-after.jpg",
+          altBefore: "Book before nudio",
+          altAfter: "Book after nudio",
+        },
+        {
+          title: "Label accuracy",
+          tagline: "UPC clarity",
+          before: "./assets/charmin-before.jpg",
+          after: "./assets/charmin-after.jpg",
+          altBefore: "Charmin package before nudio",
+          altAfter: "Charmin package after nudio",
+        },
+        {
+          title: "Ceramic vase",
+          tagline: "texture preserved",
+          before: "./assets/vase-before.jpg",
+          after: "./assets/vase-after.jpg",
+          altBefore: "Vase before nudio",
+          altAfter: "Vase after nudio",
+        },
+        {
+          title: "Workbench stool",
+          tagline: "natural shadows",
+          before: "./assets/stool-before.jpg",
+          after: "./assets/stool-after.jpg",
+          altBefore: "Stool before nudio",
+          altAfter: "Stool after nudio",
+        },
+        {
+          title: "Antique cannon",
+          tagline: "museum ready",
+          before: "./assets/cannon-before.jpg",
+          after: "./assets/cannon-after.jpg",
+          altBefore: "Cannon before nudio",
+          altAfter: "Cannon after nudio",
+        },
+        {
+          title: "Game ball",
+          tagline: "studio drama",
+          before: "./assets/football-before.jpg",
+          after: "./assets/football-after.jpg",
+          altBefore: "Football before nudio",
+          altAfter: "Football after nudio",
+        },
+        {
+          title: "Produce realism",
+          tagline: "blemishes stay",
+          before: "./assets/potato-before.jpg",
+          after: "./assets/potato-after.jpg",
+          altBefore: "Potato before nudio",
+          altAfter: "Potato after nudio",
+        },
+      ];
+
+      const grid = document.getElementById("nudio-transformations");
+      if (grid) {
+        transformations.forEach(({ title, tagline, before, after, altBefore, altAfter }) => {
+          const card = document.createElement("div");
+          card.className = "ba-card";
+          card.setAttribute("data-title", title);
+          card.innerHTML = `
+            <div class="image-frame">
+              <span class="badge">After</span>
+              <img class="after-image" src="${after}" alt="${altAfter}" loading="lazy" />
+              <img class="before-image" src="${before}" alt="${altBefore}" loading="lazy" />
+            </div>
+            <div class="label-banner">${title} — <strong>${tagline}</strong></div>
+          `;
+          card.setAttribute("role", "button");
+          grid.appendChild(card);
+        });
+      }
+
+      const FLIP_DURATION = 3200;
+      document.querySelectorAll(".ba-card").forEach((card) => {
+        let timeoutId;
+        const badge = card.querySelector(".badge");
+        const afterImage = card.querySelector(".after-image");
+        const beforeImage = card.querySelector(".before-image");
+        if (!badge || !afterImage || !beforeImage) return;
+        card.setAttribute("aria-pressed", "false");
+
+        function showAfter() {
+          card.classList.remove("show-before");
+          badge.classList.remove("flipped");
+          badge.textContent = "After";
+          card.setAttribute("aria-pressed", "false");
+        }
+
+        function showBefore() {
+          card.classList.add("show-before");
+          badge.classList.add("flipped");
+          badge.textContent = "Before";
+          card.setAttribute("aria-pressed", "true");
+          clearTimeout(timeoutId);
+          timeoutId = setTimeout(() => {
+            showAfter();
+          }, FLIP_DURATION);
+        }
+
+        function toggleState() {
+          const isShowingBefore = card.classList.contains("show-before");
+          if (isShowingBefore) {
+            clearTimeout(timeoutId);
+            showAfter();
+          } else {
+            showBefore();
+          }
+        }
+
+        card.addEventListener("click", toggleState);
+        card.addEventListener("keypress", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            toggleState();
+          }
+        });
+        card.setAttribute("tabindex", "0");
+      });
+    </script>
+  </body>
+</html>
