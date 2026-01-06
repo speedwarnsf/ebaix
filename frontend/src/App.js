@@ -8,7 +8,7 @@ import { ResetPassword } from "./components/ui/ResetPassword";
 import PrivacyPolicy from "./components/ui/PrivacyPolicy";
 import TermsOfService from "./components/ui/TermsOfService";
 import { useSession } from "./context/SessionContext";
-import { LensLab } from "./components/LensLab";
+import { LensLab } from "./components/lenslab";
 import { AffiliateIntro } from "./components/ui/AffiliateIntro";
 
 const GUEST_BASELINE = {
