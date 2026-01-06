@@ -42,7 +42,7 @@ function App() {
               src={`${process.env.PUBLIC_URL}/shopify/assets/NudioOverClear.png`}
               alt="nudio logotype"
               className="w-48 sm:w-64 h-auto"
-              style={{ marginLeft: "-15px", marginTop: "-55px" }}
+              style={{ marginLeft: "-19px", marginTop: "-71px" }}
               loading="lazy"
             />
             <p className="text-sm text-white/70" style={{ marginTop: "-107px" }}>

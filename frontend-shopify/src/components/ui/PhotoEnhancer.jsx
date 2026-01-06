@@ -1154,7 +1154,7 @@ export function PhotoEnhancer({
         />
 
         <div className="flex flex-col items-center gap-8">
-          <div className="w-full flex justify-center" style={{ maxWidth: "min(420px, calc(100vw - 48px))" }}>
+          <div className="w-full flex justify-center" style={{ maxWidth: "min(336px, calc(100vw - 48px))" }}>
             <div ref={lensWrapperRef} className="relative w-full" style={{ paddingBottom: "100%" }}>
               <div
                 className="absolute inset-0 rounded-full bg-[#121014] shadow-[0_30px_60px_rgba(7,5,9,0.55)] flex items-center justify-center cursor-pointer group"
