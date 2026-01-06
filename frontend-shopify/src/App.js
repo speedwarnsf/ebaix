@@ -33,7 +33,10 @@ function App() {
   const content = (
     <div className="min-h-screen bg-[#050305] text-white">
       <header style={{ backgroundColor: "#050305" }}>
-        <div className="w-full max-w-[420px] mx-auto px-4 sm:px-6 pt-10 pb-4 flex flex-col items-start gap-2">
+        <div
+          className="w-full mx-auto pt-12 pb-4 flex flex-col items-start gap-2"
+          style={{ maxWidth: "min(420px, calc(100vw - 48px))" }}
+        >
           <img
             src={`${process.env.PUBLIC_URL}/shopify/assets/NudioOverClear.png`}
             alt="nudio logotype"
