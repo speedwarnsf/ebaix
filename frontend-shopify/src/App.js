@@ -42,10 +42,10 @@ function App() {
               src={`${process.env.PUBLIC_URL}/shopify/assets/NudioOverClear.png`}
               alt="nudio logotype"
               className="w-48 sm:w-64 h-auto"
-              style={{ marginLeft: "-19px", marginTop: "-71px" }}
+              style={{ marginLeft: "-19px", marginTop: "-80px" }}
               loading="lazy"
             />
-            <p className="text-sm text-white/70" style={{ marginTop: "-107px" }}>
+            <p className="text-sm text-white/70" style={{ marginTop: "-80px" }}>
               Strip distractions from your product photos.
               <br />
               Relight them in a professional studio environment.
