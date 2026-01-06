@@ -33,21 +33,23 @@ function App() {
   const content = (
     <div className="min-h-screen bg-[#050305] text-white">
       <header style={{ backgroundColor: "#050305" }}>
-        <div
-          className="w-full mx-auto pt-12 pb-4 flex flex-col items-start gap-2"
-          style={{ maxWidth: "min(420px, calc(100vw - 48px))" }}
-        >
-          <img
-            src={`${process.env.PUBLIC_URL}/shopify/assets/NudioOverClear.png`}
-            alt="nudio logotype"
-            className="w-48 sm:w-64 h-auto"
-            loading="lazy"
-          />
-          <p className="text-sm text-white/70">
-            Strip distractions from your product photos.
-            <br />
-            Relight them in a professional studio environment.
-          </p>
+        <div className="w-full flex justify-center pt-12 pb-4">
+          <div
+            className="w-full flex flex-col items-start gap-2"
+            style={{ maxWidth: "min(420px, calc(100vw - 48px))" }}
+          >
+            <img
+              src={`${process.env.PUBLIC_URL}/shopify/assets/NudioOverClear.png`}
+              alt="nudio logotype"
+              className="w-48 sm:w-64 h-auto"
+              loading="lazy"
+            />
+            <p className="text-sm text-white/70">
+              Strip distractions from your product photos.
+              <br />
+              Relight them in a professional studio environment.
+            </p>
+          </div>
         </div>
       </header>
 
