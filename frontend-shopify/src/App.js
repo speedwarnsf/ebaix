@@ -36,7 +36,7 @@ function App() {
         <div className="w-full flex justify-center pb-4" style={{ paddingTop: "122px" }}>
           <div
             className="w-full flex flex-col items-start gap-2"
-            style={{ maxWidth: "min(420px, calc(100vw - 48px))", marginLeft: "-17px" }}
+            style={{ maxWidth: "min(420px, calc(100vw - 48px))", marginLeft: "-19px" }}
           >
             <img
               src={`${process.env.PUBLIC_URL}/shopify/assets/NudioOverClear.png`}
