@@ -36,7 +36,7 @@ function App() {
         <div className="w-full flex justify-center pb-4" style={{ paddingTop: "122px" }}>
           <div
             className="w-full flex flex-col items-start gap-2"
-            style={{ maxWidth: "min(420px, calc(100vw - 48px))", marginLeft: "-14px" }}
+            style={{ maxWidth: "min(420px, calc(100vw - 48px))", marginLeft: "-17px" }}
           >
             <img
               src={`${process.env.PUBLIC_URL}/shopify/assets/NudioOverClear.png`}
@@ -45,7 +45,7 @@ function App() {
               style={{ marginLeft: "-19px", marginTop: "-110px" }}
               loading="lazy"
             />
-            <p className="text-xs text-white/50" style={{ marginTop: "-80px" }}>
+            <p className="text-xs text-white/50" style={{ marginTop: "-76px" }}>
               Strip distractions from your product photos.
               <br />
               Relight them in a professional studio environment.
