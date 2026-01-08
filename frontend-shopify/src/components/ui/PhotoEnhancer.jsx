@@ -16,7 +16,7 @@ const CUSTOM_BACKDROP_KEY = "nudio:customBackdrop";
 const FRAME_TOGGLE_KEY = "nudio:frameEnabled";
 const DEFAULT_CUSTOM_BACKDROP = "#ffffff";
 const PROCESS_PRICE = 0.08;
-const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+const MAX_UPLOAD_BYTES = 6 * 1024 * 1024;
 
 export function PhotoEnhancer({
   userEmail,
@@ -187,14 +187,23 @@ export function PhotoEnhancer({
       if (!app) {
         throw new Error("Missing Shopify app bridge.");
       }
-      const token = await getSessionToken(app);
+      let token = "";
+      try {
+        token = await getSessionToken(app);
+      } catch {
+        token = "";
+      }
+      if (!token) {
+        throw new Error("Session token unavailable. Open Nudio from Shopify Admin.");
+      }
+      const { headers: optionHeaders, ...restOptions } = options;
       const response = await fetch(buildBackendUrl(path), {
+        ...restOptions,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
-          ...(options.headers || {}),
+          ...(optionHeaders || {}),
         },
-        ...options,
       });
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
@@ -219,7 +228,15 @@ export function PhotoEnhancer({
       if (!app) {
         throw new Error("Missing Shopify app bridge.");
       }
-      const token = await getSessionToken(app);
+      let token = "";
+      try {
+        token = await getSessionToken(app);
+      } catch {
+        token = "";
+      }
+      if (!token) {
+        throw new Error("Session token unavailable. Open Nudio from Shopify Admin.");
+      }
       const response = await fetch(buildBackendUrl(path), {
         method: "POST",
         headers: {
