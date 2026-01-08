@@ -731,12 +731,19 @@ async def shopify_optimize_listing(request: Request, payload: ShopifyOptimizeReq
         "apikey": SUPABASE_SERVICE_KEY,
     }
     body = payload.dict(exclude_none=True)
-    async with httpx.AsyncClient(timeout=60) as client:
-        response = await client.post(
-            f"{SUPABASE_FUNCTION_BASE}/optimize-listing",
-            headers=headers,
-            json=body,
-        )
+    timeout = httpx.Timeout(120.0, connect=10.0)
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        try:
+            response = await client.post(
+                f"{SUPABASE_FUNCTION_BASE}/optimize-listing",
+                headers=headers,
+                json=body,
+            )
+        except httpx.ReadTimeout:
+            raise HTTPException(
+                status_code=504,
+                detail="Processing timed out. Please try again.",
+            )
     if response.status_code >= 400:
         try:
             detail = response.json()
