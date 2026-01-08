@@ -2,6 +2,7 @@ import base64
 import hashlib
 import hmac
 import os
+import re
 from io import BytesIO
 from pathlib import Path
 from datetime import datetime, timezone
@@ -104,14 +105,19 @@ async def add_shopify_csp(request: Request, call_next):
     response = await call_next(request)
     shop = request.query_params.get("shop", "")
     if not _is_valid_shop_domain(shop):
-        auth_header = request.headers.get("authorization", "")
-        if auth_header.startswith("Bearer "):
-            token = auth_header.replace("Bearer ", "")
-            try:
-                payload = _verify_session_token(token)
-                shop = _shop_from_session_token(payload) or ""
-            except HTTPException:
-                shop = ""
+        host_param = request.query_params.get("host", "")
+        host_shop = _shop_from_host_param(host_param)
+        if _is_valid_shop_domain(host_shop):
+            shop = host_shop
+        else:
+            auth_header = request.headers.get("authorization", "")
+            if auth_header.startswith("Bearer "):
+                token = auth_header.replace("Bearer ", "")
+                try:
+                    payload = _verify_session_token(token)
+                    shop = _shop_from_session_token(payload) or ""
+                except HTTPException:
+                    shop = ""
     if _is_valid_shop_domain(shop):
         frame_ancestors = f"https://{shop} https://admin.shopify.com"
     else:
@@ -122,6 +128,23 @@ async def add_shopify_csp(request: Request, call_next):
 
 def _is_valid_shop_domain(shop: str) -> bool:
     return bool(shop) and shop.endswith(".myshopify.com") and "/" not in shop
+
+
+def _shop_from_host_param(host_param: str) -> str:
+    if not host_param:
+        return ""
+    try:
+        padding = "=" * (-len(host_param) % 4)
+        decoded = base64.b64decode(host_param + padding).decode("utf-8", "ignore")
+    except Exception:
+        return ""
+    if ".myshopify.com" in decoded:
+        match = re.search(r"([a-zA-Z0-9\\-]+\\.myshopify\\.com)", decoded)
+        return match.group(1) if match else ""
+    match = re.search(r"admin\\.shopify\\.com/store/([^/?#]+)", decoded)
+    if not match:
+        return ""
+    return f"{match.group(1)}.myshopify.com"
 
 
 def _build_hmac_message(params: dict) -> str:
