@@ -17,6 +17,7 @@ const FRAME_TOGGLE_KEY = "nudio:frameEnabled";
 const DEFAULT_CUSTOM_BACKDROP = "#ffffff";
 const PROCESS_PRICE = 0.08;
 const MAX_UPLOAD_BYTES = 6 * 1024 * 1024;
+const MAX_UPLOAD_DIMENSION = 3000;
 
 export function PhotoEnhancer({
   userEmail,
@@ -382,7 +383,7 @@ export function PhotoEnhancer({
   };
 
   const optimizeImageFile = useCallback(async (file) => {
-    if (!file || file.size <= MAX_UPLOAD_BYTES) {
+    if (!file) {
       return file;
     }
 
@@ -401,15 +402,22 @@ export function PhotoEnhancer({
         throw new Error("We couldn't prepare that image. Try a JPG or PNG.");
       }
 
-      let scale = 1;
+      const maxDimension = Math.max(image.width, image.height);
+      if (file.size <= MAX_UPLOAD_BYTES && maxDimension <= MAX_UPLOAD_DIMENSION) {
+        return file;
+      }
+
+      let scale = Math.min(1, MAX_UPLOAD_DIMENSION / maxDimension);
       let quality = 0.9;
       let blob = null;
       let width = image.width;
       let height = image.height;
+      const baseScale = scale;
 
       for (let attempt = 0; attempt < 6; attempt += 1) {
-        canvas.width = Math.max(1, Math.floor(width * scale));
-        canvas.height = Math.max(1, Math.floor(height * scale));
+        const attemptScale = Math.max(0.35, baseScale * Math.pow(0.85, attempt));
+        canvas.width = Math.max(1, Math.floor(width * attemptScale));
+        canvas.height = Math.max(1, Math.floor(height * attemptScale));
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
 
@@ -421,7 +429,6 @@ export function PhotoEnhancer({
           break;
         }
 
-        scale *= 0.85;
         quality = Math.max(0.7, quality - 0.1);
       }
 
@@ -1007,14 +1014,14 @@ export function PhotoEnhancer({
         setError(convertError?.message || "HEIC conversion failed.");
         return;
       }
-      if (preparedFile.size > MAX_UPLOAD_BYTES) {
-        try {
+      try {
+        if (preparedFile.size > MAX_UPLOAD_BYTES) {
           toast("Large image detected. Optimizing for upload...");
-          preparedFile = await optimizeImageFile(preparedFile);
-        } catch (optimizeError) {
-          setError(optimizeError?.message || "JPG or PNG up to 10MB");
-          return;
         }
+        preparedFile = await optimizeImageFile(preparedFile);
+      } catch (optimizeError) {
+        setError(optimizeError?.message || "JPG or PNG up to 6MB");
+        return;
       }
 
       setSelectedImage(preparedFile);
