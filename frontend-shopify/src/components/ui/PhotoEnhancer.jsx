@@ -211,6 +211,37 @@ export function PhotoEnhancer({
     [app, buildBackendUrl, shop]
   );
 
+  const shopifyFetchBlob = useCallback(
+    async (path, formData) => {
+      if (!shop) {
+        throw new Error("Missing Shopify shop context.");
+      }
+      if (!app) {
+        throw new Error("Missing Shopify app bridge.");
+      }
+      const token = await getSessionToken(app);
+      const response = await fetch(buildBackendUrl(path), {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        let message = payload?.detail || payload?.error;
+        if (!message) {
+          message = "Shopify request failed.";
+        } else if (typeof message === "object") {
+          message = JSON.stringify(message);
+        }
+        throw new Error(message);
+      }
+      return response.blob();
+    },
+    [app, buildBackendUrl, shop]
+  );
+
   useEffect(() => {
     if (!shop || billingChecked) return;
     let active = true;
@@ -461,10 +492,19 @@ export function PhotoEnhancer({
         URL.revokeObjectURL(objectUrl);
         return converted;
       } catch {
-        throw new Error("HEIC conversion failed. Please upload a JPG or PNG.");
+        try {
+          const formData = new FormData();
+          formData.append("file", file, file.name || "upload.heic");
+          const blob = await shopifyFetchBlob("/shopify/convert-heic", formData);
+          return new File([blob], file.name.replace(/\.(heic|heif)$/i, ".jpg"), {
+            type: "image/jpeg",
+          });
+        } catch {
+          throw new Error("HEIC conversion failed. Please upload a JPG or PNG.");
+        }
       }
     }
-  }, []);
+  }, [shopifyFetchBlob]);
 
   const handleCustomBackdropChange = useCallback((event) => {
     const nextColor = event.target.value;

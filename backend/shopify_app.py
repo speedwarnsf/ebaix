@@ -2,6 +2,7 @@ import base64
 import hashlib
 import hmac
 import os
+from io import BytesIO
 from pathlib import Path
 from datetime import datetime, timezone
 from urllib.parse import urlencode
@@ -11,10 +12,12 @@ import asyncio
 import jwt
 import logging
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
+from PIL import Image
+from pillow_heif import register_heif_opener
 from pydantic import BaseModel
 from supabase import Client, create_client
 
@@ -52,6 +55,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+register_heif_opener()
+MAX_HEIC_BYTES = 20 * 1024 * 1024
 
 build_dir = Path(SHOPIFY_FRONTEND_BUILD_DIR)
 static_dir = build_dir / "static"
@@ -738,6 +744,34 @@ async def shopify_optimize_listing(request: Request, payload: ShopifyOptimizeReq
             detail = response.text
         raise HTTPException(status_code=response.status_code, detail=detail)
     return response.json()
+
+
+@app.post("/shopify/convert-heic")
+async def shopify_convert_heic(
+    request: Request,
+    file: UploadFile = File(...),
+    shop: str | None = None,
+):
+    auth_shop = getattr(request.state, "shop", None) or shop
+    if not auth_shop:
+        raise HTTPException(status_code=401, detail="Missing shop context.")
+    _check_rate_limit(auth_shop, "convert_heic")
+    if not file:
+        raise HTTPException(status_code=400, detail="Missing file.")
+    contents = await file.read()
+    if not contents:
+        raise HTTPException(status_code=400, detail="Empty upload.")
+    if len(contents) > MAX_HEIC_BYTES:
+        raise HTTPException(status_code=413, detail="Image exceeds 20MB limit.")
+    try:
+        image = Image.open(BytesIO(contents))
+        image = image.convert("RGB")
+    except Exception as exc:
+        logging.warning("heic_decode_failed shop=%s error=%s", auth_shop, exc)
+        raise HTTPException(status_code=400, detail="HEIC conversion failed.")
+    output = BytesIO()
+    image.save(output, format="JPEG", quality=92, optimize=True)
+    return Response(content=output.getvalue(), media_type="image/jpeg")
 
 
 @app.get("/shopify/products")
