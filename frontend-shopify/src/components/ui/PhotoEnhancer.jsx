@@ -17,7 +17,7 @@ const FRAME_TOGGLE_KEY = "nudio:frameEnabled";
 const DEFAULT_CUSTOM_BACKDROP = "#ffffff";
 const PROCESS_PRICE = 0.08;
 const MAX_UPLOAD_BYTES = 6 * 1024 * 1024;
-const MAX_UPLOAD_DIMENSION = 3000;
+const MAX_UPLOAD_DIMENSION = 2400;
 
 export function PhotoEnhancer({
   userEmail,
@@ -429,7 +429,7 @@ export function PhotoEnhancer({
           break;
         }
 
-        quality = Math.max(0.7, quality - 0.1);
+        quality = Math.max(0.8, quality - 0.1);
       }
 
       if (!blob) {
