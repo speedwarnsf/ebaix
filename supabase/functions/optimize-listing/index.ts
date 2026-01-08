@@ -182,7 +182,7 @@ The shoot is captured on a Phase One camera using a Schneider Kreuznach 110mm LS
           ? buildPortraitPrompt(backdrop)
           : buildProductPrompt(backdrop)
 
-    const defaultImageModel = Deno.env.get('NUDIO_IMAGE_MODEL') ?? 'gemini-2.5-flash-image'
+    const defaultImageModel = Deno.env.get('NUDIO_IMAGE_MODEL') ?? 'gemini-1.5-flash'
     const labsImageModel = Deno.env.get('NUDIO_LABS_IMAGE_MODEL') ?? 'gemini-2.5-flash-image'
     const imageModel = labsMode ? labsImageModel : defaultImageModel
 
