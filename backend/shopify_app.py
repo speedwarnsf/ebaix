@@ -731,7 +731,9 @@ async def shopify_optimize_listing(request: Request, payload: ShopifyOptimizeReq
         "apikey": SUPABASE_SERVICE_KEY,
     }
     body = payload.dict(exclude_none=True)
-    timeout = httpx.Timeout(120.0, connect=10.0)
+    if not body.get("userEmail"):
+        body["userEmail"] = f"shopify+{auth_shop}@nudio.ai"
+    timeout = httpx.Timeout(180.0, connect=10.0)
     async with httpx.AsyncClient(timeout=timeout) as client:
         try:
             response = await client.post(
@@ -749,6 +751,12 @@ async def shopify_optimize_listing(request: Request, payload: ShopifyOptimizeReq
             detail = response.json()
         except Exception:
             detail = response.text
+        logging.warning(
+            "optimize_listing_failed shop=%s status=%s detail=%s",
+            auth_shop,
+            response.status_code,
+            detail,
+        )
         raise HTTPException(status_code=response.status_code, detail=detail)
     return response.json()
 
