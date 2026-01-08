@@ -796,7 +796,56 @@ export function PhotoEnhancer({
         type: "image/jpeg",
       });
     } catch (error) {
-      throw new Error("HEIC conversion failed. Please upload a JPG or PNG.");
+      try {
+        const objectUrl = URL.createObjectURL(file);
+        let bitmap = null;
+        try {
+          if (typeof createImageBitmap === "function") {
+            bitmap = await createImageBitmap(file);
+          }
+        } catch {
+          bitmap = null;
+        }
+
+        const image =
+          bitmap ||
+          (await new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = objectUrl;
+          }));
+
+        const width = bitmap ? bitmap.width : image.naturalWidth || image.width;
+        const height = bitmap ? bitmap.height : image.naturalHeight || image.height;
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          throw new Error("Canvas unavailable");
+        }
+        ctx.drawImage(image, 0, 0, width, height);
+
+        const blob = await new Promise((resolve) =>
+          canvas.toBlob(resolve, "image/jpeg", 0.92)
+        );
+        if (!blob) {
+          throw new Error("HEIC canvas conversion failed");
+        }
+        const converted = new File(
+          [blob],
+          file.name.replace(/\.(heic|heif)$/i, ".jpg"),
+          { type: "image/jpeg" }
+        );
+        if (bitmap && typeof bitmap.close === "function") {
+          bitmap.close();
+        }
+        URL.revokeObjectURL(objectUrl);
+        return converted;
+      } catch {
+        throw new Error("HEIC conversion failed. Please upload a JPG or PNG.");
+      }
     }
   }, []);
   const saveOriginalCaptureIfNeeded = useCallback(
