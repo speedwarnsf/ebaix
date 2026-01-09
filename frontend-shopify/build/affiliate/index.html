@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow,noarchive" />
+    <title>nudio Affiliate — Invitation Only</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* PALETTE */
+            --bg-body: #030304;
+            --bg-panel: #0B0B0D;
+            --bg-card: #111113;
+            --border-subtle: #1F1F22;
+            --border-active: #333336;
+            --text-main: #EDEDED;
+            --text-muted: #888890;
+            --brand-gold: #E8C874;
+            --brand-gold-glow: rgba(232, 200, 116, 0.15);
+            --tech-blue: #3B82F6;
+            --radius: 12px;
+            --font-ui: 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            background: var(--bg-body);
+            color: var(--text-main);
+            font-family: var(--font-ui);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        .wrap {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hidden { display: none !important; }
+        .gold-text { color: var(--brand-gold); }
+        .white-text { color: #fff; }
+
+        /* --- LOGO STYLING --- */
+        .site-logo {
+            display: block;
+            width: 260px; /* Small size, roughly 1/2 of mobile width */
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 40px; /* Space between logo and pill */
+            
+            /* The requested blend mode to remove background/watermarks */
+            mix-blend-mode: lighten; 
+            
+            /* Alignment: It is in the .wrap, so it aligns with text automatically. 
+               If optical alignment is off due to the rounded 'n', add margin-left: -2px; here */
+        }
+
+        /* --- ANIMATIONS --- */
+        .reveal-on-scroll {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .reveal-visible { opacity: 1; transform: translateY(0); }
+
+        /* --- TYPOGRAPHY --- */
+        h1 { 
+            font-size: clamp(2.5rem, 5vw, 4.5rem);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1.1;
+            margin: 24px 0 32px 0;
+        }
+
+        h2 {
+            font-size: clamp(1.5rem, 3vw, 2.2rem);
+            font-weight: 500;
+            letter-spacing: -0.02em;
+            margin: 0 0 16px 0;
+            line-height: 1.2;
+            text-align: left;
+        }
+        
+        p { color: var(--text-muted); margin-bottom: 24px; max-width: 650px; font-size: 1.05rem; text-align: left; }
+
+        .pill {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--brand-gold);
+            border: 1px solid rgba(232, 200, 116, 0.2);
+            background: rgba(232, 200, 116, 0.05);
+            padding: 6px 12px;
+            border-radius: 4px;
+            display: inline-block;
+            letter-spacing: 0.05em;
+            margin-bottom: 24px;
+        }
+
+        /* --- HERO & INTRO TYPOGRAPHY --- */
+        .hero-wrapper {
+            padding: 60px 0 80px; /* Reduced top padding since logo is added */
+            border-bottom: 1px solid var(--border-subtle);
+            background: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.08), transparent 60%);
+        }
+
+        .hero-statement {
+            font-size: clamp(1.5rem, 3vw, 2.5rem);
+            font-weight: 300;
+            color: var(--text-muted);
+            letter-spacing: -0.02em;
+            line-height: 1.3;
+            margin-bottom: 32px;
+            max-width: 900px;
+        }
+        .hero-statement b { font-weight: 600; color: #fff; }
+        .hero-statement span.highlight { color: var(--brand-gold); }
+
+        /* --- BUTTONS --- */
+        .cta-stack { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 40px; }
+        
+        a.cta {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 14px 28px;
+            background: var(--brand-gold);
+            color: #000;
+            font-weight: 600;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        a.cta:hover { background: #fff; transform: translateY(-1px); box-shadow: 0 0 25px rgba(255,255,255,0.3); }
+        
+        a.cta.secondary { background: transparent; border: 1px solid var(--border-active); color: var(--text-main); }
+        a.cta.secondary:hover { border-color: var(--brand-gold); color: var(--brand-gold); box-shadow: none; }
+
+        /* --- CAROUSELS --- */
+        .panel { margin-bottom: 100px; position: relative; }
+
+        .carousel-container {
+            position: relative;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-subtle); 
+            overflow: hidden;
+            background: #000;
+            width: 100%;
+            /* Desktop Aspect Ratio */
+            aspect-ratio: 9/16; 
+            max-height: 85vh; 
+            margin: 0;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+
+        /* Mobile Aspect Ratio Fix */
+        @media (max-width: 768px) {
+            .carousel-container {
+                aspect-ratio: 3/4; 
+            }
+        }
+
+        .carousel-track {
+            display: flex;
+            height: 100%;
+            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .slide {
+            min-width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+        }
+        
+        .slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; 
+            cursor: pointer;
+        }
+
+        .carousel-caption {
+            margin-top: 12px; 
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .carousel-nav {
+            position: absolute; bottom: 20px; width: 100%;
+            display: flex; justify-content: center; gap: 8px;
+            pointer-events: none; z-index: 10;
+        }
+        .dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            transition: background 0.3s, transform 0.3s;
+        }
+        .dot.active { background: var(--brand-gold); transform: scale(1.2); }
+
+        /* --- SLIDER GRID --- */
+        .ba-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+        .slider-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius);
+            padding: 16px;
+            transition: border-color 0.3s;
+        }
+        .slider-card:hover { border-color: var(--border-active); }
+        .slider-frame {
+            position: relative; width: 100%; aspect-ratio: 3/4;
+            overflow: hidden; border-radius: 8px; background: #000;
+            cursor: col-resize; touch-action: none;
+        }
+        .slider-img {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: contain; pointer-events: none; user-select: none;
+        }
+        .img-before { z-index: 2; clip-path: inset(0 50% 0 0); }
+        .slider-handle {
+            position: absolute; top: 0; bottom: 0; left: 50%; width: 2px;
+            background: var(--brand-gold); z-index: 10; pointer-events: none;
+        }
+        .slider-meta {
+            margin-top: 16px; display: flex; justify-content: space-between;
+            font-family: var(--font-mono); font-size: 0.85rem;
+        }
+
+        /* --- FOUNDER CAPTION --- */
+        .founder-caption {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--brand-gold);
+            text-align: center;
+            margin-top: 16px;
+            letter-spacing: 0.02em;
+            opacity: 0.9;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.4;
+        }
+
+        /* --- FINANCIALS --- */
+        .fin-panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius);
+            padding: 32px;
+        }
+        .cost-row {
+            display: flex; justify-content: space-between; padding: 14px 0;
+            border-bottom: 1px solid var(--border-subtle); font-family: var(--font-mono); font-size: 0.9rem;
+        }
+        .cost-row:last-child { border-bottom: none; color: var(--brand-gold); font-weight: 600; }
+        .earnings-grid {
+            display: grid; grid-template-columns: 1fr 1fr; margin-top: 24px;
+            border: 1px solid var(--border-subtle); border-radius: 8px; overflow: hidden;
+        }
+        .earnings-cell {
+            padding: 16px; border-bottom: 1px solid var(--border-subtle); background: var(--bg-card);
+            font-family: var(--font-mono); font-size: 0.85rem;
+        }
+        .earnings-cell.right { text-align: right; color: var(--brand-gold); border-left: 1px solid var(--border-subtle); }
+
+        /* --- FOOTER & GATE --- */
+        .gate {
+            position: fixed; inset: 0; z-index: 100; background: #000;
+            display: flex; align-items: center; justify-content: center;
+        }
+        footer {
+            border-top: 1px solid var(--border-subtle); padding: 60px 0; margin-top: 80px;
+            text-align: center; font-size: 0.85rem; color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="gate">
+        <div class="wrap" style="text-align: center">
+            <div class="pill">Invitation only</div>
+            <h1>Join the nudio Movement</h1>
+            <p class="lede" style="margin-top: 16px; text-align: center; margin-left: auto; margin-right: auto;">
+                Use your unique link or add <code style="color: var(--brand-gold)">?key=NUDIO2025</code> to the URL.
+            </p>
+        </div>
+    </div>
+
+    <div class="content hidden">
+        
+        <div class="hero-wrapper">
+            <div class="wrap reveal-on-scroll">
+                
+                <img src="./assets/NudioOverClear.png" alt="nudio.ai" class="site-logo">
+
+                <div class="pill">nudio affiliate invitation</div>
+                
+                <h1><span class="white-text">It is time to </span><span class="gold-text">re-light the web.</span></h1>
+
+                <div class="hero-statement">
+                    nudio is bringing <b>clarity</b> and <span class="highlight">artistry</span> to the images that define how we sell, share, and show the world our work.
+                    <br><span style="font-size: 0.6em; display: block; margin-top: 16px; line-height: 1.5; color: var(--text-main);">Partner with us and help spread the light.</span>
+                </div>
+
+                <p>
+                    nudio is an easy to use AI-powered mobile product photography studio built with integrity guardrails.
+                    While other tools seek to persuade through retouching or illusion, we focus on preserving what’s real — the honest
+                    details, textures, and character that give objects their story.
+                </p>
+                
+                <div class="cta-stack">
+                    <a class="cta" href="/?start=nudio">
+                        Start nudio
+                    </a>
+                    <a class="cta secondary" href="mailto:partners@nudio.ai">
+                        Talk to the partner team
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="wrap">
+            
+            <div class="panel reveal-on-scroll" style="margin-top: 100px;">
+                <h2>See the <span class="gold-text">nudio effect</span></h2>
+                
+                <div class="carousel-container" id="c1">
+                    <div class="carousel-track">
+                        <div class="slide"><img src="./assets/IMG_2591.PNG" alt="Can after on pink seamless" /></div>
+                        <div class="slide"><img src="./assets/IMG_2605.PNG" alt="Can after on red seamless" /></div>
+                        <div class="slide"><img src="./assets/IMG_2606.PNG" alt="Can after on bone seamless" /></div>
+                        <div class="slide"><img src="./assets/can-before.jpg" alt="Original can photo before nudio" /></div>
+                    </div>
+                    <div class="carousel-nav">
+                        <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                    </div>
+                </div>
+                
+                <p class="carousel-caption">Studio-quality product shots from a sloppy drinking phone pic.</p>
+            </div>
+
+            <div class="panel reveal-on-scroll">
+                <h2>Art of the <span class="gold-text">impossible</span></h2>
+                
+                <div class="carousel-container" id="c2">
+                    <div class="carousel-track">
+                        <div class="slide"><img src="./assets/sculpture_pink.jpg" alt="Pink" /></div>
+                        <div class="slide"><img src="./assets/sculpture_red.jpg" alt="Red" /></div>
+                        <div class="slide"><img src="./assets/sculpture_charcoal.jpg" alt="Charcoal" /></div>
+                        <div class="slide"><img src="./assets/sculpture_before.jpg" alt="Before" /></div>
+                    </div>
+                    <div class="carousel-nav">
+                        <div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                    </div>
+                </div>
+
+                <p class="carousel-caption">Chrome tests everything — light, reflection, patience. nudio brought order to the chaos.</p>
+            </div>
+
+            <div class="panel reveal-on-scroll">
+                <h2>After <span class="gold-text">&amp;</span> Before</h2>
+                <div class="ba-grid" id="interactive-transformations"></div>
+            </div>
+            
+            <div class="panel reveal-on-scroll" style="padding-top: 40px; border-top: 1px solid var(--border-subtle);">
+                <h2>
+                    The honest <span class="gold-text">potato</span>
+                </h2>
+                <p class="lede" style="font-size: 1.25rem; color: var(--text-main);">
+                    —blemishes, sprouts, and all.
+                </p>
+                <p>
+                    nudio smooths the lighting and color to give it marketplace-ready polish, but leaves the reality intact.
+                    Patina-rich historical items like the cannon keep every mark too, but nudio glows up with gallery-grade lighting instead of funky phone flash.
+                </p>
+            </div>
+
+            <div class="panel reveal-on-scroll">
+                <h2>
+                    The movement:<br>
+                    Keep it real. <span class="gold-text">Make it nudio.</span>
+                </h2>
+                <p class="lede" style="font-size: 1.25rem; color: var(--text-main);">
+                    With nudio, product photography becomes <strong>nudioing</strong>.
+                </p>
+                <p>
+                    It is the moment ordinary turns beautifully honest — your fast lane
+                    from phone shot to polished, studio-lit <strong>nudio</strong>.
+                </p>
+            </div>
+
+            <div class="panel reveal-on-scroll">
+                <img src="./assets/founder.jpg" alt="nudio founder portrait" style="width: 100%; border-radius: var(--radius); opacity: 0.9;" loading="lazy" />
+                <div class="founder-caption">
+                    <span style="color: var(--text-main);">Founder iPhone selfie,</span> glowed up with nudio labs experimental portrait mode... and no, we won't show you the "before".
+                </div>
+            </div>
+
+            <div class="panel reveal-on-scroll">
+                <h2>Innovation <span class="gold-text">roadmap</span></h2>
+                <p>
+                    Our Labs section explores more experimental features that don’t yet meet our standards of accuracy but offer a glimpse into what’s next.
+                </p>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- 1. GATE ---
+        const requiredKey = "NUDIO2025";
+        function gate() {
+            const ok = new URLSearchParams(window.location.search).get("key") === requiredKey;
+            const gateEl = document.querySelector(".gate");
+            const contentEl = document.querySelector(".content");
+            if (ok) {
+                gateEl.style.display = "none";
+                contentEl.classList.remove("hidden");
+                initObservers();
+                initCarousels();
+                initSliders();
+            } else {
+                gateEl.style.display = "flex";
+                contentEl.classList.add("hidden");
+            }
+        }
+        document.addEventListener("DOMContentLoaded", gate);
+
+        // --- 2. SCROLL REVEAL ---
+        function initObservers() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) entry.target.classList.add('reveal-visible');
+                });
+            }, { threshold: 0.1 });
+            document.querySelectorAll('.reveal-on-scroll').forEach(el => observer.observe(el));
+        }
+
+        // --- 3. AUTO-LOOP CAROUSELS ---
+        function initCarousels() {
+            const setups = [{id:'c1', time:3000}, {id:'c2', time:3500}];
+            
+            setups.forEach(setup => {
+                const container = document.getElementById(setup.id);
+                if(!container) return;
+                const track = container.querySelector('.carousel-track');
+                const slides = Array.from(track.children);
+                const dots = Array.from(container.querySelectorAll('.dot'));
+                let index = 0;
+                let timer;
+
+                function update() {
+                    track.style.transform = `translateX(-${index * 100}%)`;
+                    dots.forEach((d, i) => d.classList.toggle('active', i === index));
+                }
+
+                function next() { index = (index + 1) % slides.length; update(); }
+                function prev() { index = (index - 1 + slides.length) % slides.length; update(); }
+
+                function startTimer() { timer = setInterval(next, setup.time); }
+                function resetTimer() { clearInterval(timer); startTimer(); }
+
+                container.addEventListener('click', (e) => {
+                    const rect = container.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    if(x < rect.width / 2) prev(); else next();
+                    resetTimer();
+                });
+
+                let startX = 0;
+                container.addEventListener('touchstart', e => startX = e.touches[0].clientX);
+                container.addEventListener('touchend', e => {
+                    const diff = startX - e.changedTouches[0].clientX;
+                    if (Math.abs(diff) > 50) {
+                        if (diff > 0) next(); else prev();
+                        resetTimer();
+                    }
+                });
+
+                startTimer();
+            });
+        }
+
+        // --- 4. SLIDERS ---
+        function initSliders() {
+            const data = [
+                { title: "Stoneware plate", tagline: "studio polish", before: "./assets/plate-before.jpg", after: "./assets/plate-after.jpg", altBefore: "Plate before nudio", altAfter: "Plate after nudio" },
+                { title: "Book cover", tagline: "color fidelity", before: "./assets/book-before.jpg", after: "./assets/book-after.jpg", altBefore: "Book before nudio", altAfter: "Book after nudio" },
+                { title: "Label accuracy", tagline: "UPC clarity", before: "./assets/charmin-before.jpg", after: "./assets/charmin-after.jpg", altBefore: "Charmin package before nudio", altAfter: "Charmin package after nudio" },
+                { title: "Ceramic vase", tagline: "texture preserved", before: "./assets/vase-before.jpg", after: "./assets/vase-after.jpg", altBefore: "Vase before nudio", altAfter: "Vase after nudio" },
+                { title: "Workbench stool", tagline: "natural shadows", before: "./assets/stool-before.jpg", after: "./assets/stool-after.jpg", altBefore: "Stool before nudio", altAfter: "Stool after nudio" },
+                { title: "Antique cannon", tagline: "museum ready", before: "./assets/cannon-before.jpg", after: "./assets/cannon-after.jpg", altBefore: "Cannon before nudio", altAfter: "Cannon after nudio" },
+                { title: "Game ball", tagline: "studio drama", before: "./assets/football-before.jpg", after: "./assets/football-after.jpg", altBefore: "Football before nudio", altAfter: "Football after nudio" },
+                { title: "Produce realism", tagline: "blemishes stay", before: "./assets/potato-before.jpg", after: "./assets/potato-after.jpg", altBefore: "Potato before nudio", altAfter: "Potato after nudio" },
+            ];
+
+            const grid = document.getElementById("interactive-transformations");
+            if (!grid) return;
+
+            data.forEach((item, index) => {
+                const card = document.createElement("div");
+                card.className = "slider-card";
+                card.innerHTML = `
+                    <div class="slider-frame">
+                        <img class="slider-img img-after" src="${item.after}" alt="${item.altAfter}" loading="lazy">
+                        <img class="slider-img img-before" src="${item.before}" alt="${item.altBefore}" loading="lazy">
+                        <div class="slider-handle"></div>
+                    </div>
+                    <div class="slider-meta"><span>${item.title}</span><span class="gold-text">${item.tagline}</span></div>
+                `;
+                grid.appendChild(card);
+
+                const frame = card.querySelector('.slider-frame');
+                const beforeImg = card.querySelector('.img-before');
+                const handle = card.querySelector('.slider-handle');
+
+                function update(x) {
+                    const rect = frame.getBoundingClientRect();
+                    let pos = ((x - rect.left) / rect.width) * 100;
+                    if (pos < 0) pos = 0; if (pos > 100) pos = 100;
+                    beforeImg.style.clipPath = `inset(0 0 0 ${pos}%)`;
+                    handle.style.left = `${pos}%`;
+                }
+
+                frame.addEventListener('mousemove', e => update(e.clientX));
+                frame.addEventListener('touchmove', e => { e.preventDefault(); update(e.touches[0].clientX); }, { passive: false });
+            });
+        }
+    </script>
+</body>
+</html>
