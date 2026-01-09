@@ -236,10 +236,10 @@ def _delete_shop_record(shop: str) -> None:
 
 async def _ensure_webhooks(shop: str, access_token: str) -> None:
     webhook_topics = {
-        "app/uninstalled": "/shopify/webhooks/app_uninstalled",
-        "customers/data_request": "/shopify/webhooks/customers_data_request",
-        "customers/redact": "/shopify/webhooks/customers_redact",
-        "shop/redact": "/shopify/webhooks/shop_redact",
+        "app/uninstalled": "/shopify/webhooks/app/uninstalled",
+        "customers/data_request": "/shopify/webhooks/customers/data_request",
+        "customers/redact": "/shopify/webhooks/customers/redact",
+        "shop/redact": "/shopify/webhooks/shop/redact",
     }
     webhook_base = SHOPIFY_APP_URL
     if webhook_base.endswith("/shopify/app"):
@@ -301,8 +301,29 @@ def _get_shop_record(shop: str) -> dict:
     result = supabase.table(SHOPIFY_SHOPS_TABLE).select("*").eq("shop_domain", shop).limit(1).execute()
     data = result.data[0] if result.data else None
     if not data:
-        raise HTTPException(status_code=403, detail="Shop is not installed.")
+        raise HTTPException(
+            status_code=401,
+            detail={
+                "error": "shop_not_installed",
+                "install_url": _shopify_install_url(shop),
+            },
+        )
     return data
+
+
+def _shopify_install_url(shop: str) -> str:
+    if not SHOPIFY_API_KEY or not SHOPIFY_API_SECRET:
+        return ""
+    if not _is_valid_shop_domain(shop):
+        return ""
+    state = base64.urlsafe_b64encode(os.urandom(24)).decode("utf-8").rstrip("=")
+    params = {
+        "client_id": SHOPIFY_API_KEY,
+        "scope": SHOPIFY_SCOPES,
+        "redirect_uri": SHOPIFY_OAUTH_CALLBACK,
+        "state": state,
+    }
+    return f"https://{shop}/admin/oauth/authorize?{urlencode(params)}"
 
 
 async def _shopify_graphql(shop: str, access_token: str, query: str, variables: dict | None = None) -> dict:
@@ -884,43 +905,55 @@ async def shopify_health():
     return {"ok": True, "timestamp": datetime.now(timezone.utc).isoformat()}
 
 
-@app.post("/shopify/webhooks/app_uninstalled")
-async def shopify_app_uninstalled(request: Request):
+async def _handle_shopify_webhook(request: Request, delete_shop: bool = False) -> dict:
     raw_body = await request.body()
     hmac_header = request.headers.get("X-Shopify-Hmac-Sha256", "")
     if not _verify_webhook_hmac(raw_body, hmac_header):
         raise HTTPException(status_code=401, detail="Invalid webhook signature.")
-    shop = request.headers.get("X-Shopify-Shop-Domain", "")
-    if _is_valid_shop_domain(shop):
-        _delete_shop_record(shop)
+    if delete_shop:
+        shop = request.headers.get("X-Shopify-Shop-Domain", "")
+        if _is_valid_shop_domain(shop):
+            _delete_shop_record(shop)
     return {"ok": True}
+
+
+# Canonical compliance webhook paths (preferred).
+@app.post("/shopify/webhooks/app/uninstalled")
+async def shopify_app_uninstalled(request: Request):
+    return await _handle_shopify_webhook(request, delete_shop=True)
+
+
+@app.post("/shopify/webhooks/customers/data_request")
+async def shopify_customers_data_request(request: Request):
+    return await _handle_shopify_webhook(request)
+
+
+@app.post("/shopify/webhooks/customers/redact")
+async def shopify_customers_redact(request: Request):
+    return await _handle_shopify_webhook(request)
+
+
+@app.post("/shopify/webhooks/shop/redact")
+async def shopify_shop_redact(request: Request):
+    return await _handle_shopify_webhook(request, delete_shop=True)
+
+
+# Backward-compatible paths (legacy underscore URLs).
+@app.post("/shopify/webhooks/app_uninstalled")
+async def shopify_app_uninstalled_legacy(request: Request):
+    return await _handle_shopify_webhook(request, delete_shop=True)
 
 
 @app.post("/shopify/webhooks/customers_data_request")
-async def shopify_customers_data_request(request: Request):
-    raw_body = await request.body()
-    hmac_header = request.headers.get("X-Shopify-Hmac-Sha256", "")
-    if not _verify_webhook_hmac(raw_body, hmac_header):
-        raise HTTPException(status_code=401, detail="Invalid webhook signature.")
-    return {"ok": True}
+async def shopify_customers_data_request_legacy(request: Request):
+    return await _handle_shopify_webhook(request)
 
 
 @app.post("/shopify/webhooks/customers_redact")
-async def shopify_customers_redact(request: Request):
-    raw_body = await request.body()
-    hmac_header = request.headers.get("X-Shopify-Hmac-Sha256", "")
-    if not _verify_webhook_hmac(raw_body, hmac_header):
-        raise HTTPException(status_code=401, detail="Invalid webhook signature.")
-    return {"ok": True}
+async def shopify_customers_redact_legacy(request: Request):
+    return await _handle_shopify_webhook(request)
 
 
 @app.post("/shopify/webhooks/shop_redact")
-async def shopify_shop_redact(request: Request):
-    raw_body = await request.body()
-    hmac_header = request.headers.get("X-Shopify-Hmac-Sha256", "")
-    if not _verify_webhook_hmac(raw_body, hmac_header):
-        raise HTTPException(status_code=401, detail="Invalid webhook signature.")
-    shop = request.headers.get("X-Shopify-Shop-Domain", "")
-    if _is_valid_shop_domain(shop):
-        _delete_shop_record(shop)
-    return {"ok": True}
+async def shopify_shop_redact_legacy(request: Request):
+    return await _handle_shopify_webhook(request, delete_shop=True)
