@@ -298,10 +298,11 @@ async def _ensure_webhooks(shop: str, access_token: str) -> None:
 
 
 def _get_shop_record(shop: str) -> dict:
-    result = supabase.table(SHOPIFY_SHOPS_TABLE).select("*").eq("shop_domain", shop).single().execute()
-    if not result.data:
+    result = supabase.table(SHOPIFY_SHOPS_TABLE).select("*").eq("shop_domain", shop).limit(1).execute()
+    data = result.data[0] if result.data else None
+    if not data:
         raise HTTPException(status_code=403, detail="Shop is not installed.")
-    return result.data
+    return data
 
 
 async def _shopify_graphql(shop: str, access_token: str, query: str, variables: dict | None = None) -> dict:
