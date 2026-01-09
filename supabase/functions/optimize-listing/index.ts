@@ -19,19 +19,22 @@ Deno.serve(async (req) => {
   }
 
   let guestRemaining: number | undefined;
+  const shopifyMode = Deno.env.get('NUDIO_SHOPIFY_MODE') === 'true'
 
   try {
-    const guestResult = await guestGate(req);
-    guestRemaining =
-      !guestResult.blocked && typeof guestResult.remaining === 'number'
-        ? guestResult.remaining
-        : undefined;
-    if (guestResult.blocked) {
-      const payload = await guestResult.response.text();
-      return new Response(payload, {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: guestResult.response.status,
-      });
+    if (!shopifyMode) {
+      const guestResult = await guestGate(req);
+      guestRemaining =
+        !guestResult.blocked && typeof guestResult.remaining === 'number'
+          ? guestResult.remaining
+          : undefined;
+      if (guestResult.blocked) {
+        const payload = await guestResult.response.text();
+        return new Response(payload, {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: guestResult.response.status,
+        });
+      }
     }
 
     const body = await req.json()
@@ -57,7 +60,6 @@ Deno.serve(async (req) => {
     const labsUltraRes = labsMode && enable4k === true
     const variant = labsMode || bodyVariant === 'portrait' ? 'portrait' : 'product'
 
-    const shopifyMode = Deno.env.get('NUDIO_SHOPIFY_MODE') === 'true'
     if (shopifyMode) {
       if (mode !== 'image') {
         return new Response(
