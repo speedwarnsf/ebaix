@@ -208,7 +208,17 @@ export function PhotoEnhancer({
       });
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
-        let message = payload?.detail || payload?.error;
+        const detail = payload?.detail ?? payload;
+        const installUrl = detail?.install_url;
+        if (installUrl && typeof window !== "undefined") {
+          if (window.top) {
+            window.top.location.href = installUrl;
+          } else {
+            window.location.href = installUrl;
+          }
+          throw new Error("Redirecting to install.");
+        }
+        let message = detail?.error || detail?.message || payload?.error;
         if (!message) {
           message = "Shopify request failed.";
         } else if (typeof message === "object") {
@@ -247,7 +257,17 @@ export function PhotoEnhancer({
       });
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
-        let message = payload?.detail || payload?.error;
+        const detail = payload?.detail ?? payload;
+        const installUrl = detail?.install_url;
+        if (installUrl && typeof window !== "undefined") {
+          if (window.top) {
+            window.top.location.href = installUrl;
+          } else {
+            window.location.href = installUrl;
+          }
+          throw new Error("Redirecting to install.");
+        }
+        let message = detail?.error || detail?.message || payload?.error;
         if (!message) {
           message = "Shopify request failed.";
         } else if (typeof message === "object") {
