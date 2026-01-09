@@ -241,6 +241,11 @@ async def _ensure_webhooks(shop: str, access_token: str) -> None:
         "customers/redact": "/shopify/webhooks/customers_redact",
         "shop/redact": "/shopify/webhooks/shop_redact",
     }
+    webhook_base = SHOPIFY_APP_URL
+    if webhook_base.endswith("/shopify/app"):
+        webhook_base = webhook_base[: -len("/shopify/app")]
+    elif webhook_base.endswith("/shopify"):
+        webhook_base = webhook_base[: -len("/shopify")]
 
     try:
         existing = await _shopify_rest(
@@ -260,7 +265,7 @@ async def _ensure_webhooks(shop: str, access_token: str) -> None:
     }
 
     for topic, path in webhook_topics.items():
-        address = f"{SHOPIFY_APP_URL}{path}"
+        address = f"{webhook_base}{path}"
         if topic in current:
             existing_webhook = current[topic]
             if existing_webhook.get("address") == address:
