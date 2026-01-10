@@ -74,6 +74,10 @@ async def require_shopify_session_token(request: Request, call_next):
         "/shopify/oauth/callback",
         "/shopify/app",
         "/shopify/health",
+        "/shopify/webhooks/app/uninstalled",
+        "/shopify/webhooks/customers/data_request",
+        "/shopify/webhooks/customers/redact",
+        "/shopify/webhooks/shop/redact",
         "/shopify/webhooks/app_uninstalled",
         "/shopify/webhooks/customers_redact",
         "/shopify/webhooks/customers_data_request",
@@ -640,6 +644,19 @@ async def shopify_billing_ensure(request: Request, shop: str | None = None, host
     if payload.get("userErrors"):
         raise HTTPException(status_code=400, detail=payload["userErrors"])
     return {"active": False, "confirmationUrl": payload.get("confirmationUrl")}
+
+
+@app.post("/shopify/webhooks/register")
+async def shopify_webhooks_register(request: Request, shop: str | None = None):
+    auth_shop = getattr(request.state, "shop", None) or shop
+    if not auth_shop:
+        raise HTTPException(status_code=401, detail="Missing shop context.")
+    record = _get_shop_record(auth_shop)
+    access_token = record.get("access_token", "")
+    if not access_token:
+        raise HTTPException(status_code=401, detail="Missing Shopify access token.")
+    await _ensure_webhooks(auth_shop, access_token)
+    return {"ok": True}
 
 
 @app.post("/shopify/billing/usage")
