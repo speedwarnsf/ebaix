@@ -81,6 +81,7 @@ export function PhotoEnhancer({
   const backdropMenuRef = useRef(null);
   const sourceMenuRef = useRef(null);
   const lensWrapperRef = useRef(null);
+  const webhooksRegisteredRef = useRef(false);
   const watermarkDisabled = true;
 
   const usageEmail = useMemo(() => {
@@ -164,6 +165,12 @@ export function PhotoEnhancer({
     if (typeof window === "undefined") return;
     window.localStorage.setItem(CUSTOM_BACKDROP_KEY, customBackdrop);
   }, [customBackdrop]);
+
+  useEffect(() => {
+    if (!shop || !app || webhooksRegisteredRef.current) return;
+    webhooksRegisteredRef.current = true;
+    shopifyFetch("/shopify/webhooks/register", { method: "POST" }).catch(() => {});
+  }, [app, shop, shopifyFetch]);
 
   const buildBackendUrl = useCallback(
     (path) => {
