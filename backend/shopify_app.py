@@ -349,6 +349,21 @@ def _shopify_app_origin() -> str:
     return f"{parsed.scheme}://{parsed.netloc}"
 
 
+def _shopify_app_url(request: Request | None = None) -> str:
+    if SHOPIFY_APP_URL:
+        parsed = urlparse(SHOPIFY_APP_URL)
+        if parsed.scheme and parsed.netloc:
+            return SHOPIFY_APP_URL
+        if request:
+            base = f"{request.url.scheme}://{request.url.netloc}"
+            if SHOPIFY_APP_URL.startswith("/"):
+                return f"{base}{SHOPIFY_APP_URL}"
+            return f"{base}/{SHOPIFY_APP_URL}"
+    if request:
+        return f"{request.url.scheme}://{request.url.netloc}/shopify/app"
+    return ""
+
+
 def _make_oauth_state(shop: str) -> str:
     if not SHOPIFY_API_SECRET:
         return base64.urlsafe_b64encode(os.urandom(24)).decode("utf-8").rstrip("=")
@@ -614,7 +629,10 @@ async def shopify_oauth_callback(request: Request, shop: str, code: str, state: 
     await _ensure_webhooks(shop, access_token)
 
     redirect_host = host or _base64_host(shop)
-    app_url = f"{SHOPIFY_APP_URL}?shop={shop}&host={redirect_host}"
+    app_url = _shopify_app_url(request)
+    if not app_url:
+        raise HTTPException(status_code=500, detail="Missing Shopify app URL.")
+    app_url = f"{app_url}?shop={shop}&host={redirect_host}"
     response = RedirectResponse(url=app_url, status_code=302)
     response.delete_cookie("shopify_oauth_state")
     return response
@@ -714,9 +732,11 @@ async def shopify_billing_ensure(request: Request, shop: str | None = None, host
         }
       }
     """
-    return_url = SHOPIFY_APP_URL
+    return_url = _shopify_app_url(request)
+    if not return_url:
+        raise HTTPException(status_code=500, detail="Missing Shopify app URL.")
     if host:
-        return_url = f"{SHOPIFY_APP_URL}?shop={auth_shop}&host={host}"
+        return_url = f"{return_url}?shop={auth_shop}&host={host}"
 
     variables = {
         "name": "Nudio (Product Studio)",
