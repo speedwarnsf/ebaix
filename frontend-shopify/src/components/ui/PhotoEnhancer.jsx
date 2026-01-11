@@ -166,12 +166,6 @@ export function PhotoEnhancer({
     window.localStorage.setItem(CUSTOM_BACKDROP_KEY, customBackdrop);
   }, [customBackdrop]);
 
-  useEffect(() => {
-    if (!shop || !app || webhooksRegisteredRef.current) return;
-    webhooksRegisteredRef.current = true;
-    shopifyFetch("/shopify/webhooks/register", { method: "POST" }).catch(() => {});
-  }, [app, shop, shopifyFetch]);
-
   const buildBackendUrl = useCallback(
     (path) => {
       const base = backendBaseUrl.replace(/\/$/, "");
@@ -237,6 +231,12 @@ export function PhotoEnhancer({
     },
     [app, buildBackendUrl, shop]
   );
+
+  useEffect(() => {
+    if (!shop || !app || webhooksRegisteredRef.current) return;
+    webhooksRegisteredRef.current = true;
+    shopifyFetch("/shopify/webhooks/register", { method: "POST" }).catch(() => {});
+  }, [app, shop, shopifyFetch]);
 
   const shopifyFetchBlob = useCallback(
     async (path, formData) => {
