@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import base64
 import hashlib
 import hmac
@@ -7,6 +9,7 @@ from io import BytesIO
 from pathlib import Path
 from datetime import datetime, timezone
 from urllib.parse import urlencode
+from urllib.parse import urlparse
 
 import httpx
 import asyncio
@@ -147,9 +150,9 @@ def _shop_from_host_param(host_param: str) -> str:
     except Exception:
         return ""
     if ".myshopify.com" in decoded:
-        match = re.search(r"([a-zA-Z0-9\\-]+\\.myshopify\\.com)", decoded)
+        match = re.search(r"([a-zA-Z0-9-]+\.myshopify\.com)", decoded)
         return match.group(1) if match else ""
-    match = re.search(r"admin\\.shopify\\.com/store/([^/?#]+)", decoded)
+    match = re.search(r"admin\.shopify\.com/store/([^/?#]+)", decoded)
     if not match:
         return ""
     return f"{match.group(1)}.myshopify.com"
@@ -324,14 +327,26 @@ def _shopify_install_url(shop: str) -> str:
         return ""
     if not _is_valid_shop_domain(shop):
         return ""
-    state = _make_oauth_state(shop)
-    params = {
-        "client_id": SHOPIFY_API_KEY,
-        "scope": SHOPIFY_SCOPES,
-        "redirect_uri": SHOPIFY_OAUTH_CALLBACK,
-        "state": state,
-    }
-    return f"https://{shop}/admin/oauth/authorize?{urlencode(params)}"
+    origin = _shopify_app_origin()
+    if not origin:
+        state = _make_oauth_state(shop)
+        params = {
+            "client_id": SHOPIFY_API_KEY,
+            "scope": SHOPIFY_SCOPES,
+            "redirect_uri": SHOPIFY_OAUTH_CALLBACK,
+            "state": state,
+        }
+        return f"https://{shop}/admin/oauth/authorize?{urlencode(params)}"
+    return f"{origin}/shopify/install?{urlencode({'shop': shop})}"
+
+
+def _shopify_app_origin() -> str:
+    if not SHOPIFY_APP_URL:
+        return ""
+    parsed = urlparse(SHOPIFY_APP_URL)
+    if not parsed.scheme or not parsed.netloc:
+        return ""
+    return f"{parsed.scheme}://{parsed.netloc}"
 
 
 def _make_oauth_state(shop: str) -> str:

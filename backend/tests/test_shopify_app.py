@@ -94,6 +94,8 @@ def test_shop_from_session_token_no_iss_dest():
     assert _shop_from_session_token({}) is None
 
 
+@patch("shopify_app.SHOPIFY_API_KEY", "api_key")
+@patch("shopify_app.SHOPIFY_API_SECRET", "secret")
 @patch("shopify_app.jwt.decode")
 def test_verify_session_token_valid(mock_decode):
     mock_decode.return_value = {
@@ -107,6 +109,8 @@ def test_verify_session_token_valid(mock_decode):
     assert _verify_session_token("token") == mock_decode.return_value
 
 
+@patch("shopify_app.SHOPIFY_API_KEY", "api_key")
+@patch("shopify_app.SHOPIFY_API_SECRET", "secret")
 @patch("shopify_app.jwt.decode")
 def test_verify_session_token_invalid(mock_decode):
     mock_decode.side_effect = jwt.InvalidTokenError
@@ -115,6 +119,8 @@ def test_verify_session_token_invalid(mock_decode):
     assert exc.value.status_code == 401
 
 
+@patch("shopify_app.SHOPIFY_API_KEY", "api_key")
+@patch("shopify_app.SHOPIFY_API_SECRET", "secret")
 @patch("shopify_app.jwt.decode")
 def test_verify_session_token_expired(mock_decode):
     mock_decode.side_effect = jwt.ExpiredSignatureError
