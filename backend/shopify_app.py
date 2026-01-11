@@ -324,7 +324,7 @@ def _shopify_install_url(shop: str) -> str:
         return ""
     if not _is_valid_shop_domain(shop):
         return ""
-    state = base64.urlsafe_b64encode(os.urandom(24)).decode("utf-8").rstrip("=")
+    state = _make_oauth_state(shop)
     params = {
         "client_id": SHOPIFY_API_KEY,
         "scope": SHOPIFY_SCOPES,
@@ -332,6 +332,27 @@ def _shopify_install_url(shop: str) -> str:
         "state": state,
     }
     return f"https://{shop}/admin/oauth/authorize?{urlencode(params)}"
+
+
+def _make_oauth_state(shop: str) -> str:
+    if not SHOPIFY_API_SECRET:
+        return base64.urlsafe_b64encode(os.urandom(24)).decode("utf-8").rstrip("=")
+    payload = {
+        "shop": shop,
+        "iat": int(datetime.now(timezone.utc).timestamp()),
+        "exp": int(datetime.now(timezone.utc).timestamp()) + 600,
+    }
+    return jwt.encode(payload, SHOPIFY_API_SECRET, algorithm="HS256")
+
+
+def _verify_oauth_state(state: str, shop: str) -> bool:
+    if not SHOPIFY_API_SECRET:
+        return False
+    try:
+        payload = jwt.decode(state, SHOPIFY_API_SECRET, algorithms=["HS256"])
+    except jwt.InvalidTokenError:
+        return False
+    return payload.get("shop") == shop
 
 
 async def _shopify_graphql(shop: str, access_token: str, query: str, variables: dict | None = None) -> dict:
@@ -525,7 +546,7 @@ async def shopify_install(shop: str):
     if not _is_valid_shop_domain(shop):
         raise HTTPException(status_code=400, detail="Invalid shop domain.")
 
-    state = base64.urlsafe_b64encode(os.urandom(24)).decode("utf-8").rstrip("=")
+    state = _make_oauth_state(shop)
     params = {
         "client_id": SHOPIFY_API_KEY,
         "scope": SHOPIFY_SCOPES,
@@ -556,8 +577,12 @@ async def shopify_oauth_callback(request: Request, shop: str, code: str, state: 
         raise HTTPException(status_code=400, detail="Invalid HMAC signature.")
 
     cookie_state = request.cookies.get("shopify_oauth_state")
-    if not cookie_state or cookie_state != state:
-        raise HTTPException(status_code=400, detail="Invalid OAuth state.")
+    if cookie_state:
+        if cookie_state != state:
+            raise HTTPException(status_code=400, detail="Invalid OAuth state.")
+    else:
+        if not _verify_oauth_state(state, shop):
+            raise HTTPException(status_code=400, detail="Invalid OAuth state.")
 
     token_payload = await _exchange_token(shop, code)
     access_token = token_payload.get("access_token")
