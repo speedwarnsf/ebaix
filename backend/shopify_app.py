@@ -592,12 +592,16 @@ async def shopify_oauth_callback(request: Request, shop: str, code: str, state: 
         raise HTTPException(status_code=400, detail="Invalid HMAC signature.")
 
     cookie_state = request.cookies.get("shopify_oauth_state")
+    state_ok = False
     if cookie_state:
-        if cookie_state != state:
-            raise HTTPException(status_code=400, detail="Invalid OAuth state.")
+        if cookie_state == state:
+            state_ok = True
+        else:
+            state_ok = _verify_oauth_state(state, shop)
     else:
-        if not _verify_oauth_state(state, shop):
-            raise HTTPException(status_code=400, detail="Invalid OAuth state.")
+        state_ok = _verify_oauth_state(state, shop)
+    if not state_ok:
+        raise HTTPException(status_code=400, detail="Invalid OAuth state.")
 
     token_payload = await _exchange_token(shop, code)
     access_token = token_payload.get("access_token")
@@ -611,7 +615,9 @@ async def shopify_oauth_callback(request: Request, shop: str, code: str, state: 
 
     redirect_host = host or _base64_host(shop)
     app_url = f"{SHOPIFY_APP_URL}?shop={shop}&host={redirect_host}"
-    return RedirectResponse(url=app_url, status_code=302)
+    response = RedirectResponse(url=app_url, status_code=302)
+    response.delete_cookie("shopify_oauth_state")
+    return response
 
 
 @app.get("/shopify/billing/active")
