@@ -89,9 +89,13 @@ async def require_shopify_session_token(request: Request, call_next):
         return await call_next(request)
 
     auth_header = request.headers.get("authorization", "")
-    if not auth_header.startswith("Bearer "):
+    token = ""
+    if auth_header.startswith("Bearer "):
+        token = auth_header.replace("Bearer ", "")
+    else:
+        token = request.query_params.get("id_token", "")
+    if not token:
         raise HTTPException(status_code=401, detail="Missing session token.")
-    token = auth_header.replace("Bearer ", "")
     payload = _verify_session_token(token)
     shop = _shop_from_session_token(payload)
     if not shop:
@@ -417,9 +421,15 @@ def _verify_session_token(token: str) -> dict:
         raise HTTPException(status_code=401, detail="Invalid session token shop.")
     issuer = payload.get("iss")
     expected_issuer = f"https://{shop}/admin"
-    if issuer != expected_issuer:
+    expected_store_issuer = f"https://{shop}"
+    if issuer not in (expected_issuer, expected_store_issuer):
         raise HTTPException(status_code=401, detail="Invalid session token issuer.")
-    if payload.get("aud") != SHOPIFY_API_KEY:
+    audience = payload.get("aud")
+    if isinstance(audience, list):
+        aud_ok = SHOPIFY_API_KEY in audience
+    else:
+        aud_ok = audience == SHOPIFY_API_KEY
+    if not aud_ok:
         raise HTTPException(status_code=401, detail="Invalid session token audience.")
     if not payload.get("sub"):
         raise HTTPException(status_code=401, detail="Invalid session token subject.")
