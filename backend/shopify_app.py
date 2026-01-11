@@ -391,10 +391,27 @@ def _extract_base64(data_url: str) -> str:
     return data_url
 
 
+def _shop_from_issuer(issuer: str) -> str | None:
+    if not issuer:
+        return None
+    if issuer.startswith("https://") and issuer.endswith("/admin"):
+        return issuer.replace("https://", "").replace("/admin", "")
+    if issuer.startswith("https://admin.shopify.com/store/"):
+        slug = issuer.split("/store/", 1)[-1].strip("/")
+        if slug:
+            return f"{slug}.myshopify.com"
+    if issuer.startswith("https://") and ".myshopify.com" in issuer:
+        return issuer.replace("https://", "").strip("/")
+    return None
+
+
 def _shop_from_session_token(payload: dict) -> str | None:
     dest = payload.get("dest")
     if isinstance(dest, str) and dest.startswith("https://"):
-        return dest.replace("https://", "")
+        return dest.replace("https://", "").strip("/")
+    issuer = payload.get("iss")
+    if isinstance(issuer, str):
+        return _shop_from_issuer(issuer)
     return None
 
 
@@ -408,7 +425,7 @@ def _verify_session_token(token: str) -> dict:
             algorithms=["HS256"],
             audience=SHOPIFY_API_KEY,
             options={
-                "require": ["iss", "dest", "aud", "exp", "sub", "iat"],
+                "require": ["iss", "aud", "exp", "sub", "iat"],
             },
             leeway=10,
         )
@@ -422,7 +439,11 @@ def _verify_session_token(token: str) -> dict:
     issuer = payload.get("iss")
     expected_issuer = f"https://{shop}/admin"
     expected_store_issuer = f"https://{shop}"
-    if issuer not in (expected_issuer, expected_store_issuer):
+    expected_admin_store = f"https://admin.shopify.com/store/{shop.replace('.myshopify.com', '')}"
+    issuer_ok = issuer in (expected_issuer, expected_store_issuer, expected_admin_store)
+    if not issuer_ok and isinstance(issuer, str) and issuer.endswith("/admin/"):
+        issuer_ok = issuer.rstrip("/") in (expected_issuer, expected_store_issuer, expected_admin_store)
+    if not issuer_ok:
         raise HTTPException(status_code=401, detail="Invalid session token issuer.")
     audience = payload.get("aud")
     if isinstance(audience, list):
