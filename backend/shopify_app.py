@@ -429,9 +429,17 @@ def _verify_session_token(token: str) -> dict:
             },
             leeway=10,
         )
+        logging.info(
+            "session_token_ok iss=%s aud=%s dest=%s",
+            payload.get("iss"),
+            payload.get("aud"),
+            payload.get("dest"),
+        )
     except jwt.ExpiredSignatureError as exc:
+        logging.warning("session_token_expired")
         raise HTTPException(status_code=401, detail="Session token expired.") from exc
     except jwt.InvalidTokenError as exc:
+        logging.warning("session_token_invalid type=%s", exc.__class__.__name__)
         raise HTTPException(status_code=401, detail="Invalid session token.") from exc
     shop = _shop_from_session_token(payload)
     if not shop or not _is_valid_shop_domain(shop):
