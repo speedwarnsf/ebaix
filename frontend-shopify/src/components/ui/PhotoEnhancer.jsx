@@ -54,6 +54,8 @@ export function PhotoEnhancer({
   const [sourceLoading, setSourceLoading] = useState(false);
   const [sourceError, setSourceError] = useState("");
   const [sourceMenuPosition, setSourceMenuPosition] = useState({ x: 0, y: 0 });
+  const [installRequired, setInstallRequired] = useState(false);
+  const [installUrl, setInstallUrl] = useState("");
   const [customBackdrop, setCustomBackdrop] = useState(() => {
     if (typeof window === "undefined") return DEFAULT_CUSTOM_BACKDROP;
     const stored = window.localStorage.getItem(CUSTOM_BACKDROP_KEY);
@@ -181,6 +183,15 @@ export function PhotoEnhancer({
     [backendBaseUrl, host, shop]
   );
 
+  const redirectToInstall = useCallback(
+    (nextUrl) => {
+      if (!nextUrl || !app) return;
+      const redirect = Redirect.create(app);
+      redirect.dispatch(Redirect.Action.REMOTE, nextUrl);
+    },
+    [app]
+  );
+
   const shopifyFetch = useCallback(
     async (path, options = {}) => {
       if (!shop) {
@@ -210,14 +221,11 @@ export function PhotoEnhancer({
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
         const detail = payload?.detail ?? payload;
-        const installUrl = detail?.install_url;
-        if (installUrl && typeof window !== "undefined") {
-          if (window.top) {
-            window.top.location.href = installUrl;
-          } else {
-            window.location.href = installUrl;
-          }
-          throw new Error("Redirecting to install.");
+        const installLink = detail?.install_url;
+        if (installLink) {
+          setInstallRequired(true);
+          setInstallUrl(installLink);
+          throw new Error("Shopify install required.");
         }
         let message = detail?.error || detail?.message || payload?.error;
         if (!message) {
@@ -227,16 +235,20 @@ export function PhotoEnhancer({
         }
         throw new Error(message);
       }
+      if (installRequired) {
+        setInstallRequired(false);
+        setInstallUrl("");
+      }
       return response.json();
     },
-    [app, buildBackendUrl, shop]
+    [app, buildBackendUrl, installRequired, shop]
   );
 
   useEffect(() => {
-    if (!shop || !app || webhooksRegisteredRef.current) return;
+    if (!shop || !app || webhooksRegisteredRef.current || installRequired) return;
     webhooksRegisteredRef.current = true;
     shopifyFetch("/shopify/webhooks/register", { method: "POST" }).catch(() => {});
-  }, [app, shop, shopifyFetch]);
+  }, [app, installRequired, shop, shopifyFetch]);
 
   const shopifyFetchBlob = useCallback(
     async (path, formData) => {
@@ -265,14 +277,11 @@ export function PhotoEnhancer({
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
         const detail = payload?.detail ?? payload;
-        const installUrl = detail?.install_url;
-        if (installUrl && typeof window !== "undefined") {
-          if (window.top) {
-            window.top.location.href = installUrl;
-          } else {
-            window.location.href = installUrl;
-          }
-          throw new Error("Redirecting to install.");
+        const installLink = detail?.install_url;
+        if (installLink) {
+          setInstallRequired(true);
+          setInstallUrl(installLink);
+          throw new Error("Shopify install required.");
         }
         let message = detail?.error || detail?.message || payload?.error;
         if (!message) {
@@ -282,13 +291,17 @@ export function PhotoEnhancer({
         }
         throw new Error(message);
       }
+      if (installRequired) {
+        setInstallRequired(false);
+        setInstallUrl("");
+      }
       return response.blob();
     },
-    [app, buildBackendUrl, shop]
+    [app, buildBackendUrl, installRequired, shop]
   );
 
   useEffect(() => {
-    if (!shop || billingChecked) return;
+    if (!shop || billingChecked || installRequired) return;
     let active = true;
     const fetchBilling = async () => {
       try {
@@ -312,7 +325,7 @@ export function PhotoEnhancer({
     return () => {
       active = false;
     };
-  }, [billingChecked, shop, shopifyFetch]);
+  }, [billingChecked, installRequired, shop, shopifyFetch]);
 
   const handleImageSelect = (event) => {
     const file = event.target.files?.[0];
@@ -1101,6 +1114,10 @@ export function PhotoEnhancer({
   );
 
   const handleEnableBilling = useCallback(async () => {
+    if (installRequired && installUrl) {
+      redirectToInstall(installUrl);
+      return;
+    }
     setBillingError("");
     setBillingLoading(true);
     try {
@@ -1122,7 +1139,7 @@ export function PhotoEnhancer({
     } finally {
       setBillingLoading(false);
     }
-  }, [app, shopifyFetch]);
+  }, [installRequired, installUrl, redirectToInstall, shopifyFetch]);
 
   const handleSelectProduct = useCallback(() => {
     if (!app) {
@@ -1565,6 +1582,27 @@ export function PhotoEnhancer({
           )}
 
           <div className="w-full max-w-2xl mx-auto space-y-3 text-white">
+            {installRequired && installUrl && (
+              <div className="rounded-2xl border border-amber-400/40 bg-amber-400/10 px-4 py-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase tracking-[0.4em] text-amber-100/70">
+                      install required
+                    </p>
+                    <p className="text-sm text-white/80">
+                      Reconnect Shopify to finish setup and enable billing + webhooks.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => redirectToInstall(installUrl)}
+                    className="rounded-full bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-slate-900 transition hover:bg-white/90"
+                  >
+                    Reinstall app
+                  </button>
+                </div>
+              </div>
+            )}
             <div className="rounded-2xl border border-white/10 bg-[#120a14] px-4 py-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-1">
