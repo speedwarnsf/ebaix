@@ -187,8 +187,32 @@ export function PhotoEnhancer({
     (nextUrl) => {
       if (!nextUrl || !app) return;
       const redirect = Redirect.create(app);
+      let resolvedUrl = nextUrl;
+      try {
+        resolvedUrl = new URL(nextUrl, window.location.origin).toString();
+      } catch {
+        resolvedUrl = nextUrl;
+      }
+      try {
+        const parsed = new URL(resolvedUrl);
+        const isAdminShopify = parsed.hostname === "admin.shopify.com";
+        const isMyshopifyAdmin =
+          parsed.hostname.endsWith(".myshopify.com") && parsed.pathname.startsWith("/admin");
+        if (isAdminShopify) {
+          const path = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+          redirect.dispatch(Redirect.Action.ADMIN_PATH, { path });
+          return;
+        }
+        if (isMyshopifyAdmin) {
+          const path = `${parsed.pathname.replace(/^\\/admin/, "")}${parsed.search}${parsed.hash}`;
+          redirect.dispatch(Redirect.Action.ADMIN_PATH, { path });
+          return;
+        }
+      } catch {
+        // Fall back to REMOTE.
+      }
       redirect.dispatch(Redirect.Action.REMOTE, {
-        url: nextUrl,
+        url: resolvedUrl,
         newContext: true,
       });
     },
@@ -1132,11 +1156,8 @@ export function PhotoEnhancer({
         return;
       }
       const confirmationUrl = payload?.confirmationUrl;
-      if (confirmationUrl && app) {
-        Redirect.create(app).dispatch(Redirect.Action.REMOTE, {
-          url: confirmationUrl,
-          newContext: true,
-        });
+      if (confirmationUrl) {
+        redirectToInstall(confirmationUrl);
       } else {
         throw new Error("Billing confirmation unavailable.");
       }

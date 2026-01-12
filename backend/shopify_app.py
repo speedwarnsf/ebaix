@@ -32,6 +32,7 @@ SHOPIFY_API_KEY = os.environ.get("SHOPIFY_API_KEY")
 SHOPIFY_API_SECRET = os.environ.get("SHOPIFY_API_SECRET")
 SHOPIFY_SCOPES = os.environ.get("SHOPIFY_SCOPES", "read_products,write_products")
 SHOPIFY_APP_URL = os.environ.get("SHOPIFY_APP_URL", "https://app.nudio.ai/shopify/app")
+SHOPIFY_APP_HANDLE = os.environ.get("SHOPIFY_APP_HANDLE", "nudio-product-studio").strip()
 SHOPIFY_OAUTH_CALLBACK = os.environ.get(
     "SHOPIFY_OAUTH_CALLBACK", "https://app.nudio.ai/shopify/oauth/callback"
 )
@@ -374,7 +375,8 @@ def _shopify_admin_app_url(shop: str) -> str:
     slug = shop.replace(".myshopify.com", "")
     if not slug:
         return ""
-    return f"https://admin.shopify.com/store/{slug}/apps/{SHOPIFY_API_KEY}"
+    app_handle = SHOPIFY_APP_HANDLE or SHOPIFY_API_KEY
+    return f"https://admin.shopify.com/store/{slug}/apps/{app_handle}"
 
 
 def _make_oauth_state(shop: str) -> str:
