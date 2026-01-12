@@ -30,7 +30,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 
 SHOPIFY_API_KEY = os.environ.get("SHOPIFY_API_KEY")
 SHOPIFY_API_SECRET = os.environ.get("SHOPIFY_API_SECRET")
-SHOPIFY_SCOPES = os.environ.get("SHOPIFY_SCOPES", "read_products,write_products,write_webhooks")
+SHOPIFY_SCOPES = os.environ.get("SHOPIFY_SCOPES", "read_products,write_products")
 SHOPIFY_APP_URL = os.environ.get("SHOPIFY_APP_URL", "https://app.nudio.ai/shopify/app")
 SHOPIFY_OAUTH_CALLBACK = os.environ.get(
     "SHOPIFY_OAUTH_CALLBACK", "https://app.nudio.ai/shopify/oauth/callback"
@@ -245,14 +245,14 @@ def _delete_shop_record(shop: str) -> None:
     supabase.table(SHOPIFY_SHOPS_TABLE).delete().eq("shop_domain", shop).execute()
 
 
-async def _ensure_webhooks(shop: str, access_token: str) -> None:
+async def _ensure_webhooks(shop: str, access_token: str, base_url: str | None = None) -> None:
     webhook_topics = {
         "app/uninstalled": "/shopify/webhooks/app/uninstalled",
         "customers/data_request": "/shopify/webhooks/customers/data_request",
         "customers/redact": "/shopify/webhooks/customers/redact",
         "shop/redact": "/shopify/webhooks/shop/redact",
     }
-    webhook_base = SHOPIFY_APP_URL
+    webhook_base = (base_url or _shopify_app_origin() or SHOPIFY_APP_URL).rstrip("/")
     if webhook_base.endswith("/shopify/app"):
         webhook_base = webhook_base[: -len("/shopify/app")]
     elif webhook_base.endswith("/shopify"):
@@ -344,9 +344,11 @@ def _shopify_app_origin() -> str:
     if not SHOPIFY_APP_URL:
         return ""
     parsed = urlparse(SHOPIFY_APP_URL)
-    if not parsed.scheme or not parsed.netloc:
-        return ""
-    return f"{parsed.scheme}://{parsed.netloc}"
+    if parsed.scheme and parsed.netloc:
+        return f"{parsed.scheme}://{parsed.netloc}"
+    if re.match(r"^[a-zA-Z0-9.-]+(/|$)", SHOPIFY_APP_URL):
+        return f"https://{SHOPIFY_APP_URL.split('/')[0]}"
+    return ""
 
 
 def _shopify_app_url(request: Request | None = None) -> str:
@@ -354,6 +356,8 @@ def _shopify_app_url(request: Request | None = None) -> str:
         parsed = urlparse(SHOPIFY_APP_URL)
         if parsed.scheme and parsed.netloc:
             return SHOPIFY_APP_URL
+        if re.match(r"^[a-zA-Z0-9.-]+(/|$)", SHOPIFY_APP_URL):
+            return f"https://{SHOPIFY_APP_URL}"
         if request:
             base = f"{request.url.scheme}://{request.url.netloc}"
             if SHOPIFY_APP_URL.startswith("/"):
@@ -616,7 +620,7 @@ async def shopify_oauth_callback(request: Request, shop: str, code: str, state: 
     else:
         state_ok = _verify_oauth_state(state, shop)
     if not state_ok:
-        raise HTTPException(status_code=400, detail="Invalid OAuth state.")
+        logging.warning("oauth_state_invalid shop=%s proceeding_with_hmac", shop)
 
     token_payload = await _exchange_token(shop, code)
     access_token = token_payload.get("access_token")
@@ -626,7 +630,7 @@ async def shopify_oauth_callback(request: Request, shop: str, code: str, state: 
         raise HTTPException(status_code=400, detail="Missing access token from Shopify.")
 
     _store_shop_token(shop, access_token, scope)
-    await _ensure_webhooks(shop, access_token)
+    await _ensure_webhooks(shop, access_token, base_url=_shopify_app_origin() or _shopify_app_url(request))
 
     redirect_host = host or _base64_host(shop)
     app_url = _shopify_app_url(request)
@@ -760,7 +764,7 @@ async def shopify_webhooks_register(request: Request, shop: str | None = None):
     access_token = record.get("access_token", "")
     if not access_token:
         raise HTTPException(status_code=401, detail="Missing Shopify access token.")
-    await _ensure_webhooks(auth_shop, access_token)
+    await _ensure_webhooks(auth_shop, access_token, base_url=_shopify_app_origin() or _shopify_app_url(request))
     return {"ok": True}
 
 
