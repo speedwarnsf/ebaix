@@ -187,7 +187,10 @@ export function PhotoEnhancer({
     (nextUrl) => {
       if (!nextUrl || !app) return;
       const redirect = Redirect.create(app);
-      redirect.dispatch(Redirect.Action.REMOTE, nextUrl);
+      redirect.dispatch(Redirect.Action.REMOTE, {
+        url: nextUrl,
+        newContext: true,
+      });
     },
     [app]
   );
@@ -1130,7 +1133,10 @@ export function PhotoEnhancer({
       }
       const confirmationUrl = payload?.confirmationUrl;
       if (confirmationUrl && app) {
-        Redirect.create(app).dispatch(Redirect.Action.REMOTE, confirmationUrl);
+        Redirect.create(app).dispatch(Redirect.Action.REMOTE, {
+          url: confirmationUrl,
+          newContext: true,
+        });
       } else {
         throw new Error("Billing confirmation unavailable.");
       }

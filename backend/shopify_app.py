@@ -368,6 +368,15 @@ def _shopify_app_url(request: Request | None = None) -> str:
     return ""
 
 
+def _shopify_admin_app_url(shop: str) -> str:
+    if not SHOPIFY_API_KEY or not shop:
+        return ""
+    slug = shop.replace(".myshopify.com", "")
+    if not slug:
+        return ""
+    return f"https://admin.shopify.com/store/{slug}/apps/{SHOPIFY_API_KEY}"
+
+
 def _make_oauth_state(shop: str) -> str:
     if not SHOPIFY_API_SECRET:
         return base64.urlsafe_b64encode(os.urandom(24)).decode("utf-8").rstrip("=")
@@ -736,10 +745,10 @@ async def shopify_billing_ensure(request: Request, shop: str | None = None, host
         }
       }
     """
-    return_url = _shopify_app_url(request)
+    return_url = _shopify_admin_app_url(auth_shop) or _shopify_app_url(request)
     if not return_url:
         raise HTTPException(status_code=500, detail="Missing Shopify app URL.")
-    if host:
+    if host and "admin.shopify.com" not in return_url:
         return_url = f"{return_url}?shop={auth_shop}&host={host}"
 
     variables = {
