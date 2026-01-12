@@ -8,6 +8,7 @@ import re
 from io import BytesIO
 from pathlib import Path
 from datetime import datetime, timezone
+from urllib.parse import parse_qsl
 from urllib.parse import urlencode
 from urllib.parse import urlparse
 
@@ -375,7 +376,9 @@ def _shopify_admin_app_url(shop: str) -> str:
     slug = shop.replace(".myshopify.com", "")
     if not slug:
         return ""
-    app_handle = SHOPIFY_APP_HANDLE or SHOPIFY_API_KEY
+    if not SHOPIFY_APP_HANDLE:
+        return ""
+    app_handle = SHOPIFY_APP_HANDLE
     return f"https://admin.shopify.com/store/{slug}/apps/{app_handle}"
 
 
@@ -747,7 +750,16 @@ async def shopify_billing_ensure(request: Request, shop: str | None = None, host
         }
       }
     """
-    return_url = _shopify_admin_app_url(auth_shop) or _shopify_app_url(request)
+    return_url = _shopify_app_url(request)
+    if return_url and (shop or host):
+        parsed_return = urlparse(return_url)
+        query = dict(parse_qsl(parsed_return.query))
+        if shop:
+            query["shop"] = shop
+        if host:
+            query["host"] = host
+        parsed_return = parsed_return._replace(query=urlencode(query))
+        return_url = urlunparse(parsed_return)
     if not return_url:
         raise HTTPException(status_code=500, detail="Missing Shopify app URL.")
     if host and "admin.shopify.com" not in return_url:

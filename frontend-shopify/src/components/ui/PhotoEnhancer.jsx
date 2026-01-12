@@ -193,24 +193,6 @@ export function PhotoEnhancer({
       } catch {
         resolvedUrl = nextUrl;
       }
-      try {
-        const parsed = new URL(resolvedUrl);
-        const isAdminShopify = parsed.hostname === "admin.shopify.com";
-        const isMyshopifyAdmin =
-          parsed.hostname.endsWith(".myshopify.com") && parsed.pathname.startsWith("/admin");
-        if (isAdminShopify) {
-          const path = `${parsed.pathname}${parsed.search}${parsed.hash}`;
-          redirect.dispatch(Redirect.Action.ADMIN_PATH, { path });
-          return;
-        }
-        if (isMyshopifyAdmin) {
-          const path = `${parsed.pathname.replace(/^\/admin/, "")}${parsed.search}${parsed.hash}`;
-          redirect.dispatch(Redirect.Action.ADMIN_PATH, { path });
-          return;
-        }
-      } catch {
-        // Fall back to REMOTE.
-      }
       redirect.dispatch(Redirect.Action.REMOTE, {
         url: resolvedUrl,
         newContext: true,
