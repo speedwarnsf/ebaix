@@ -84,6 +84,7 @@ export function PhotoEnhancer({
   const sourceMenuRef = useRef(null);
   const lensWrapperRef = useRef(null);
   const webhooksRegisteredRef = useRef(false);
+  const installRedirectedRef = useRef(false);
   const watermarkDisabled = true;
 
   const usageEmail = useMemo(() => {
@@ -200,6 +201,15 @@ export function PhotoEnhancer({
     },
     [app]
   );
+
+  useEffect(() => {
+    if (installRequired && installUrl && app && !installRedirectedRef.current) {
+      installRedirectedRef.current = true;
+      redirectToInstall(installUrl);
+    } else if (!installRequired) {
+      installRedirectedRef.current = false;
+    }
+  }, [app, installRequired, installUrl, redirectToInstall]);
 
   const shopifyFetch = useCallback(
     async (path, options = {}) => {
