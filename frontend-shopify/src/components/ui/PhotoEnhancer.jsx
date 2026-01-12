@@ -204,7 +204,7 @@ export function PhotoEnhancer({
           return;
         }
         if (isMyshopifyAdmin) {
-          const path = `${parsed.pathname.replace(/^\\/admin/, "")}${parsed.search}${parsed.hash}`;
+          const path = `${parsed.pathname.replace(/^\/admin/, "")}${parsed.search}${parsed.hash}`;
           redirect.dispatch(Redirect.Action.ADMIN_PATH, { path });
           return;
         }
