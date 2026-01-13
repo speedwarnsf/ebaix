@@ -1,9 +1,13 @@
-client_id = "961772163d178943fdf64612cc0f6a5d"
-
-[app]
 name = "Nudio (Product Studio)"
+client_id = "961772163d178943fdf64612cc0f6a5d"
 application_url = "https://app.nudio.ai/shopify/app"
 embedded = true
+
+[auth]
+redirect_urls = ["https://app.nudio.ai/shopify/oauth/callback"]
+
+[access_scopes]
+scopes = "read_products,write_products"
 
 [webhooks]
 api_version = "2026-01"
