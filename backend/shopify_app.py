@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from urllib.parse import parse_qsl
 from urllib.parse import urlencode
 from urllib.parse import urlparse
+from urllib.parse import urlunparse
 
 import httpx
 import asyncio
@@ -212,7 +213,11 @@ def _check_rate_limit(shop: str, action: str) -> None:
 
 
 def _base64_host(shop: str) -> str:
-    raw = f"{shop}/admin".encode("utf-8")
+    slug = shop.replace(".myshopify.com", "")
+    if slug:
+        raw = f"admin.shopify.com/store/{slug}".encode("utf-8")
+    else:
+        raw = f"{shop}/admin".encode("utf-8")
     return base64.b64encode(raw).decode("utf-8")
 
 
@@ -310,7 +315,7 @@ async def _ensure_webhooks(shop: str, access_token: str, base_url: str | None = 
             logging.warning("webhook_create_failed shop=%s topic=%s status=%s", shop, topic, exc.response.status_code)
 
 
-def _get_shop_record(shop: str) -> dict:
+def _get_shop_record(shop: str, host: str | None = None) -> dict:
     result = supabase.table(SHOPIFY_SHOPS_TABLE).select("*").eq("shop_domain", shop).limit(1).execute()
     data = result.data[0] if result.data else None
     if not data:
@@ -318,13 +323,13 @@ def _get_shop_record(shop: str) -> dict:
             status_code=401,
             detail={
                 "error": "shop_not_installed",
-                "install_url": _shopify_install_url(shop),
+                "install_url": _shopify_install_url(shop, host),
             },
         )
     return data
 
 
-def _shopify_install_url(shop: str) -> str:
+def _shopify_install_url(shop: str, host: str | None = None) -> str:
     if not SHOPIFY_API_KEY or not SHOPIFY_API_SECRET:
         return ""
     if not _is_valid_shop_domain(shop):
@@ -339,7 +344,10 @@ def _shopify_install_url(shop: str) -> str:
             "state": state,
         }
         return f"https://{shop}/admin/oauth/authorize?{urlencode(params)}"
-    return f"{origin}/shopify/install?{urlencode({'shop': shop})}"
+    query = {"shop": shop}
+    if host:
+        query["host"] = host
+    return f"{origin}/shopify/install?{urlencode(query)}"
 
 
 def _shopify_app_origin() -> str:
@@ -588,17 +596,24 @@ async def shopify_app_catchall(full_path: str):
 
 
 @app.get("/shopify/install")
-async def shopify_install(shop: str):
+async def shopify_install(shop: str, host: str | None = None):
     if not SHOPIFY_API_KEY or not SHOPIFY_API_SECRET:
         raise HTTPException(status_code=500, detail="Missing Shopify API config.")
     if not _is_valid_shop_domain(shop):
         raise HTTPException(status_code=400, detail="Invalid shop domain.")
 
     state = _make_oauth_state(shop)
+    redirect_uri = SHOPIFY_OAUTH_CALLBACK
+    if host:
+        parsed_redirect = urlparse(redirect_uri)
+        query = dict(parse_qsl(parsed_redirect.query))
+        query["host"] = host
+        parsed_redirect = parsed_redirect._replace(query=urlencode(query))
+        redirect_uri = urlunparse(parsed_redirect)
     params = {
         "client_id": SHOPIFY_API_KEY,
         "scope": SHOPIFY_SCOPES,
-        "redirect_uri": SHOPIFY_OAUTH_CALLBACK,
+        "redirect_uri": redirect_uri,
         "state": state,
     }
     install_url = f"https://{shop}/admin/oauth/authorize?{urlencode(params)}"
@@ -661,7 +676,7 @@ async def shopify_billing_active(request: Request, shop: str | None = None):
     auth_shop = getattr(request.state, "shop", None) or shop
     if not auth_shop:
         raise HTTPException(status_code=401, detail="Missing shop context.")
-    record = _get_shop_record(auth_shop)
+    record = _get_shop_record(auth_shop, request.query_params.get("host"))
     access_token = record["access_token"]
     query = """
       query ActiveSubscriptions {
@@ -695,7 +710,7 @@ async def shopify_billing_ensure(request: Request, shop: str | None = None, host
     auth_shop = getattr(request.state, "shop", None) or shop
     if not auth_shop:
         raise HTTPException(status_code=401, detail="Missing shop context.")
-    record = _get_shop_record(auth_shop)
+    record = _get_shop_record(auth_shop, host or request.query_params.get("host"))
     access_token = record["access_token"]
     query = """
       query ActiveSubscriptions {
@@ -783,7 +798,7 @@ async def shopify_webhooks_register(request: Request, shop: str | None = None):
     auth_shop = getattr(request.state, "shop", None) or shop
     if not auth_shop:
         raise HTTPException(status_code=401, detail="Missing shop context.")
-    record = _get_shop_record(auth_shop)
+    record = _get_shop_record(auth_shop, request.query_params.get("host"))
     access_token = record.get("access_token", "")
     if not access_token:
         raise HTTPException(status_code=401, detail="Missing Shopify access token.")
@@ -797,7 +812,7 @@ async def shopify_billing_usage(request: Request, payload: UsageChargeRequest, s
     if not auth_shop:
         raise HTTPException(status_code=401, detail="Missing shop context.")
     _check_rate_limit(auth_shop, "billing_usage")
-    record = _get_shop_record(auth_shop)
+    record = _get_shop_record(auth_shop, request.query_params.get("host"))
     access_token = record["access_token"]
     description = payload.description
     price = payload.price
@@ -877,7 +892,7 @@ async def shopify_product_image_upload(
     if not auth_shop:
         raise HTTPException(status_code=401, detail="Missing shop context.")
     _check_rate_limit(auth_shop, "product_upload")
-    record = _get_shop_record(auth_shop)
+    record = _get_shop_record(auth_shop, request.query_params.get("host"))
     access_token = record["access_token"]
     image_base64 = payload.image_base64
     filename = payload.filename
@@ -993,7 +1008,7 @@ async def shopify_products(request: Request, shop: str | None = None, limit: int
     auth_shop = getattr(request.state, "shop", None) or shop
     if not auth_shop:
         raise HTTPException(status_code=401, detail="Missing shop context.")
-    record = _get_shop_record(auth_shop)
+    record = _get_shop_record(auth_shop, request.query_params.get("host"))
     access_token = record["access_token"]
     payload = {"limit": max(1, min(limit, 250)), "fields": "id,title,images"}
     response = await _shopify_rest(
@@ -1011,7 +1026,7 @@ async def shopify_product_images(request: Request, product_id: str, shop: str | 
     auth_shop = getattr(request.state, "shop", None) or shop
     if not auth_shop:
         raise HTTPException(status_code=401, detail="Missing shop context.")
-    record = _get_shop_record(auth_shop)
+    record = _get_shop_record(auth_shop, request.query_params.get("host"))
     access_token = record["access_token"]
     payload = {"fields": "id,src,position,alt"}
     response = await _shopify_rest(
@@ -1029,6 +1044,7 @@ async def shopify_fetch_image(request: Request, src: str, shop: str | None = Non
     auth_shop = getattr(request.state, "shop", None) or shop
     if not auth_shop:
         raise HTTPException(status_code=401, detail="Missing shop context.")
+    _get_shop_record(auth_shop, request.query_params.get("host"))
     if not src:
         raise HTTPException(status_code=400, detail="Missing image source.")
     allowed_hosts = ("cdn.shopify.com", ".myshopify.com")
