@@ -2,6 +2,7 @@
 name = "Nudio (Product Studio)"
 application_url = "https://app.nudio.ai/shopify/app"
 embedded = true
+client_id = "961772163d178943fdf64612cc0f6a5d"
 
 [webhooks]
 api_version = "2026-01"
