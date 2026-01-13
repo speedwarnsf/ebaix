@@ -999,6 +999,14 @@ async def _handle_shopify_webhook(request: Request, delete_shop: bool = False) -
     return {"ok": True}
 
 
+# Shopify CLI compliance_topics webhook (single endpoint for GDPR topics).
+@app.post("/shopify/webhooks/compliance")
+async def shopify_webhooks_compliance(request: Request):
+    topic = request.headers.get("X-Shopify-Topic", "")
+    delete_shop = topic == "shop/redact"
+    return await _handle_shopify_webhook(request, delete_shop=delete_shop)
+
+
 # Canonical compliance webhook paths (preferred).
 @app.post("/shopify/webhooks/app/uninstalled")
 async def shopify_app_uninstalled(request: Request):

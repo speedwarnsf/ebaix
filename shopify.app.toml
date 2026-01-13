@@ -13,16 +13,8 @@ scopes = "read_products,write_products"
 api_version = "2026-01"
 
 [[webhooks.subscriptions]]
-topics = ["customers/data_request"]
-uri = "https://app.nudio.ai/shopify/webhooks/customers/data_request"
-
-[[webhooks.subscriptions]]
-topics = ["customers/redact"]
-uri = "https://app.nudio.ai/shopify/webhooks/customers/redact"
-
-[[webhooks.subscriptions]]
-topics = ["shop/redact"]
-uri = "https://app.nudio.ai/shopify/webhooks/shop/redact"
+compliance_topics = ["customers/data_request", "customers/redact", "shop/redact"]
+uri = "https://app.nudio.ai/shopify/webhooks/compliance"
 
 [[webhooks.subscriptions]]
 topics = ["app/uninstalled"]
