@@ -4,7 +4,7 @@ application_url = "https://app.nudio.ai/shopify/app"
 embedded = true
 
 [webhooks]
-api_version = "2025-10"
+api_version = "2026-01"
 
 [[webhooks.subscriptions]]
 topics = ["customers/data_request"]
@@ -17,3 +17,7 @@ uri = "https://app.nudio.ai/shopify/webhooks/customers/redact"
 [[webhooks.subscriptions]]
 topics = ["shop/redact"]
 uri = "https://app.nudio.ai/shopify/webhooks/shop/redact"
+
+[[webhooks.subscriptions]]
+topics = ["app/uninstalled"]
+uri = "https://app.nudio.ai/shopify/webhooks/app/uninstalled"
