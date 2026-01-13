@@ -10,9 +10,10 @@ function App() {
   const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
   const shopifyApiKey = process.env.REACT_APP_SHOPIFY_API_KEY;
   const shopifyHost = resolveShopifyHost();
+  const inIframe = typeof window !== "undefined" && window.self !== window.top;
   const appBridgeConfig =
     shopifyApiKey && shopifyHost
-      ? { apiKey: shopifyApiKey, host: shopifyHost, forceRedirect: true }
+      ? { apiKey: shopifyApiKey, host: shopifyHost, forceRedirect: !inIframe }
       : null;
 
   if (!appBridgeConfig) {
