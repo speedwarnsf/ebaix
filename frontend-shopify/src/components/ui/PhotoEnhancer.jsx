@@ -83,7 +83,6 @@ export function PhotoEnhancer({
   const backdropMenuRef = useRef(null);
   const sourceMenuRef = useRef(null);
   const lensWrapperRef = useRef(null);
-  const webhooksRegisteredRef = useRef(false);
   const installRedirectedRef = useRef(false);
   const watermarkDisabled = true;
 
@@ -262,12 +261,6 @@ export function PhotoEnhancer({
     },
     [app, buildBackendUrl, installRequired, shop]
   );
-
-  useEffect(() => {
-    if (!shop || !app || webhooksRegisteredRef.current || installRequired) return;
-    webhooksRegisteredRef.current = true;
-    shopifyFetch("/shopify/webhooks/register", { method: "POST" }).catch(() => {});
-  }, [app, installRequired, shop, shopifyFetch]);
 
   const shopifyFetchBlob = useCallback(
     async (path, formData) => {

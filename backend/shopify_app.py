@@ -252,69 +252,6 @@ def _delete_shop_record(shop: str) -> None:
     supabase.table(SHOPIFY_SHOPS_TABLE).delete().eq("shop_domain", shop).execute()
 
 
-async def _ensure_webhooks(shop: str, access_token: str, base_url: str | None = None) -> None:
-    webhook_topics = {
-        "app/uninstalled": "/shopify/webhooks/app/uninstalled",
-        "customers/data_request": "/shopify/webhooks/customers/data_request",
-        "customers/redact": "/shopify/webhooks/customers/redact",
-        "shop/redact": "/shopify/webhooks/shop/redact",
-    }
-    webhook_base = (base_url or _shopify_app_origin() or SHOPIFY_APP_URL).rstrip("/")
-    if webhook_base.endswith("/shopify/app"):
-        webhook_base = webhook_base[: -len("/shopify/app")]
-    elif webhook_base.endswith("/shopify"):
-        webhook_base = webhook_base[: -len("/shopify")]
-
-    try:
-        existing = await _shopify_rest(
-            shop,
-            access_token,
-            "GET",
-            "/webhooks.json",
-            {"fields": "id,topic,address"},
-        )
-    except httpx.HTTPStatusError as exc:
-        logging.warning("webhook_list_failed shop=%s status=%s", shop, exc.response.status_code)
-        return
-    current = {
-        webhook["topic"]: webhook
-        for webhook in existing.get("webhooks", [])
-        if webhook.get("topic") in webhook_topics
-    }
-
-    for topic, path in webhook_topics.items():
-        address = f"{webhook_base}{path}"
-        if topic in current:
-            existing_webhook = current[topic]
-            if existing_webhook.get("address") == address:
-                continue
-            webhook_id = existing_webhook.get("id")
-            if webhook_id:
-                payload = {
-                    "webhook": {
-                        "id": webhook_id,
-                        "address": address,
-                        "format": "json",
-                    }
-                }
-                try:
-                    await _shopify_rest(shop, access_token, "PUT", f"/webhooks/{webhook_id}.json", payload)
-                except httpx.HTTPStatusError as exc:
-                    logging.warning("webhook_update_failed shop=%s topic=%s status=%s", shop, topic, exc.response.status_code)
-                continue
-        payload = {
-            "webhook": {
-                "topic": topic,
-                "address": address,
-                "format": "json",
-            }
-        }
-        try:
-            await _shopify_rest(shop, access_token, "POST", "/webhooks.json", payload)
-        except httpx.HTTPStatusError as exc:
-            logging.warning("webhook_create_failed shop=%s topic=%s status=%s", shop, topic, exc.response.status_code)
-
-
 def _get_shop_record(shop: str, host: str | None = None) -> dict:
     result = supabase.table(SHOPIFY_SHOPS_TABLE).select("*").eq("shop_domain", shop).limit(1).execute()
     data = result.data[0] if result.data else None
@@ -653,7 +590,6 @@ async def shopify_oauth_callback(request: Request, shop: str, code: str, state: 
         raise HTTPException(status_code=400, detail="Missing access token from Shopify.")
 
     _store_shop_token(shop, access_token, scope)
-    await _ensure_webhooks(shop, access_token, base_url=_shopify_app_origin() or _shopify_app_url(request))
 
     redirect_host = host or _base64_host(shop)
     app_url = _shopify_app_url(request)
@@ -785,19 +721,6 @@ async def shopify_billing_ensure(request: Request, shop: str | None = None, host
     if payload.get("userErrors"):
         raise HTTPException(status_code=400, detail=payload["userErrors"])
     return {"active": False, "confirmationUrl": payload.get("confirmationUrl")}
-
-
-@app.post("/shopify/webhooks/register")
-async def shopify_webhooks_register(request: Request, shop: str | None = None):
-    auth_shop = getattr(request.state, "shop", None) or shop
-    if not auth_shop:
-        raise HTTPException(status_code=401, detail="Missing shop context.")
-    record = _get_shop_record(auth_shop, request.query_params.get("host"))
-    access_token = record.get("access_token", "")
-    if not access_token:
-        raise HTTPException(status_code=401, detail="Missing Shopify access token.")
-    await _ensure_webhooks(auth_shop, access_token, base_url=_shopify_app_origin() or _shopify_app_url(request))
-    return {"ok": True}
 
 
 @app.post("/shopify/billing/usage")
