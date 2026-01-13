@@ -32,7 +32,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 
 SHOPIFY_API_KEY = os.environ.get("SHOPIFY_API_KEY")
 SHOPIFY_API_SECRET = os.environ.get("SHOPIFY_API_SECRET")
-SHOPIFY_SCOPES = os.environ.get("SHOPIFY_SCOPES", "read_products,write_products")
+SHOPIFY_SCOPES = os.environ.get("SHOPIFY_SCOPES", "read_products,write_products,write_webhooks")
 SHOPIFY_APP_URL = os.environ.get("SHOPIFY_APP_URL", "https://app.nudio.ai/shopify/app")
 SHOPIFY_APP_HANDLE = os.environ.get("SHOPIFY_APP_HANDLE", "nudio-product-studio").strip()
 SHOPIFY_OAUTH_CALLBACK = os.environ.get(
@@ -604,12 +604,6 @@ async def shopify_install(shop: str, host: str | None = None):
 
     state = _make_oauth_state(shop)
     redirect_uri = SHOPIFY_OAUTH_CALLBACK
-    if host:
-        parsed_redirect = urlparse(redirect_uri)
-        query = dict(parse_qsl(parsed_redirect.query))
-        query["host"] = host
-        parsed_redirect = parsed_redirect._replace(query=urlencode(query))
-        redirect_uri = urlunparse(parsed_redirect)
     params = {
         "client_id": SHOPIFY_API_KEY,
         "scope": SHOPIFY_SCOPES,
