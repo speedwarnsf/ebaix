@@ -1,4 +1,5 @@
 name = "Nudio (Product Studio)"
+handle = "nudio-product-studio"
 client_id = "961772163d178943fdf64612cc0f6a5d"
 application_url = "https://app.nudio.ai/shopify/app"
 embedded = true
