@@ -592,10 +592,12 @@ async def shopify_oauth_callback(request: Request, shop: str, code: str, state: 
     _store_shop_token(shop, access_token, scope)
 
     redirect_host = host or _base64_host(shop)
-    app_url = _shopify_app_url(request)
+    admin_url = _shopify_admin_app_url(shop)
+    app_url = admin_url or _shopify_app_url(request)
     if not app_url:
         raise HTTPException(status_code=500, detail="Missing Shopify app URL.")
-    app_url = f"{app_url}?shop={shop}&host={redirect_host}"
+    if not admin_url:
+        app_url = f"{app_url}?shop={shop}&host={redirect_host}"
     response = RedirectResponse(url=app_url, status_code=302)
     response.delete_cookie("shopify_oauth_state")
     return response
