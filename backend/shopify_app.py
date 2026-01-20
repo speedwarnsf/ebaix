@@ -990,20 +990,28 @@ async def shopify_health():
 
 
 async def _handle_shopify_webhook(request: Request, delete_shop: bool = False) -> dict:
-    raw_body = await request.body()
-    hmac_header = request.headers.get("X-Shopify-Hmac-Sha256", "")
-    if not _verify_webhook_hmac(raw_body, hmac_header):
+    try:
+        raw_body = await request.body()
+        hmac_header = request.headers.get("X-Shopify-Hmac-Sha256", "")
+        if not _verify_webhook_hmac(raw_body, hmac_header):
+            raise HTTPException(status_code=401, detail="Invalid webhook signature.")
+        if delete_shop:
+            shop = request.headers.get("X-Shopify-Shop-Domain", "")
+            if _is_valid_shop_domain(shop):
+                _delete_shop_record(shop)
+        return {"ok": True}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logging.exception("webhook_handler_failed error=%s", exc)
         raise HTTPException(status_code=401, detail="Invalid webhook signature.")
-    if delete_shop:
-        shop = request.headers.get("X-Shopify-Shop-Domain", "")
-        if _is_valid_shop_domain(shop):
-            _delete_shop_record(shop)
-    return {"ok": True}
 
 
 # Shopify CLI compliance_topics webhook (single endpoint for GDPR topics).
 @app.post("/shopify/webhooks/compliance")
 async def shopify_webhooks_compliance(request: Request):
+    if not SHOPIFY_API_SECRET:
+        raise HTTPException(status_code=401, detail="Invalid webhook signature.")
     topic = request.headers.get("X-Shopify-Topic", "")
     delete_shop = topic == "shop/redact"
     return await _handle_shopify_webhook(request, delete_shop=delete_shop)
