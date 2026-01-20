@@ -181,7 +181,7 @@ def _verify_hmac(params: dict, secret: str) -> bool:
 
 
 def _verify_webhook_hmac(raw_body: bytes, hmac_header: str) -> bool:
-    if not hmac_header:
+    if not hmac_header or not SHOPIFY_API_SECRET:
         return False
     digest = hmac.new(
         SHOPIFY_API_SECRET.encode("utf-8"),
