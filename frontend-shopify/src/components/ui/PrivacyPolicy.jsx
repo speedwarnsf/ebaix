@@ -105,7 +105,15 @@ export function PrivacyPolicy() {
             <li>Receive information about how we use and share your data</li>
           </ul>
           <p className="mt-2 text-slate-700">
-            To exercise these rights, contact us at <a className="text-slate-900 underline" href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
+            To exercise these rights, contact us at{" "}
+            <a
+              className="text-slate-900 underline"
+              href={`mailto:${SUPPORT_EMAIL}`}
+              target="_top"
+              rel="noreferrer"
+            >
+              {SUPPORT_EMAIL}
+            </a>.
           </p>
         </section>
 
@@ -167,7 +175,17 @@ export function PrivacyPolicy() {
             For questions about this Privacy Policy or our privacy practices, contact:
           </p>
           <ul className="mt-2 space-y-1 list-none text-slate-700">
-            <li><span className="font-medium">Email:</span> <a className="text-slate-900 underline" href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a></li>
+            <li>
+              <span className="font-medium">Email:</span>{" "}
+              <a
+                className="text-slate-900 underline"
+                href={`mailto:${SUPPORT_EMAIL}`}
+                target="_top"
+                rel="noreferrer"
+              >
+                {SUPPORT_EMAIL}
+              </a>
+            </li>
           </ul>
           <p className="mt-3 text-slate-700">
             EU/GDPR Users: If you reside in the European Union, you may have additional rights under

@@ -133,7 +133,15 @@ export default function TermsOfService() {
         <section>
           <h2 className="text-xl font-semibold text-slate-900">13. Contact</h2>
           <p className="mt-3 text-slate-700">
-            Questions about these Terms? Email us at <a className="text-slate-900 underline" href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
+            Questions about these Terms? Email us at{" "}
+            <a
+              className="text-slate-900 underline"
+              href={`mailto:${SUPPORT_EMAIL}`}
+              target="_top"
+              rel="noreferrer"
+            >
+              {SUPPORT_EMAIL}
+            </a>.
           </p>
         </section>
       </main>

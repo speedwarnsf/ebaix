@@ -1852,8 +1852,8 @@ export function PhotoEnhancer({
           Support:{" "}
           <a
             className="underline underline-offset-4"
-            href="https://nudio.ai/contact"
-            target="_blank"
+            href="mailto:support@nudio.ai"
+            target="_top"
             rel="noreferrer"
           >
             support@nudio.ai
