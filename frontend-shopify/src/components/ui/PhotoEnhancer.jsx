@@ -1850,7 +1850,12 @@ export function PhotoEnhancer({
       <footer className="w-full max-w-5xl mx-auto px-4 sm:px-6 pb-10 text-xs text-white/60 flex flex-col sm:flex-row gap-3 items-start sm:items-center sm:justify-between">
         <div>
           Support:{" "}
-          <a className="underline underline-offset-4" href="mailto:support@nudio.ai">
+          <a
+            className="underline underline-offset-4"
+            href="https://nudio.ai/contact"
+            target="_blank"
+            rel="noreferrer"
+          >
             support@nudio.ai
           </a>
         </div>
