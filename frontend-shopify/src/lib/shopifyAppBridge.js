@@ -18,16 +18,28 @@ const deriveShopFromHost = (host) => {
   }
 };
 
+const isValidHostParam = (host) => {
+  if (!host || typeof host !== "string") return false;
+  try {
+    const decoded = window.atob(host);
+    return /admin\.shopify\.com\/store\/[^/]+/i.test(decoded);
+  } catch {
+    return false;
+  }
+};
+
 export const resolveShopifyHost = () => {
   if (typeof window === "undefined") return null;
   const params = new URLSearchParams(window.location.search);
   const host = params.get("host");
-  if (host) {
+  if (host && isValidHostParam(host)) {
     window.sessionStorage.setItem("shopifyHost", host);
     return host;
+  } else if (host) {
+    window.sessionStorage.removeItem("shopifyHost");
   }
   const storedHost = window.sessionStorage.getItem("shopifyHost");
-  if (storedHost) return storedHost;
+  if (storedHost && isValidHostParam(storedHost)) return storedHost;
   const shop = params.get("shop");
   const derived = deriveHostFromShop(shop);
   if (derived) {

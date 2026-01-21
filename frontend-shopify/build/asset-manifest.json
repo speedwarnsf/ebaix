@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/shopify/app/static/css/main.b3052840.css",
-    "main.js": "/shopify/app/static/js/main.6993981e.js",
+    "main.js": "/shopify/app/static/js/main.a5c02dcb.js",
     "index.html": "/shopify/app/index.html",
     "main.b3052840.css.map": "/shopify/app/static/css/main.b3052840.css.map",
-    "main.6993981e.js.map": "/shopify/app/static/js/main.6993981e.js.map"
+    "main.a5c02dcb.js.map": "/shopify/app/static/js/main.a5c02dcb.js.map"
   },
   "entrypoints": [
     "static/css/main.b3052840.css",
-    "static/js/main.6993981e.js"
+    "static/js/main.a5c02dcb.js"
   ]
 }
