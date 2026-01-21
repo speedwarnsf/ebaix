@@ -72,8 +72,7 @@ export function ShopifyTermsOfService() {
       <section>
         <h4 className="text-sm font-semibold text-white">8. Contact</h4>
         <p className="mt-2">
-          Questions about these Terms? Email{" "}
-          <a className="underline" href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
+          Questions about these Terms? Email {SUPPORT_EMAIL}.
         </p>
       </section>
     </>

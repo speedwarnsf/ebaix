@@ -88,8 +88,7 @@ export function ShopifyPrivacyPolicy() {
           <li>Receive information about how we use and share your data</li>
         </ul>
         <p className="mt-2">
-          To exercise these rights, contact us at{" "}
-          <a className="underline" href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
+          To exercise these rights, contact us at {SUPPORT_EMAIL}.
         </p>
       </section>
 
@@ -122,8 +121,7 @@ export function ShopifyPrivacyPolicy() {
       <section>
         <h4 className="text-sm font-semibold text-white">10. Contact Us</h4>
         <p className="mt-2">
-          For questions about this Privacy Policy or our privacy practices, contact{" "}
-          <a className="underline" href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
+          For questions about this Privacy Policy or our privacy practices, contact {SUPPORT_EMAIL}.
         </p>
       </section>
     </>

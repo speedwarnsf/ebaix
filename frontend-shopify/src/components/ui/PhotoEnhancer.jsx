@@ -85,6 +85,8 @@ export function PhotoEnhancer({
   const lensWrapperRef = useRef(null);
   const installRedirectedRef = useRef(false);
   const watermarkDisabled = true;
+  const supportEmail = "support@nudio.ai";
+  const [supportCopyLabel, setSupportCopyLabel] = useState("Copy email");
 
   const usageEmail = useMemo(() => {
     if (userEmail) return userEmail;
@@ -167,6 +169,28 @@ export function PhotoEnhancer({
     if (typeof window === "undefined") return;
     window.localStorage.setItem(CUSTOM_BACKDROP_KEY, customBackdrop);
   }, [customBackdrop]);
+
+  const handleCopySupportEmail = useCallback(async () => {
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(supportEmail);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = supportEmail;
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      setSupportCopyLabel("Copied!");
+    } catch {
+      setSupportCopyLabel("Copy failed");
+    }
+    setTimeout(() => setSupportCopyLabel("Copy email"), 2000);
+  }, [supportEmail]);
 
   const buildBackendUrl = useCallback(
     (path) => {
@@ -1850,14 +1874,14 @@ export function PhotoEnhancer({
       <footer className="w-full max-w-5xl mx-auto px-4 sm:px-6 pb-10 text-xs text-white/60 flex flex-col sm:flex-row gap-3 items-start sm:items-center sm:justify-between">
         <div>
           Support:{" "}
-          <a
-            className="underline underline-offset-4"
-            href="mailto:support@nudio.ai"
-            target="_top"
-            rel="noreferrer"
+          <span>{supportEmail}</span>
+          <button
+            type="button"
+            onClick={handleCopySupportEmail}
+            className="ml-2 text-xs uppercase tracking-[0.2em] text-white/60 hover:text-white transition"
           >
-            support@nudio.ai
-          </a>
+            {supportCopyLabel}
+          </button>
         </div>
         <div className="flex items-center gap-4">
           <a
