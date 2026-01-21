@@ -28,6 +28,7 @@ export function PhotoEnhancer({
   const shop = resolveShopifyShop();
   const host = resolveShopifyHost();
   const backendBaseUrl = process.env.REACT_APP_SHOPIFY_BACKEND_URL || "";
+  const publicUrl = process.env.PUBLIC_URL || "";
   const [selectedImage, setSelectedImage] = useState(null);
   const [preview, setPreview] = useState("");
   const [enhancedImage, setEnhancedImage] = useState("");
@@ -446,11 +447,15 @@ export function PhotoEnhancer({
     });
   }, [app]);
 
-  const handleOpenShopifyPicker = useCallback(async () => {
+  const handleOpenShopifyPicker = useCallback(async (forceSelect = false) => {
     setSourceError("");
     setSourceLoading(true);
     try {
-      let product = selectedProduct;
+      if (forceSelect) {
+        setSelectedProduct(null);
+        setSourceImages([]);
+      }
+      let product = forceSelect ? null : selectedProduct;
       if (!product) {
         product = await promptProductSelection();
         if (!product) {
@@ -680,7 +685,7 @@ export function PhotoEnhancer({
       const [beforeImg, afterImg, logoImg] = await Promise.all([
         loadImageElement(beforeSrc),
         loadImageElement(afterSrc),
-        loadImageElement("/nudioheader.jpg"),
+        loadImageElement(`${publicUrl}/nudioheader.jpg`),
       ]);
 
       const logoScale = canvas.width / logoImg.width;
@@ -744,7 +749,7 @@ export function PhotoEnhancer({
       const [beforeImg, afterImg, logoImg] = await Promise.all([
         loadImageElement(beforeSrc),
         loadImageElement(afterSrc),
-        loadImageElement("/nudioheader.jpg"),
+        loadImageElement(`${publicUrl}/nudioheader.jpg`),
       ]);
 
       const stream = canvas.captureStream(30);
@@ -909,7 +914,7 @@ export function PhotoEnhancer({
       };
 
       logo.onerror = () => resolve(imageBase64);
-      logo.src = "/nudiologo.png";
+      logo.src = `${publicUrl}/nudiologo.png`;
     });
 
   const enhanceWithGemini = async (base64Image, selectedVariant) => {
@@ -1479,11 +1484,20 @@ export function PhotoEnhancer({
                   </button>
                   <button
                     type="button"
-                    onClick={handleOpenShopifyPicker}
+                    onClick={() => handleOpenShopifyPicker(false)}
                     className="w-full rounded-full border border-white/15 px-3 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white/80 transition hover:bg-white/10"
                   >
                     Choose from Shopify
                   </button>
+                  {selectedProduct && (
+                    <button
+                      type="button"
+                      onClick={() => handleOpenShopifyPicker(true)}
+                      className="w-full rounded-full border border-white/15 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-white/60 transition hover:text-white hover:bg-white/10"
+                    >
+                      Change product
+                    </button>
+                  )}
                 </div>
                 {sourceLoading && (
                   <p className="mt-3 text-[10px] uppercase tracking-[0.3em] text-white/60">
