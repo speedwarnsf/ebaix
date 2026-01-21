@@ -84,6 +84,7 @@ export function PhotoEnhancer({
   const sourceMenuRef = useRef(null);
   const lensWrapperRef = useRef(null);
   const installRedirectedRef = useRef(false);
+  const awaitingFilePickRef = useRef(false);
   const watermarkDisabled = true;
   const supportEmail = "support@nudio.ai";
   const [supportCopyLabel, setSupportCopyLabel] = useState("Copy email");
@@ -169,6 +170,19 @@ export function PhotoEnhancer({
     if (typeof window === "undefined") return;
     window.localStorage.setItem(CUSTOM_BACKDROP_KEY, customBackdrop);
   }, [customBackdrop]);
+
+  useEffect(() => {
+    const handleFocus = () => {
+      if (!awaitingFilePickRef.current) return;
+      awaitingFilePickRef.current = false;
+      const hasFile = !!fileInputRef.current?.files?.length;
+      if (!hasFile) {
+        setSourcePickerOpen(true);
+      }
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, []);
 
   const handleCopySupportEmail = useCallback(async () => {
     try {
@@ -397,6 +411,10 @@ export function PhotoEnhancer({
     setSourcePickerOpen(false);
     setSourceImages([]);
     setSourceError("");
+    awaitingFilePickRef.current = true;
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
     fileInputRef.current?.click();
   };
 
