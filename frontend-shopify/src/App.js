@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import "./App.css";
 import { Toaster } from "sonner";
 import { PhotoEnhancer } from "./components/ui/PhotoEnhancer";
@@ -11,6 +11,16 @@ function App() {
   const shopifyApiKey = process.env.REACT_APP_SHOPIFY_API_KEY;
   const shopifyHost = resolveShopifyHost();
   const inIframe = typeof window !== "undefined" && window.self !== window.top;
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const src = "https://cdn.shopify.com/shopifycloud/app-bridge.js";
+    const existing = document.querySelector(`script[src="${src}"]`);
+    if (existing) return;
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    document.head.appendChild(script);
+  }, []);
   const appBridgeConfig =
     shopifyApiKey && shopifyHost
       ? { apiKey: shopifyApiKey, host: shopifyHost, forceRedirect: !inIframe }
