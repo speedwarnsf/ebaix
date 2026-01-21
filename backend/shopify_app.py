@@ -80,6 +80,7 @@ async def require_shopify_session_token(request: Request, call_next):
         "/shopify/oauth/callback",
         "/shopify/app",
         "/shopify/health",
+        "/shopify/webhooks/compliance",
         "/shopify/webhooks/app/uninstalled",
         "/shopify/webhooks/customers/data_request",
         "/shopify/webhooks/customers/redact",
