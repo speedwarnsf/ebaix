@@ -136,7 +136,7 @@ async def add_shopify_csp(request: Request, call_next):
     if _is_valid_shop_domain(shop):
         frame_ancestors = f"https://{shop} https://admin.shopify.com"
     else:
-        frame_ancestors = "'none'"
+        frame_ancestors = "https://admin.shopify.com https://*.myshopify.com"
     response.headers["Content-Security-Policy"] = f"frame-ancestors {frame_ancestors};"
     return response
 
