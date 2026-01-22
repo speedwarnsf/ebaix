@@ -511,7 +511,9 @@ def _render_shopify_index() -> Response:
     if script_src not in html and "</head>" in html:
         script_tag = f'<script src="{script_src}"></script>'
         html = html.replace("</head>", f"{script_tag}</head>", 1)
-    return Response(content=html, media_type="text/html")
+    response = Response(content=html, media_type="text/html")
+    response.headers["Cache-Control"] = "no-store, max-age=0"
+    return response
 
 def _resolve_build_asset(path_fragment: str) -> Path | None:
     if not path_fragment:
