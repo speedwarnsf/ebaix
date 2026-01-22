@@ -2,8 +2,34 @@ import React, { useEffect } from "react";
 import "./App.css";
 import { Toaster } from "sonner";
 import { PhotoEnhancer } from "./components/ui/PhotoEnhancer";
-import { Provider as AppBridgeProvider } from "@shopify/app-bridge-react";
+import { Provider as AppBridgeProvider, useAppBridge } from "@shopify/app-bridge-react";
+import { Toast } from "@shopify/app-bridge/actions";
 import { resolveShopifyHost } from "./lib/shopifyAppBridge";
+
+function AppBridgePing() {
+  const app = useAppBridge();
+  useEffect(() => {
+    if (!app || typeof window === "undefined") return;
+    const key = "nudio_appbridge_ping_v1";
+    if (window.sessionStorage.getItem(key)) return;
+    window.sessionStorage.setItem(key, "1");
+    try {
+      const toast = Toast.create(app, { message: "Nudio ready", duration: 1 });
+      toast.dispatch(Toast.Action.SHOW);
+      setTimeout(() => {
+        try {
+          toast.dispatch(Toast.Action.CLEAR);
+        } catch {
+          // Ignore toast cleanup errors.
+        }
+      }, 1500);
+    } catch {
+      // Ignore App Bridge errors; this is a non-blocking ping.
+    }
+  }, [app]);
+
+  return null;
+}
 
 function App() {
   const anonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
@@ -43,6 +69,7 @@ function App() {
 
   const content = (
     <div className="min-h-screen bg-[#050305] text-white">
+      <AppBridgePing />
       <header className="relative z-20" style={{ backgroundColor: "#050305" }}>
         <div className="w-full flex justify-center pb-4" style={{ paddingTop: "122px" }}>
           <div
