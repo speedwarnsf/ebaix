@@ -502,6 +502,17 @@ class ShopifyOptimizeRequest(BaseModel):
 def _frontend_index_path() -> Path:
     return Path(SHOPIFY_FRONTEND_BUILD_DIR) / "index.html"
 
+def _render_shopify_index() -> Response:
+    index_path = _frontend_index_path()
+    if not index_path.exists():
+        raise HTTPException(status_code=500, detail="Shopify frontend build missing.")
+    html = index_path.read_text(encoding="utf-8")
+    script_src = "https://cdn.shopify.com/shopifycloud/app-bridge.js"
+    if script_src not in html and "</head>" in html:
+        script_tag = f'<script src="{script_src}"></script>'
+        html = html.replace("</head>", f"{script_tag}</head>", 1)
+    return Response(content=html, media_type="text/html")
+
 def _resolve_build_asset(path_fragment: str) -> Path | None:
     if not path_fragment:
         return None
@@ -516,10 +527,7 @@ def _resolve_build_asset(path_fragment: str) -> Path | None:
 
 @app.get("/shopify/app")
 async def shopify_app_root():
-    index_path = _frontend_index_path()
-    if not index_path.exists():
-        raise HTTPException(status_code=500, detail="Shopify frontend build missing.")
-    return FileResponse(index_path)
+    return _render_shopify_index()
 
 
 @app.get("/shopify/app/{full_path:path}")
@@ -530,7 +538,7 @@ async def shopify_app_catchall(full_path: str):
     asset_path = _resolve_build_asset(full_path)
     if asset_path and asset_path.is_file():
         return FileResponse(asset_path)
-    return FileResponse(index_path)
+    return _render_shopify_index()
 
 
 @app.get("/shopify/install")
