@@ -53,6 +53,11 @@ function App() {
     script.async = true;
     document.head.appendChild(script);
   }, []);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.AppBridge = window.AppBridge || {};
+    window.ShopifyAppBridge = window.ShopifyAppBridge || {};
+  }, []);
   const appBridgeConfig =
     shopifyApiKey && shopifyHost
       ? { apiKey: shopifyApiKey, host: shopifyHost, forceRedirect: !inIframe }
