@@ -508,9 +508,15 @@ def _render_shopify_index() -> Response:
         raise HTTPException(status_code=500, detail="Shopify frontend build missing.")
     html = index_path.read_text(encoding="utf-8")
     script_src = "https://cdn.shopify.com/shopifycloud/app-bridge.js"
+    globals_script = (
+        '<script>window.AppBridge=window.AppBridge||{};'
+        'window.ShopifyAppBridge=window.ShopifyAppBridge||{};</script>'
+    )
     if script_src not in html and "</head>" in html:
         script_tag = f'<script src="{script_src}"></script>'
-        html = html.replace("</head>", f"{script_tag}</head>", 1)
+        html = html.replace("</head>", f"{script_tag}{globals_script}</head>", 1)
+    elif "</head>" in html and "window.AppBridge" not in html:
+        html = html.replace("</head>", f"{globals_script}</head>", 1)
     response = Response(content=html, media_type="text/html")
     response.headers["Cache-Control"] = "no-store, max-age=0"
     return response
