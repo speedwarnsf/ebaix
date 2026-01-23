@@ -508,15 +508,37 @@ def _render_shopify_index() -> Response:
         raise HTTPException(status_code=500, detail="Shopify frontend build missing.")
     html = index_path.read_text(encoding="utf-8")
     script_src = "https://cdn.shopify.com/shopifycloud/app-bridge.js"
-    globals_script = (
-        '<script>window.AppBridge=window.AppBridge||{};'
-        'window.ShopifyAppBridge=window.ShopifyAppBridge||{};</script>'
+    app_bridge_init = (
+        "<script>(function(){"
+        "window.AppBridge=window.AppBridge||{};"
+        "window.ShopifyAppBridge=window.ShopifyAppBridge||{};"
+        "var p=new URLSearchParams(window.location.search);"
+        "var host=p.get('host');"
+        "var apiKey="
+        + repr(SHOPIFY_API_KEY or "")
+        + ";"
+        "if(!host||!apiKey){return;}"
+        "function init(){"
+        "var bridge=window['app-bridge'];"
+        "if(!bridge||!bridge.createApp){return;}"
+        "try{var app=bridge.createApp({apiKey:apiKey,host:host,forceRedirect:true});"
+        "window.AppBridge=window.AppBridge||app;"
+        "window.ShopifyAppBridge=window.ShopifyAppBridge||{};"
+        "if(!window.ShopifyAppBridge.app){window.ShopifyAppBridge.app=app;}"
+        "}catch(e){}}"
+        "if(window['app-bridge']){init();return;}"
+        "var tries=0;"
+        "var timer=setInterval(function(){"
+        "if(window['app-bridge']){clearInterval(timer);init();}"
+        "else if(++tries>50){clearInterval(timer);}"
+        "},100);"
+        "})();</script>"
     )
     if script_src not in html and "</head>" in html:
         script_tag = f'<script src="{script_src}"></script>'
-        html = html.replace("</head>", f"{script_tag}{globals_script}</head>", 1)
+        html = html.replace("</head>", f"{script_tag}{app_bridge_init}</head>", 1)
     elif "</head>" in html and "window.AppBridge" not in html:
-        html = html.replace("</head>", f"{globals_script}</head>", 1)
+        html = html.replace("</head>", f"{app_bridge_init}</head>", 1)
     response = Response(content=html, media_type="text/html")
     response.headers["Cache-Control"] = "no-store, max-age=0"
     return response
