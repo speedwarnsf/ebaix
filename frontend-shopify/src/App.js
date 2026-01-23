@@ -13,6 +13,12 @@ function AppBridgePing() {
     const key = "nudio_appbridge_ping_v1";
     if (window.sessionStorage.getItem(key)) return;
     window.sessionStorage.setItem(key, "1");
+    // Expose a stable global handle for Shopify's embedded check.
+    window.AppBridge = window.AppBridge || app;
+    window.ShopifyAppBridge = window.ShopifyAppBridge || {};
+    if (!window.ShopifyAppBridge.app) {
+      window.ShopifyAppBridge.app = app;
+    }
     try {
       const toast = Toast.create(app, { message: "Nudio ready", duration: 1 });
       toast.dispatch(Toast.Action.SHOW);
