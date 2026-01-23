@@ -1,9 +1,10 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import "./App.css";
 import { Toaster } from "sonner";
 import { PhotoEnhancer } from "./components/ui/PhotoEnhancer";
 import { Provider as AppBridgeProvider, useAppBridge } from "@shopify/app-bridge-react";
 import { Toast } from "@shopify/app-bridge/actions";
+import { createApp } from "@shopify/app-bridge";
 import { resolveShopifyHost } from "./lib/shopifyAppBridge";
 
 function AppBridgePing() {
@@ -53,10 +54,22 @@ function App() {
     script.async = true;
     document.head.appendChild(script);
   }, []);
-  const appBridgeConfig =
-    shopifyApiKey && shopifyHost
-      ? { apiKey: shopifyApiKey, host: shopifyHost, forceRedirect: !inIframe }
-      : null;
+  const appBridgeConfig = useMemo(() => {
+    if (!shopifyApiKey || !shopifyHost) return null;
+    return { apiKey: shopifyApiKey, host: shopifyHost, forceRedirect: !inIframe };
+  }, [shopifyApiKey, shopifyHost, inIframe]);
+  const appBridgeApp = useMemo(() => {
+    if (!appBridgeConfig) return null;
+    return createApp(appBridgeConfig);
+  }, [appBridgeConfig]);
+  useEffect(() => {
+    if (!appBridgeApp || typeof window === "undefined") return;
+    window.AppBridge = window.AppBridge || appBridgeApp;
+    window.ShopifyAppBridge = window.ShopifyAppBridge || {};
+    if (!window.ShopifyAppBridge.app) {
+      window.ShopifyAppBridge.app = appBridgeApp;
+    }
+  }, [appBridgeApp]);
 
   if (!appBridgeConfig) {
     return (
@@ -108,7 +121,7 @@ function App() {
     </div>
   );
 
-  return <AppBridgeProvider config={appBridgeConfig}>{content}</AppBridgeProvider>;
+  return <AppBridgeProvider app={appBridgeApp}>{content}</AppBridgeProvider>;
 }
 
 export default App;
