@@ -559,6 +559,10 @@ def _resolve_build_asset(path_fragment: str) -> Path | None:
 async def shopify_app_root():
     return _render_shopify_index()
 
+@app.get("/")
+async def shopify_root():
+    return _render_shopify_index()
+
 
 @app.get("/shopify/app/{full_path:path}")
 async def shopify_app_catchall(full_path: str):
