@@ -9,7 +9,7 @@ import { guestGate } from '../_shared/guest_gate.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-guest-id',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-guest-id, x-nudio-shopify-mode',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
@@ -19,7 +19,9 @@ Deno.serve(async (req) => {
   }
 
   let guestRemaining: number | undefined;
-  const shopifyMode = Deno.env.get('NUDIO_SHOPIFY_MODE') === 'true'
+  const shopifyModeEnabled = Deno.env.get('NUDIO_SHOPIFY_MODE') === 'true'
+  const shopifyMode =
+    shopifyModeEnabled && req.headers.get('x-nudio-shopify-mode') === 'true'
 
   try {
     if (!shopifyMode) {

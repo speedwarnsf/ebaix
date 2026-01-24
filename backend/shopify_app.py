@@ -918,6 +918,7 @@ async def shopify_optimize_listing(request: Request, payload: ShopifyOptimizeReq
         "Content-Type": "application/json",
         "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
         "apikey": SUPABASE_SERVICE_KEY,
+        "x-nudio-shopify-mode": "true",
     }
     body = payload.dict(exclude_none=True)
     if not body.get("userEmail"):
