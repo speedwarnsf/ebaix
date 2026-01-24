@@ -510,6 +510,7 @@ def _render_shopify_index() -> Response:
         raise HTTPException(status_code=500, detail="Shopify frontend build missing.")
     html = index_path.read_text(encoding="utf-8")
     script_src = "https://cdn.shopify.com/shopifycloud/app-bridge.js"
+    meta_tag = f'<meta name="shopify-api-key" content="{SHOPIFY_API_KEY or ""}">'
     app_bridge_init = (
         "<script>(function(){"
         "window.AppBridge=window.AppBridge||{};"
@@ -545,9 +546,16 @@ def _render_shopify_index() -> Response:
     )
     if script_src not in html and "</head>" in html:
         script_tag = f'<script src="{script_src}"></script>'
-        html = html.replace("</head>", f"{script_tag}{app_bridge_init}</head>", 1)
-    elif "</head>" in html and "window.AppBridge" not in html:
-        html = html.replace("</head>", f"{app_bridge_init}</head>", 1)
+        html = html.replace("</head>", f"{meta_tag}{script_tag}{app_bridge_init}</head>", 1)
+    else:
+        if meta_tag not in html and script_src in html:
+            html = html.replace(
+                f'<script src="{script_src}"></script>',
+                f"{meta_tag}<script src=\"{script_src}\"></script>",
+                1,
+            )
+        if "</head>" in html and "window.AppBridge" not in html:
+            html = html.replace("</head>", f"{app_bridge_init}</head>", 1)
     response = Response(content=html, media_type="text/html")
     response.headers["Cache-Control"] = "no-store, max-age=0"
     return response
