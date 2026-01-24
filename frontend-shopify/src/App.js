@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 import { PhotoEnhancer } from "./components/ui/PhotoEnhancer";
 import { Provider as AppBridgeProvider, useAppBridge } from "@shopify/app-bridge-react";
 import { Toast } from "@shopify/app-bridge/actions";
+import { createApp } from "@shopify/app-bridge";
 import { resolveShopifyHost } from "./lib/shopifyAppBridge";
 
 function AppBridgePing() {
@@ -58,6 +59,18 @@ function App() {
     window.AppBridge = window.AppBridge || {};
     window.ShopifyAppBridge = window.ShopifyAppBridge || {};
   }, []);
+  useEffect(() => {
+    if (!appBridgeConfig || typeof window === "undefined") return;
+    if (window.ShopifyAppBridge && window.ShopifyAppBridge.app) return;
+    try {
+      const app = createApp(appBridgeConfig);
+      window.AppBridge = window.AppBridge || app;
+      window.ShopifyAppBridge = window.ShopifyAppBridge || {};
+      window.ShopifyAppBridge.app = app;
+    } catch {
+      // Non-blocking; App Bridge still initializes via provider.
+    }
+  }, [appBridgeConfig]);
   const appBridgeConfig =
     shopifyApiKey && shopifyHost
       ? { apiKey: shopifyApiKey, host: shopifyHost, forceRedirect: !inIframe }
