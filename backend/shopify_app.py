@@ -564,11 +564,15 @@ def _resolve_build_asset(path_fragment: str) -> Path | None:
 
 
 @app.api_route("/shopify/app", methods=["GET", "HEAD"])
-async def shopify_app_root():
+async def shopify_app_root(request: Request):
+    if request.method == "HEAD":
+        return Response(status_code=200)
     return _render_shopify_index()
 
 @app.api_route("/", methods=["GET", "HEAD"])
-async def shopify_root():
+async def shopify_root(request: Request):
+    if request.method == "HEAD":
+        return Response(status_code=200)
     return _render_shopify_index()
 
 
