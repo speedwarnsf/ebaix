@@ -90,7 +90,7 @@ async def require_shopify_session_token(request: Request, call_next):
         "/shopify/webhooks/customers_data_request",
         "/shopify/webhooks/shop_redact",
     )
-    if path.startswith("/shopify/app/") or path in public_paths:
+    if path.startswith("/shopify/app") or path in public_paths:
         return await call_next(request)
     if not path.startswith("/shopify/"):
         return await call_next(request)
@@ -563,21 +563,13 @@ def _resolve_build_asset(path_fragment: str) -> Path | None:
     return candidate
 
 
-@app.get("/shopify/app")
+@app.api_route("/shopify/app", methods=["GET", "HEAD"])
 async def shopify_app_root():
     return _render_shopify_index()
 
-@app.head("/shopify/app")
-async def shopify_app_root_head():
-    return Response(status_code=200)
-
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 async def shopify_root():
     return _render_shopify_index()
-
-@app.head("/")
-async def shopify_root_head():
-    return Response(status_code=200)
 
 
 @app.get("/shopify/app/{full_path:path}")
