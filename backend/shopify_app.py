@@ -138,7 +138,8 @@ async def add_shopify_csp(request: Request, call_next):
     else:
         frame_ancestors = "https://admin.shopify.com https://*.myshopify.com"
     response.headers["Content-Security-Policy"] = f"frame-ancestors {frame_ancestors};"
-    response.headers.pop("X-Frame-Options", None)
+    if "X-Frame-Options" in response.headers:
+        del response.headers["X-Frame-Options"]
     return response
 
 
