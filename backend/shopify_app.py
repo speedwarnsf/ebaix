@@ -138,6 +138,7 @@ async def add_shopify_csp(request: Request, call_next):
     else:
         frame_ancestors = "https://admin.shopify.com https://*.myshopify.com"
     response.headers["Content-Security-Policy"] = f"frame-ancestors {frame_ancestors};"
+    response.headers.pop("X-Frame-Options", None)
     return response
 
 
@@ -514,6 +515,13 @@ def _render_shopify_index() -> Response:
         "window.ShopifyAppBridge=window.ShopifyAppBridge||{};"
         "var p=new URLSearchParams(window.location.search);"
         "var host=p.get('host');"
+        "if(!host){"
+        "var shop=p.get('shop');"
+        "if(shop){"
+        "var store=shop.replace(/\\.myshopify\\.com$/,'');"
+        "if(store){try{host=btoa('admin.shopify.com/store/'+store);}catch(e){}}"
+        "}"
+        "}"
         "var apiKey="
         + repr(SHOPIFY_API_KEY or "")
         + ";"
