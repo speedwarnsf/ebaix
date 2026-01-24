@@ -59,6 +59,10 @@ function App() {
     window.AppBridge = window.AppBridge || {};
     window.ShopifyAppBridge = window.ShopifyAppBridge || {};
   }, []);
+  const appBridgeConfig =
+    shopifyApiKey && shopifyHost
+      ? { apiKey: shopifyApiKey, host: shopifyHost, forceRedirect: !inIframe }
+      : null;
   useEffect(() => {
     if (!appBridgeConfig || typeof window === "undefined") return;
     if (window.ShopifyAppBridge && window.ShopifyAppBridge.app) return;
@@ -71,10 +75,6 @@ function App() {
       // Non-blocking; App Bridge still initializes via provider.
     }
   }, [appBridgeConfig]);
-  const appBridgeConfig =
-    shopifyApiKey && shopifyHost
-      ? { apiKey: shopifyApiKey, host: shopifyHost, forceRedirect: !inIframe }
-      : null;
 
   if (!appBridgeConfig) {
     return (
