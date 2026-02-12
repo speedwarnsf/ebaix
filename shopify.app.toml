@@ -1,22 +1,25 @@
-name = "Nudio (Product Studio)"
-handle = "nudio-product-studio"
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
 client_id = "961772163d178943fdf64612cc0f6a5d"
+name = "Nudio (Product Studio)"
 application_url = "https://app.nudio.ai/shopify/app"
 embedded = true
-
-[auth]
-redirect_urls = ["https://app.nudio.ai/shopify/oauth/callback"]
-
-[access_scopes]
-scopes = "read_products,write_products"
+handle = "nudio"
 
 [webhooks]
 api_version = "2026-01"
 
-[[webhooks.subscriptions]]
-compliance_topics = ["customers/data_request", "customers/redact", "shop/redact"]
-uri = "https://app.nudio.ai/shopify/webhooks/compliance"
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "https://app.nudio.ai/shopify/webhooks/app/uninstalled"
 
-[[webhooks.subscriptions]]
-topics = ["app/uninstalled"]
-uri = "https://app.nudio.ai/shopify/webhooks/app/uninstalled"
+  [[webhooks.subscriptions]]
+  uri = "https://app.nudio.ai/shopify/webhooks/compliance"
+  compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_products,write_products"
+
+[auth]
+redirect_urls = [ "https://app.nudio.ai/shopify/oauth/callback" ]

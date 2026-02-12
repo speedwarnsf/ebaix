@@ -32,18 +32,23 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 
 SHOPIFY_API_KEY = os.environ.get("SHOPIFY_API_KEY")
 SHOPIFY_API_SECRET = os.environ.get("SHOPIFY_API_SECRET")
-SHOPIFY_SCOPES = os.environ.get("SHOPIFY_SCOPES", "read_products,write_products,write_webhooks")
+SHOPIFY_SCOPES = os.environ.get("SHOPIFY_SCOPES", "read_products,write_products")
 SHOPIFY_APP_URL = os.environ.get("SHOPIFY_APP_URL", "https://app.nudio.ai/shopify/app")
-SHOPIFY_APP_HANDLE = os.environ.get("SHOPIFY_APP_HANDLE", "nudio-product-studio").strip()
+# App Store listing slug + admin app handle (apps.shopify.com/<handle> and admin.shopify.com/.../apps/<handle>).
+SHOPIFY_APP_HANDLE = os.environ.get("SHOPIFY_APP_HANDLE", "nudio").strip()
 SHOPIFY_OAUTH_CALLBACK = os.environ.get(
     "SHOPIFY_OAUTH_CALLBACK", "https://app.nudio.ai/shopify/oauth/callback"
 )
+SHOPIFY_ADMIN_API_VERSION = os.environ.get("SHOPIFY_ADMIN_API_VERSION", "2024-10")
 SHOPIFY_TEST_BILLING = os.environ.get("SHOPIFY_TEST_BILLING", "false").lower() in ("1", "true", "yes")
 SHOPIFY_SHOPS_TABLE = os.environ.get("SHOPIFY_SHOPS_TABLE", "shopify_shops")
 SHOPIFY_FRONTEND_BUILD_DIR = os.environ.get(
     "SHOPIFY_FRONTEND_BUILD_DIR",
     str(Path(__file__).resolve().parents[1] / "frontend-shopify" / "build"),
 )
+SHOPIFY_SUBSCRIPTION_NAME = "Nudio (Product Studio)"
+SHOPIFY_USAGE_DESCRIPTION = "Nudio image processing"
+SHOPIFY_USAGE_PRICE_USD = 0.08
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
@@ -194,6 +199,28 @@ def _verify_webhook_hmac(raw_body: bytes, hmac_header: str) -> bool:
     computed = base64.b64encode(digest).decode("utf-8")
     return hmac.compare_digest(computed, hmac_header)
 
+ACTIVE_SUBSCRIPTIONS_QUERY = """
+  query ActiveSubscriptions {
+    currentAppInstallation {
+      activeSubscriptions {
+        id
+        name
+        status
+        lineItems {
+          id
+          plan {
+            pricingDetails {
+              __typename
+              ... on AppUsagePricing {
+                terms
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+"""
 
 RATE_LIMIT_WINDOW_SECONDS = 60
 RATE_LIMIT_MAX_REQUESTS = 45
@@ -290,14 +317,26 @@ def _shopify_install_url(shop: str, host: str | None = None) -> str:
     return f"{origin}/shopify/install?{urlencode(query)}"
 
 
+def _is_valid_public_host(host: str) -> bool:
+    # Accept localhost for local dev and standard dotted domains in production.
+    if not host:
+        return False
+    if not re.fullmatch(r"[a-zA-Z0-9.-]+(?::\d+)?", host):
+        return False
+    hostname = host.split(":", 1)[0].strip(".")
+    return hostname == "localhost" or "." in hostname
+
+
 def _shopify_app_origin() -> str:
     if not SHOPIFY_APP_URL:
         return ""
     parsed = urlparse(SHOPIFY_APP_URL)
     if parsed.scheme and parsed.netloc:
         return f"{parsed.scheme}://{parsed.netloc}"
-    if re.match(r"^[a-zA-Z0-9.-]+(/|$)", SHOPIFY_APP_URL):
-        return f"https://{SHOPIFY_APP_URL.split('/')[0]}"
+    if re.match(r"^[a-zA-Z0-9.:-]+(/|$)", SHOPIFY_APP_URL):
+        host = SHOPIFY_APP_URL.split("/")[0]
+        if _is_valid_public_host(host):
+            return f"https://{host}"
     return ""
 
 
@@ -306,8 +345,10 @@ def _shopify_app_url(request: Request | None = None) -> str:
         parsed = urlparse(SHOPIFY_APP_URL)
         if parsed.scheme and parsed.netloc:
             return SHOPIFY_APP_URL
-        if re.match(r"^[a-zA-Z0-9.-]+(/|$)", SHOPIFY_APP_URL):
-            return f"https://{SHOPIFY_APP_URL}"
+        if re.match(r"^[a-zA-Z0-9.:-]+(/|$)", SHOPIFY_APP_URL):
+            host = SHOPIFY_APP_URL.split("/", 1)[0]
+            if _is_valid_public_host(host):
+                return f"https://{SHOPIFY_APP_URL}"
         if request:
             base = f"{request.url.scheme}://{request.url.netloc}"
             if SHOPIFY_APP_URL.startswith("/"):
@@ -328,6 +369,54 @@ def _shopify_admin_app_url(shop: str) -> str:
         return ""
     app_handle = SHOPIFY_APP_HANDLE
     return f"https://admin.shopify.com/store/{slug}/apps/{app_handle}"
+
+
+async def _shopify_active_subscriptions(shop: str, access_token: str) -> list[dict]:
+    data = await _shopify_graphql(shop, access_token, ACTIVE_SUBSCRIPTIONS_QUERY)
+    return data.get("data", {}).get("currentAppInstallation", {}).get("activeSubscriptions", [])
+
+
+def _extract_usage_line_item_id(subscriptions: list[dict]) -> str | None:
+    for subscription in subscriptions:
+        if subscription.get("name") != SHOPIFY_SUBSCRIPTION_NAME:
+            continue
+        for line_item in subscription.get("lineItems", []):
+            pricing = line_item.get("plan", {}).get("pricingDetails", {})
+            if pricing.get("__typename") == "AppUsagePricing":
+                return line_item.get("id")
+    return None
+
+
+async def _create_usage_record(
+    shop: str,
+    access_token: str,
+    usage_line_item_id: str,
+    description: str = SHOPIFY_USAGE_DESCRIPTION,
+    amount: float = SHOPIFY_USAGE_PRICE_USD,
+) -> str | None:
+    mutation = """
+      mutation CreateUsageRecord($id: ID!, $description: String!, $amount: MoneyInput!) {
+        appUsageRecordCreate(description: $description, price: $amount, subscriptionLineItemId: $id) {
+          appUsageRecord {
+            id
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    """
+    variables = {
+        "id": usage_line_item_id,
+        "description": description,
+        "amount": {"amount": amount, "currencyCode": "USD"},
+    }
+    created = await _shopify_graphql(shop, access_token, mutation, variables)
+    payload = created.get("data", {}).get("appUsageRecordCreate", {})
+    if payload.get("userErrors"):
+        raise HTTPException(status_code=400, detail=payload["userErrors"])
+    return payload.get("appUsageRecord", {}).get("id")
 
 
 def _make_oauth_state(shop: str) -> str:
@@ -352,7 +441,7 @@ def _verify_oauth_state(state: str, shop: str) -> bool:
 
 
 async def _shopify_graphql(shop: str, access_token: str, query: str, variables: dict | None = None) -> dict:
-    url = f"https://{shop}/admin/api/2024-10/graphql.json"
+    url = f"https://{shop}/admin/api/{SHOPIFY_ADMIN_API_VERSION}/graphql.json"
     payload = {"query": query, "variables": variables or {}}
     headers = {
         "X-Shopify-Access-Token": access_token,
@@ -365,7 +454,7 @@ async def _shopify_graphql(shop: str, access_token: str, query: str, variables: 
 
 
 async def _shopify_rest(shop: str, access_token: str, method: str, path: str, payload: dict) -> dict:
-    url = f"https://{shop}/admin/api/2024-10/{path.lstrip('/')}"
+    url = f"https://{shop}/admin/api/{SHOPIFY_ADMIN_API_VERSION}/{path.lstrip('/')}"
     headers = {
         "X-Shopify-Access-Token": access_token,
         "Content-Type": "application/json",
@@ -406,6 +495,18 @@ def _extract_base64(data_url: str) -> str:
     if "," in data_url:
         return data_url.split(",", 1)[1]
     return data_url
+
+
+def _is_allowed_shopify_image_url(src: str) -> bool:
+    if not src:
+        return False
+    parsed = urlparse(src)
+    if parsed.scheme.lower() != "https":
+        return False
+    host = (parsed.hostname or "").lower()
+    if not host:
+        return False
+    return host == "cdn.shopify.com" or host.endswith(".cdn.shopify.com") or host.endswith(".myshopify.com")
 
 
 def _shop_from_issuer(issuer: str) -> str | None:
@@ -483,8 +584,8 @@ def _verify_session_token(token: str) -> dict:
 
 
 class UsageChargeRequest(BaseModel):
-    description: str = "Nudio image processing"
-    price: float = 0.08
+    description: str = SHOPIFY_USAGE_DESCRIPTION
+    price: float = SHOPIFY_USAGE_PRICE_USD
 
 
 class ImageUploadRequest(BaseModel):
@@ -644,7 +745,8 @@ async def shopify_oauth_callback(request: Request, shop: str, code: str, state: 
     else:
         state_ok = _verify_oauth_state(state, shop)
     if not state_ok:
-        logging.warning("oauth_state_invalid shop=%s proceeding_with_hmac", shop)
+        logging.warning("oauth_state_invalid shop=%s", shop)
+        raise HTTPException(status_code=400, detail="Invalid OAuth state.")
 
     token_payload = await _exchange_token(shop, code)
     access_token = token_payload.get("access_token")
@@ -674,30 +776,7 @@ async def shopify_billing_active(request: Request, shop: str | None = None):
         raise HTTPException(status_code=401, detail="Missing shop context.")
     record = _get_shop_record(auth_shop, request.query_params.get("host"))
     access_token = record["access_token"]
-    query = """
-      query ActiveSubscriptions {
-        currentAppInstallation {
-          activeSubscriptions {
-            id
-            name
-            status
-            lineItems {
-              id
-              plan {
-                pricingDetails {
-                  __typename
-                  ... on AppUsagePricing {
-                    terms
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    """
-    data = await _shopify_graphql(auth_shop, access_token, query)
-    subscriptions = data.get("data", {}).get("currentAppInstallation", {}).get("activeSubscriptions", [])
+    subscriptions = await _shopify_active_subscriptions(auth_shop, access_token)
     return {"subscriptions": subscriptions}
 
 
@@ -708,32 +787,9 @@ async def shopify_billing_ensure(request: Request, shop: str | None = None, host
         raise HTTPException(status_code=401, detail="Missing shop context.")
     record = _get_shop_record(auth_shop, host or request.query_params.get("host"))
     access_token = record["access_token"]
-    query = """
-      query ActiveSubscriptions {
-        currentAppInstallation {
-          activeSubscriptions {
-            id
-            name
-            status
-            lineItems {
-              id
-              plan {
-                pricingDetails {
-                  __typename
-                  ... on AppUsagePricing {
-                    terms
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    """
-    existing = await _shopify_graphql(auth_shop, access_token, query)
-    subscriptions = existing.get("data", {}).get("currentAppInstallation", {}).get("activeSubscriptions", [])
+    subscriptions = await _shopify_active_subscriptions(auth_shop, access_token)
     for subscription in subscriptions:
-        if subscription.get("name") == "Nudio (Product Studio)":
+        if subscription.get("name") == SHOPIFY_SUBSCRIPTION_NAME and _extract_usage_line_item_id([subscription]):
             return {"active": True, "subscription": subscription}
 
     mutation = """
@@ -777,7 +833,7 @@ async def shopify_billing_ensure(request: Request, shop: str | None = None, host
         return_url = f"{return_url}?shop={auth_shop}&host={host}"
 
     variables = {
-        "name": "Nudio (Product Studio)",
+        "name": SHOPIFY_SUBSCRIPTION_NAME,
         "returnUrl": return_url,
         "terms": "8 cents per image, billed through Shopify.",
         "test": SHOPIFY_TEST_BILLING,
@@ -797,70 +853,25 @@ async def shopify_billing_usage(request: Request, payload: UsageChargeRequest, s
     _check_rate_limit(auth_shop, "billing_usage")
     record = _get_shop_record(auth_shop, request.query_params.get("host"))
     access_token = record["access_token"]
-    description = payload.description
-    price = payload.price
-    if price <= 0:
+    if abs(payload.price - SHOPIFY_USAGE_PRICE_USD) > 1e-6:
         raise HTTPException(status_code=400, detail="Invalid price.")
-    query = """
-      query ActiveSubscriptions {
-        currentAppInstallation {
-          activeSubscriptions {
-            id
-            name
-            status
-            lineItems {
-              id
-              plan {
-                pricingDetails {
-                  __typename
-                  ... on AppUsagePricing {
-                    terms
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    """
-    data = await _shopify_graphql(auth_shop, access_token, query)
-    subscriptions = data.get("data", {}).get("currentAppInstallation", {}).get("activeSubscriptions", [])
-    usage_line_item_id = None
-    for subscription in subscriptions:
-        if subscription.get("name") != "Nudio (Product Studio)":
-            continue
-        for line_item in subscription.get("lineItems", []):
-            pricing = line_item.get("plan", {}).get("pricingDetails", {})
-            if pricing.get("__typename") == "AppUsagePricing":
-                usage_line_item_id = line_item.get("id")
-                break
+    description = SHOPIFY_USAGE_DESCRIPTION
+    price = SHOPIFY_USAGE_PRICE_USD
+
+    subscriptions = await _shopify_active_subscriptions(auth_shop, access_token)
+    usage_line_item_id = _extract_usage_line_item_id(subscriptions)
     if not usage_line_item_id:
         raise HTTPException(status_code=400, detail="No active usage plan found.")
 
-    mutation = """
-      mutation CreateUsageRecord($id: ID!, $description: String!, $amount: MoneyInput!) {
-        appUsageRecordCreate(description: $description, price: $amount, subscriptionLineItemId: $id) {
-          appUsageRecord {
-            id
-          }
-          userErrors {
-            field
-            message
-          }
-        }
-      }
-    """
-    variables = {
-        "id": usage_line_item_id,
-        "description": description,
-        "amount": {"amount": price, "currencyCode": "USD"},
-    }
-    created = await _shopify_graphql(auth_shop, access_token, mutation, variables)
-    payload = created.get("data", {}).get("appUsageRecordCreate", {})
-    if payload.get("userErrors"):
-        raise HTTPException(status_code=400, detail=payload["userErrors"])
-    logging.info("billing_usage shop=%s usage_id=%s amount=%.2f", auth_shop, payload.get("appUsageRecord", {}).get("id"), price)
-    return {"ok": True, "usageRecordId": payload.get("appUsageRecord", {}).get("id")}
+    usage_record_id = await _create_usage_record(
+        auth_shop,
+        access_token,
+        usage_line_item_id,
+        description=description,
+        amount=price,
+    )
+    logging.info("billing_usage shop=%s usage_id=%s amount=%.2f", auth_shop, usage_record_id, price)
+    return {"ok": True, "usageRecordId": usage_record_id}
 
 
 @app.post("/shopify/products/{product_id}/images")
@@ -921,6 +932,12 @@ async def shopify_optimize_listing(request: Request, payload: ShopifyOptimizeReq
         raise HTTPException(status_code=401, detail="Missing shop context.")
     if not SUPABASE_FUNCTION_BASE or not SUPABASE_SERVICE_KEY:
         raise HTTPException(status_code=500, detail="Missing Supabase configuration.")
+    record = _get_shop_record(auth_shop, request.query_params.get("host"))
+    access_token = record["access_token"]
+    subscriptions = await _shopify_active_subscriptions(auth_shop, access_token)
+    usage_line_item_id = _extract_usage_line_item_id(subscriptions)
+    if not usage_line_item_id:
+        raise HTTPException(status_code=402, detail="Active billing subscription required.")
 
     headers = {
         "Content-Type": "application/json",
@@ -956,7 +973,18 @@ async def shopify_optimize_listing(request: Request, payload: ShopifyOptimizeReq
             detail,
         )
         raise HTTPException(status_code=response.status_code, detail=detail)
-    return response.json()
+    result = response.json()
+    usage_record_id = await _create_usage_record(
+        auth_shop,
+        access_token,
+        usage_line_item_id,
+        description=SHOPIFY_USAGE_DESCRIPTION,
+        amount=SHOPIFY_USAGE_PRICE_USD,
+    )
+    logging.info("optimize_listing_billed shop=%s usage_id=%s amount=%.2f", auth_shop, usage_record_id, SHOPIFY_USAGE_PRICE_USD)
+    if isinstance(result, dict):
+        result["usageRecordId"] = usage_record_id
+    return result
 
 
 @app.post("/shopify/convert-heic")
@@ -1031,8 +1059,7 @@ async def shopify_fetch_image(request: Request, src: str, shop: str | None = Non
     _get_shop_record(auth_shop, request.query_params.get("host"))
     if not src:
         raise HTTPException(status_code=400, detail="Missing image source.")
-    allowed_hosts = ("cdn.shopify.com", ".myshopify.com")
-    if not any(host in src for host in allowed_hosts):
+    if not _is_allowed_shopify_image_url(src):
         raise HTTPException(status_code=400, detail="Unsupported image source.")
 
     async with httpx.AsyncClient(timeout=30) as client:

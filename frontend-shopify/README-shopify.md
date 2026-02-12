@@ -39,9 +39,10 @@ Frontend (Shopify fork):
 Backend (`shopify_app.py`):
 - `SHOPIFY_API_KEY`
 - `SHOPIFY_API_SECRET`
-- `SHOPIFY_SCOPES` (recommend: `read_products,write_products,write_webhooks`)
+- `SHOPIFY_SCOPES` (recommend: `read_products,write_products`)
 - `SHOPIFY_APP_URL` (default: `https://app.nudio.ai/shopify/app`)
 - `SHOPIFY_OAUTH_CALLBACK` (default: `https://app.nudio.ai/shopify/oauth/callback`)
+- `SHOPIFY_ADMIN_API_VERSION` (default: `2024-10`; pin explicitly in production)
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_KEY`
 - `SHOPIFY_SHOPS_TABLE` (default: `shopify_shops`)
@@ -73,17 +74,17 @@ create table if not exists shopify_shops (
 
 The backend sets a dynamic CSP header per shop:
 - `Content-Security-Policy: frame-ancestors https://{shop}.myshopify.com https://admin.shopify.com;`
-If `shop` is missing/invalid, CSP is `frame-ancestors 'none';`.
+If `shop` is missing/invalid, CSP falls back to `frame-ancestors https://admin.shopify.com https://*.myshopify.com;`.
 
 ## Webhooks (for Shopify review)
 
 Register these webhook endpoints in your Shopify app settings:
-- `app/uninstalled` → `/shopify/webhooks/app_uninstalled`
-- `customers/data_request` → `/shopify/webhooks/customers_data_request`
-- `customers/redact` → `/shopify/webhooks/customers_redact`
-- `shop/redact` → `/shopify/webhooks/shop_redact`
+- `app/uninstalled` → `/shopify/webhooks/app/uninstalled`
+- `customers/data_request` → `/shopify/webhooks/compliance`
+- `customers/redact` → `/shopify/webhooks/compliance`
+- `shop/redact` → `/shopify/webhooks/compliance`
 
-These are also auto-registered on install; keep them listed in the Partner dashboard for clarity.
+Legacy underscore routes remain supported by the backend for compatibility.
 
 ## Health endpoint
 

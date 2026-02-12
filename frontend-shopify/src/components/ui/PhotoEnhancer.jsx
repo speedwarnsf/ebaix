@@ -15,9 +15,15 @@ const CUSTOM_BACKDROP_ID = "custom";
 const CUSTOM_BACKDROP_KEY = "nudio:customBackdrop";
 const FRAME_TOGGLE_KEY = "nudio:frameEnabled";
 const DEFAULT_CUSTOM_BACKDROP = "#ffffff";
-const PROCESS_PRICE = 0.08;
 const MAX_UPLOAD_BYTES = 6 * 1024 * 1024;
 const MAX_UPLOAD_DIMENSION = 2400;
+
+function makeHttpError(message, status, detail) {
+  const err = new Error(message);
+  err.status = status;
+  err.detail = detail;
+  return err;
+}
 
 export function PhotoEnhancer({
   userEmail,
@@ -39,7 +45,6 @@ export function PhotoEnhancer({
   const [billingError, setBillingError] = useState("");
   const [billingChecked, setBillingChecked] = useState(false);
   const [usageCharged, setUsageCharged] = useState(false);
-  const [usageChargeError, setUsageChargeError] = useState("");
   const [publishLoading, setPublishLoading] = useState(false);
   const [publishError, setPublishError] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -285,12 +290,15 @@ export function PhotoEnhancer({
           throw new Error("Shopify install required.");
         }
         let message = detail?.error || detail?.message || payload?.error;
+        if (!message && typeof detail === "string") {
+          message = detail;
+        }
         if (!message) {
           message = "Shopify request failed.";
         } else if (typeof message === "object") {
           message = JSON.stringify(message);
         }
-        throw new Error(message);
+        throw makeHttpError(message, response.status, detail);
       }
       if (installRequired) {
         setInstallRequired(false);
@@ -1125,7 +1133,6 @@ export function PhotoEnhancer({
 
       setSelectedImage(preparedFile);
       setUsageCharged(false);
-      setUsageChargeError("");
       setPublishError("");
       setProcessingFailed(false);
 
@@ -1225,26 +1232,6 @@ export function PhotoEnhancer({
     picker.dispatch(ResourcePicker.Action.OPEN);
   }, [app]);
 
-  const handleUsageCharge = useCallback(async () => {
-    if (usageCharged) return true;
-    setUsageChargeError("");
-    try {
-      await shopifyFetch("/shopify/billing/usage", {
-        method: "POST",
-        body: JSON.stringify({
-          description: "Nudio image processing",
-          price: PROCESS_PRICE,
-        }),
-      });
-      setUsageCharged(true);
-      setLastChargeAt(new Date());
-      return true;
-    } catch (err) {
-      setUsageChargeError(err?.message || "Usage charge failed.");
-      return false;
-    }
-  }, [shopifyFetch, usageCharged]);
-
   const handlePublishToShopify = useCallback(async () => {
     if (!selectedProduct?.id || !enhancedImage) return;
     setPublishError("");
@@ -1297,7 +1284,6 @@ export function PhotoEnhancer({
     setEnhancedImage("");
     const runVariant = "product";
     setUsageCharged(false);
-    setUsageChargeError("");
     setPublishError("");
     setProcessingFailed(false);
 
@@ -1311,16 +1297,22 @@ export function PhotoEnhancer({
           const finalImage = watermarkDisabled ? baseImage : await addWatermark(baseImage);
 
           setEnhancedImage(finalImage);
+          setUsageCharged(Boolean(result?.usageRecordId));
+          if (result?.usageRecordId) {
+            setLastChargeAt(new Date());
+          }
           toast.success("Fresh nudio ready! Save it or share it in a tap.");
           await handleSaveToCameraRoll(finalImage, true, "nudio-enhanced", true);
           shareBeforeAfterStory(preview, finalImage);
-          await handleUsageCharge();
         } catch (err) {
           setProcessingFailed(true);
+          if (err?.status === 402) {
+            setBillingReady(false);
+            setBillingChecked(true);
+          }
           if (err?.status === 402 || err?.status === 403) {
             const limitMessage =
-              err?.message &&
-              err.message.toLowerCase().includes("free tier")
+              typeof err?.message === "string" && err.message.trim().length > 0
                 ? err.message
                 : "We couldn’t process that image yet.";
             setError(
@@ -1350,7 +1342,6 @@ export function PhotoEnhancer({
     setEnhancedImage("");
     setError("");
     setUsageCharged(false);
-    setUsageChargeError("");
     setPublishError("");
     setProcessingFailed(false);
     if (fileInputRef.current) {
@@ -1753,18 +1744,6 @@ export function PhotoEnhancer({
               </p>
             </div>
 
-            {usageChargeError && (
-              <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs text-rose-100">
-                <p>{usageChargeError}</p>
-                <button
-                  type="button"
-                  onClick={handleUsageCharge}
-                  className="mt-2 underline underline-offset-4"
-                >
-                  Retry charge
-                </button>
-              </div>
-            )}
           </div>
 
           {enhancedImage && (

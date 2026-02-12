@@ -19,13 +19,14 @@ Deno.serve(async (req) => {
   }
 
   let guestRemaining: number | undefined;
+  let guestResult: Awaited<ReturnType<typeof guestGate>> | null = null;
   const shopifyModeEnabled = Deno.env.get('NUDIO_SHOPIFY_MODE') === 'true'
   const shopifyMode =
     shopifyModeEnabled && req.headers.get('x-nudio-shopify-mode') === 'true'
 
   try {
     if (!shopifyMode) {
-      const guestResult = await guestGate(req);
+      guestResult = await guestGate(req);
       guestRemaining =
         !guestResult.blocked && typeof guestResult.remaining === 'number'
           ? guestResult.remaining
@@ -125,7 +126,7 @@ Deno.serve(async (req) => {
     const backdrop = resolveBackdrop()
 
     let email = extractUserEmail({ userEmail: bodyEmail }, req)
-    if (!email && guestResult.fingerprint) {
+    if (!email && guestResult && !guestResult.blocked && guestResult.fingerprint) {
       email = `guest-${guestResult.fingerprint}@nudio.ai`
     }
     if (!email) {
@@ -137,21 +138,23 @@ Deno.serve(async (req) => {
     }
 
     const profile = await ensureProfile(email)
-    const allowance = canConsumeCredit(profile, {
-      creditCost: creditCostValue,
-      requirePaidCredits: forcePaidCredits,
-    })
-    if (!allowance.allowed) {
-      return new Response(
-        JSON.stringify({
-          error: allowance.message ?? 'Usage limit reached',
-          usage: (await getUsageSummary(email)).usage,
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 403,
-        }
-      )
+    if (!shopifyMode) {
+      const allowance = canConsumeCredit(profile, {
+        creditCost: creditCostValue,
+        requirePaidCredits: forcePaidCredits,
+      })
+      if (!allowance.allowed) {
+        return new Response(
+          JSON.stringify({
+            error: allowance.message ?? 'Usage limit reached',
+            usage: (await getUsageSummary(email)).usage,
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 403,
+          }
+        )
+      }
     }
 
     const geminiKey = Deno.env.get('GEMINI_API_KEY')
@@ -239,16 +242,20 @@ The shoot is captured on a Phase One camera using a Schneider Kreuznach 110mm LS
         for (const part of data.candidates[0].content.parts) {
           if (part.inlineData) {
             console.log('Image successfully generated')
-            const consumption = await consumeCredit(profile, {
-              creditCost: creditCostValue,
-              requirePaidCredits: forcePaidCredits,
-            })
+            const usage = shopifyMode
+              ? (await getUsageSummary(email)).usage
+              : (
+                  await consumeCredit(profile, {
+                    creditCost: creditCostValue,
+                    requirePaidCredits: forcePaidCredits,
+                  })
+                ).usage
             return new Response(
               JSON.stringify({
                 success: true,
                 image: `data:image/png;base64,${part.inlineData.data}`,
                 message: 'Image processed successfully',
-                usage: consumption.usage,
+                usage,
                 backdropId: backdrop.id,
                 variant,
               }),
@@ -342,17 +349,21 @@ Make it punchy, professional, and conversion-focused. Do NOT use emojis.`
 
       console.log('Generated description:', optimizedDescription)
 
-      const consumption = await consumeCredit(profile, {
-        creditCost: creditCostValue,
-        requirePaidCredits: forcePaidCredits,
-      })
+      const usage = shopifyMode
+        ? (await getUsageSummary(email)).usage
+        : (
+            await consumeCredit(profile, {
+              creditCost: creditCostValue,
+              requirePaidCredits: forcePaidCredits,
+            })
+          ).usage
 
       return new Response(
         JSON.stringify({
           success: true,
           description: optimizedDescription,
           message: 'Description generated successfully',
-          usage: consumption.usage,
+          usage,
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
