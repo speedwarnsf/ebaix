@@ -64,7 +64,7 @@
   "scripts": {
     "start": "craco start",
     "build": "craco build",
-    "build:shopify": "PUBLIC_URL=/shopify/app craco build",
+    "build:shopify": "REACT_APP_SUPABASE_ANON_KEY= REACT_APP_SUPABASE_URL= PUBLIC_URL=/shopify/app craco build",
     "test": "craco test"
   },
   "browserslist": {

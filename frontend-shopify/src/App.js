@@ -39,8 +39,6 @@ function AppBridgePing() {
 }
 
 function App() {
-  const anonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
-  const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
   const shopifyApiKey = process.env.REACT_APP_SHOPIFY_API_KEY;
   const shopifyHost = resolveShopifyHost();
   const inIframe = typeof window !== "undefined" && window.self !== window.top;
@@ -120,7 +118,7 @@ function App() {
         className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10"
         style={{ marginTop: "-60px" }}
       >
-        <PhotoEnhancer anonKey={anonKey} supabaseUrl={supabaseUrl} />
+        <PhotoEnhancer />
       </main>
       <Toaster position="top-right" />
     </div>
