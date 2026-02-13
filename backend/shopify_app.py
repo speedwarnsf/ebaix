@@ -826,12 +826,21 @@ async def shopify_oauth_callback(request: Request, shop: str, code: str, state: 
     _store_shop_token(shop, access_token, scope)
 
     redirect_host = host or _base64_host(shop)
-    admin_url = _shopify_admin_app_url(shop)
-    app_url = admin_url or _shopify_app_url(request)
+    # Redirect back to our app URL (not the admin "apps/<handle>" route).
+    #
+    # Using the admin handle here is brittle: Shopify admin routes can differ
+    # between dev/prod apps and can lag behind listing slug changes.
+    # Our embedded frontend uses App Bridge with forceRedirect to land merchants
+    # in the correct admin context without us hard-coding the handle.
+    app_url = _shopify_app_url(request)
     if not app_url:
         raise HTTPException(status_code=500, detail="Missing Shopify app URL.")
-    if not admin_url:
-        app_url = f"{app_url}?shop={shop}&host={redirect_host}"
+    parsed_app = urlparse(app_url)
+    query = dict(parse_qsl(parsed_app.query))
+    query["shop"] = shop
+    query["host"] = redirect_host
+    parsed_app = parsed_app._replace(query=urlencode(query))
+    app_url = urlunparse(parsed_app)
     response = RedirectResponse(url=app_url, status_code=302)
     response.delete_cookie("shopify_oauth_state")
     return response
