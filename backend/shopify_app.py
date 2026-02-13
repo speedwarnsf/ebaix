@@ -20,7 +20,7 @@ import logging
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, RedirectResponse, Response, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from PIL import Image
 from pillow_heif import register_heif_opener
@@ -79,45 +79,55 @@ if static_dir.exists():
 
 @app.middleware("http")
 async def require_shopify_session_token(request: Request, call_next):
-    path = request.url.path
-    public_paths = (
-        "/shopify/install",
-        "/shopify/oauth/callback",
-        "/shopify/app",
-        "/shopify/health",
-        "/shopify/webhooks/compliance",
-        "/shopify/webhooks/app/uninstalled",
-        "/shopify/webhooks/customers/data_request",
-        "/shopify/webhooks/customers/redact",
-        "/shopify/webhooks/shop/redact",
-        "/shopify/webhooks/app_uninstalled",
-        "/shopify/webhooks/customers_redact",
-        "/shopify/webhooks/customers_data_request",
-        "/shopify/webhooks/shop_redact",
-    )
-    if path.startswith("/shopify/app") or path in public_paths:
-        return await call_next(request)
-    if not path.startswith("/shopify/"):
-        return await call_next(request)
+    # NOTE: Raising HTTPException from Starlette/FastAPI middleware is handled by
+    # ServerErrorMiddleware (500) instead of FastAPI's exception handlers.
+    # We must return a JSON response ourselves for auth failures.
+    try:
+        path = request.url.path
+        public_paths = (
+            "/shopify/install",
+            "/shopify/oauth/callback",
+            "/shopify/app",
+            "/shopify/health",
+            "/shopify/webhooks/compliance",
+            "/shopify/webhooks/app/uninstalled",
+            "/shopify/webhooks/customers/data_request",
+            "/shopify/webhooks/customers/redact",
+            "/shopify/webhooks/shop/redact",
+            "/shopify/webhooks/app_uninstalled",
+            "/shopify/webhooks/customers_redact",
+            "/shopify/webhooks/customers_data_request",
+            "/shopify/webhooks/shop_redact",
+        )
+        if path.startswith("/shopify/app") or path in public_paths:
+            return await call_next(request)
+        if not path.startswith("/shopify/"):
+            return await call_next(request)
 
-    auth_header = request.headers.get("authorization", "")
-    token = ""
-    if auth_header.startswith("Bearer "):
-        token = auth_header.replace("Bearer ", "")
-    else:
-        token = request.query_params.get("id_token", "")
-    if not token:
-        raise HTTPException(status_code=401, detail="Missing session token.")
-    payload = _verify_session_token(token)
-    shop = _shop_from_session_token(payload)
-    if not shop:
-        raise HTTPException(status_code=401, detail="Invalid session token shop.")
-    query_shop = request.query_params.get("shop")
-    if query_shop and query_shop != shop:
-        raise HTTPException(status_code=401, detail="Shop context mismatch.")
+        auth_header = request.headers.get("authorization", "")
+        token = ""
+        if auth_header.startswith("Bearer "):
+            token = auth_header.replace("Bearer ", "")
+        else:
+            token = request.query_params.get("id_token", "")
+        if not token:
+            raise HTTPException(status_code=401, detail="Missing session token.")
 
-    request.state.shop = shop
-    return await call_next(request)
+        payload = _verify_session_token(token)
+        shop = _shop_from_session_token(payload)
+        if not shop:
+            raise HTTPException(status_code=401, detail="Invalid session token shop.")
+        query_shop = request.query_params.get("shop")
+        if query_shop and query_shop != shop:
+            raise HTTPException(status_code=401, detail="Shop context mismatch.")
+
+        request.state.shop = shop
+        return await call_next(request)
+    except HTTPException as exc:
+        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+    except Exception:
+        logging.exception("middleware_auth_failed path=%s", getattr(request.url, "path", ""))
+        return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
 
 
 @app.middleware("http")
@@ -512,14 +522,15 @@ def _is_allowed_shopify_image_url(src: str) -> bool:
 def _shop_from_issuer(issuer: str) -> str | None:
     if not issuer:
         return None
-    if issuer.startswith("https://") and issuer.endswith("/admin"):
-        return issuer.replace("https://", "").replace("/admin", "")
     if issuer.startswith("https://admin.shopify.com/store/"):
-        slug = issuer.split("/store/", 1)[-1].strip("/")
-        if slug:
-            return f"{slug}.myshopify.com"
-    if issuer.startswith("https://") and ".myshopify.com" in issuer:
-        return issuer.replace("https://", "").strip("/")
+        match = re.search(r"^https://admin\.shopify\.com/store/([^/?#]+)", issuer)
+        if match:
+            return f"{match.group(1)}.myshopify.com"
+    if issuer.startswith("https://"):
+        parsed = urlparse(issuer)
+        host = (parsed.hostname or "").lower()
+        if host.endswith(".myshopify.com"):
+            return host
     return None
 
 
@@ -566,9 +577,14 @@ def _verify_session_token(token: str) -> dict:
     expected_issuer = f"https://{shop}/admin"
     expected_store_issuer = f"https://{shop}"
     expected_admin_store = f"https://admin.shopify.com/store/{shop.replace('.myshopify.com', '')}"
-    issuer_ok = issuer in (expected_issuer, expected_store_issuer, expected_admin_store)
-    if not issuer_ok and isinstance(issuer, str) and issuer.endswith("/admin/"):
-        issuer_ok = issuer.rstrip("/") in (expected_issuer, expected_store_issuer, expected_admin_store)
+    issuer_ok = False
+    if isinstance(issuer, str):
+        normalized = issuer.rstrip("/")
+        if normalized in (expected_issuer, expected_store_issuer, expected_admin_store):
+            issuer_ok = True
+        elif normalized.startswith(expected_admin_store + "/"):
+            # Shopify may include deeper paths in `iss` when using the new admin URL format.
+            issuer_ok = True
     if not issuer_ok:
         raise HTTPException(status_code=401, detail="Invalid session token issuer.")
     audience = payload.get("aud")
