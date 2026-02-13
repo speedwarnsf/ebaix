@@ -895,19 +895,15 @@ async def shopify_billing_ensure(request: Request, shop: str | None = None, host
       }
     """
     return_url = _shopify_app_url(request)
-    if return_url and (shop or host):
-        parsed_return = urlparse(return_url)
-        query = dict(parse_qsl(parsed_return.query))
-        if shop:
-            query["shop"] = shop
-        if host:
-            query["host"] = host
-        parsed_return = parsed_return._replace(query=urlencode(query))
-        return_url = urlunparse(parsed_return)
     if not return_url:
         raise HTTPException(status_code=500, detail="Missing Shopify app URL.")
-    if host and "admin.shopify.com" not in return_url:
-        return_url = f"{return_url}?shop={auth_shop}&host={host}"
+    parsed_return = urlparse(return_url)
+    query = dict(parse_qsl(parsed_return.query))
+    query["shop"] = auth_shop
+    if host:
+        query["host"] = host
+    parsed_return = parsed_return._replace(query=urlencode(query))
+    return_url = urlunparse(parsed_return)
 
     variables = {
         "name": SHOPIFY_SUBSCRIPTION_NAME,
