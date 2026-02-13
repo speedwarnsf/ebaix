@@ -457,10 +457,28 @@ async def _shopify_graphql(shop: str, access_token: str, query: str, variables: 
         "X-Shopify-Access-Token": access_token,
         "Content-Type": "application/json",
     }
-    async with httpx.AsyncClient(timeout=20.0) as client:
-        response = await client.post(url, json=payload, headers=headers)
-        response.raise_for_status()
-        return response.json()
+    try:
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            response = await client.post(url, json=payload, headers=headers)
+    except httpx.RequestError as exc:
+        logging.warning("shopify_graphql_request_error shop=%s err=%s", shop, exc)
+        raise HTTPException(status_code=502, detail="Shopify API request failed.") from exc
+
+    if response.status_code in (401, 403):
+        logging.warning("shopify_graphql_auth_error shop=%s status=%s", shop, response.status_code)
+        raise HTTPException(
+            status_code=401,
+            detail={"error": "shopify_token_invalid", "install_url": _shopify_install_url(shop)},
+        )
+
+    if response.status_code >= 400:
+        logging.warning("shopify_graphql_error shop=%s status=%s", shop, response.status_code)
+        raise HTTPException(
+            status_code=502,
+            detail={"error": "shopify_api_error", "status": response.status_code},
+        )
+
+    return response.json()
 
 
 async def _shopify_rest(shop: str, access_token: str, method: str, path: str, payload: dict) -> dict:
@@ -469,13 +487,47 @@ async def _shopify_rest(shop: str, access_token: str, method: str, path: str, pa
         "X-Shopify-Access-Token": access_token,
         "Content-Type": "application/json",
     }
-    async with httpx.AsyncClient(timeout=20.0) as client:
-        if method.upper() == "GET":
-            response = await client.request(method, url, params=payload, headers=headers)
-        else:
-            response = await client.request(method, url, json=payload, headers=headers)
+    try:
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            if method.upper() == "GET":
+                response = await client.request(method, url, params=payload, headers=headers)
+            else:
+                response = await client.request(method, url, json=payload, headers=headers)
+    except httpx.RequestError as exc:
+        logging.warning("shopify_rest_request_error shop=%s method=%s path=%s err=%s", shop, method, path, exc)
+        raise HTTPException(status_code=502, detail="Shopify API request failed.") from exc
+
+    # Let the retry wrapper handle transient statuses.
+    if response.status_code in (429, 500, 502, 503, 504):
         response.raise_for_status()
-        return response.json()
+
+    if response.status_code in (401, 403):
+        logging.warning(
+            "shopify_rest_auth_error shop=%s method=%s path=%s status=%s",
+            shop,
+            method,
+            path,
+            response.status_code,
+        )
+        raise HTTPException(
+            status_code=401,
+            detail={"error": "shopify_token_invalid", "install_url": _shopify_install_url(shop)},
+        )
+
+    if response.status_code >= 400:
+        logging.warning(
+            "shopify_rest_error shop=%s method=%s path=%s status=%s",
+            shop,
+            method,
+            path,
+            response.status_code,
+        )
+        raise HTTPException(
+            status_code=502,
+            detail={"error": "shopify_api_error", "status": response.status_code},
+        )
+
+    return response.json()
 
 
 async def _shopify_rest_with_retry(
